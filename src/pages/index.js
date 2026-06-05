@@ -1,7 +1,9 @@
 // pages/index.js
-import React from 'react';
-import { FaSkull, FaChess, FaLock, FaGamepad } from 'react-icons/fa';
+import Link from 'next/link';
+import { useDiscord } from '@/hooks/useDiscord';
+import { FaGamepad } from 'react-icons/fa';
 import { FiUser, FiCpu, FiZap } from 'react-icons/fi';
+import { FaSkull, FaChess, FaLock } from 'react-icons/fa';
 
 const games = [
   {
@@ -61,6 +63,10 @@ const games = [
 ];
 
 export default function GameHub() {
+  const { auth } = useDiscord();
+  const isDiscordFrame = typeof window !== 'undefined' && 
+    new URLSearchParams(window.location.search).get('frame_id');
+
   return (
     <div className="min-h-screen bg-[#0f0f12]">
       {/* Background subtle gradient */}
@@ -76,9 +82,21 @@ export default function GameHub() {
               </div>
               <span className="text-xl font-bold text-white">Peepe</span>
             </div>
-            <div className="flex gap-4 text-sm">
-              <span className="text-gray-500">🎮 6 jogos disponíveis</span>
-            </div>
+            
+            {/* Status do Discord */}
+            {isDiscordFrame && auth ? (
+              <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                <span className="text-xs text-emerald-400">
+                  {auth.user?.username}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-full">
+                <div className="w-2 h-2 bg-yellow-500 rounded-full" />
+                <span className="text-xs text-yellow-400">Modo Demo</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -102,7 +120,7 @@ export default function GameHub() {
           </p>
         </div>
 
-        {/* Games Grid */}
+        {/* Games Grid - USANDO Link do Next.js */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {games.map((game) => {
             const colorClasses = {
@@ -133,45 +151,43 @@ export default function GameHub() {
             };
 
             return (
-              <a
-                key={game.id}
-                href={game.path}
-                className="group relative bg-white/5 border border-white/10 rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
-              >
-                <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${colorClasses[game.color]}`} />
-                
-                <div className="relative p-6">
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <span className="text-xs font-mono text-gray-500 tracking-wider">
-                      {game.badge}
-                    </span>
-                    <div className={`${iconColors[game.color]} group-hover:scale-110 transition-transform duration-300`}>
-                      {game.icon}
-                    </div>
-                  </div>
-
-                  {/* Title */}
-                  <h2 className="text-xl font-bold text-white mb-2">
-                    {game.title}
-                  </h2>
+              <Link key={game.id} href={game.path} legacyBehavior>
+                <a className="group relative bg-white/5 border border-white/10 rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+                  <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${colorClasses[game.color]}`} />
                   
-                  {/* Description */}
-                  <p className="text-gray-400 text-sm leading-relaxed mb-5">
-                    {game.desc}
-                  </p>
+                  <div className="relative p-6">
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-4">
+                      <span className="text-xs font-mono text-gray-500 tracking-wider">
+                        {game.badge}
+                      </span>
+                      <div className={`${iconColors[game.color]} group-hover:scale-110 transition-transform duration-300`}>
+                        {game.icon}
+                      </div>
+                    </div>
 
-                  {/* Play Button */}
-                  <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                    <span className="text-xs text-gray-500">Clique para jogar</span>
-                    <div className={`w-8 h-8 rounded-full ${buttonColors[game.color]} flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-1`}>
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
+                    {/* Title */}
+                    <h2 className="text-xl font-bold text-white mb-2">
+                      {game.title}
+                    </h2>
+                    
+                    {/* Description */}
+                    <p className="text-gray-400 text-sm leading-relaxed mb-5">
+                      {game.desc}
+                    </p>
+
+                    {/* Play Button */}
+                    <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                      <span className="text-xs text-gray-500">Clique para jogar</span>
+                      <div className={`w-8 h-8 rounded-full ${buttonColors[game.color]} flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-1`}>
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </a>
+                </a>
+              </Link>
             );
           })}
         </div>
