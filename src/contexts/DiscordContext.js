@@ -1,33 +1,65 @@
 // contexts/DiscordContext.js
 import { createContext, useContext, useEffect, useState } from 'react';
-import { getDiscordSDK, getAuth, setupDiscordSdk } from '@/lib/discord';
+import { getDiscordSDK, setupDiscordSdk } from '@/lib/discord';
 
-const DiscordContext = createContext(null);
+// Criar e exportar o contexto
+export const DiscordContext = createContext(null);
 
+// Exportar o Provider
 export function DiscordProvider({ children }) {
   const [discordSdk, setDiscordSdk] = useState(null);
   const [auth, setAuth] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isDiscordFrame, setIsDiscordFrame] = useState(false);
 
   useEffect(() => {
     async function init() {
-      const sdk = getDiscordSDK();
-      const userAuth = await setupDiscordSdk();
-      setDiscordSdk(sdk);
-      setAuth(userAuth);
-      setLoading(false);
+      try {
+        // Verifica se está no Discord
+        const params = new URLSearchParams(window.location.search);
+        const frameId = params.get('frame_id');
+        setIsDiscordFrame(!!frameId);
+        
+        const sdk = getDiscordSDK();
+        setDiscordSdk(sdk);
+        
+        // Só tenta autenticar se estiver no Discord
+        if (frameId) {
+          const userAuth = await setupDiscordSdk();
+          setAuth(userAuth);
+        } else {
+          console.log("Modo standalone - autenticação Discord desabilitada");
+          setAuth(null);
+        }
+      } catch (err) {
+        console.error("Erro ao inicializar Discord:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
     }
     
     init();
   }, []);
 
+  const value = {
+    discordSdk,
+    auth,
+    loading,
+    error,
+    isDiscordFrame,
+    isAuthenticated: !!auth
+  };
+
   return (
-    <DiscordContext.Provider value={{ discordSdk, auth, loading }}>
+    <DiscordContext.Provider value={value}>
       {children}
     </DiscordContext.Provider>
   );
 }
 
+// Exportar o hook useDiscord
 export function useDiscord() {
   const context = useContext(DiscordContext);
   if (!context) {
@@ -35,3 +67,6 @@ export function useDiscord() {
   }
   return context;
 }
+
+// Exportação padrão
+export default DiscordProvider;

@@ -1,15 +1,16 @@
 // hooks/useDiscord.js
-import { useEffect, useState } from 'react';
-import { getAuth, getDiscordSDK } from '@/lib/discord';
+import { useContext } from 'react';
+import { DiscordContext } from '@/contexts/DiscordContext';
 
 export function useDiscord() {
-  const [auth, setAuth] = useState(null);
-  const [sdk, setSdk] = useState(null);
-
-  useEffect(() => {
-    setAuth(getAuth());
-    setSdk(getDiscordSDK());
-  }, []);
-
-  return { auth, sdk };
+  const context = useContext(DiscordContext);
+  
+  if (!context) {
+    throw new Error('useDiscord must be used within DiscordProvider');
+  }
+  
+  return context;
 }
+
+// Também exportar como padrão
+export default useDiscord;

@@ -3,6 +3,7 @@ import { DiscordSDK } from "@discord/embedded-app-sdk";
 
 let discordSdk = null;
 let auth = null;
+let isInitialized = false;
 
 export function getDiscordSDK() {
   if (!discordSdk && typeof window !== 'undefined') {
@@ -16,6 +17,11 @@ export function getAuth() {
 }
 
 export async function setupDiscordSdk() {
+  // Evita reinicializações desnecessárias
+  if (isInitialized) {
+    return auth;
+  }
+
   const sdk = getDiscordSDK();
   if (!sdk) return null;
 
@@ -26,6 +32,7 @@ export async function setupDiscordSdk() {
     
     if (!frameId) {
       console.warn("Fora do Discord. Modo Standalone ativo.");
+      isInitialized = true;
       return null;
     }
 
@@ -42,21 +49,37 @@ export async function setupDiscordSdk() {
 
     const response = await fetch("/api/token", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({ code }),
     });
 
-    if (!response.ok) throw new Error("Failed to get access token");
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to get access token");
+    }
 
     const { access_token } = await response.json();
+    
+    // Autentica no SDK
     auth = await sdk.commands.authenticate({ access_token });
 
-    if (auth == null) throw new Error("Authenticate failed");
+    if (!auth) throw new Error("Authenticate failed - no user data returned");
 
-    console.log("Discord SDK authenticated");
+    console.log("Discord SDK authenticated:", auth.user?.username);
+    isInitialized = true;
     return auth;
+    
   } catch (e) {
-    console.warn("Erro na autenticação Discord:", e);
+    console.error("Erro na autenticação Discord:", e);
+    isInitialized = true;
     return null;
   }
+}
+
+// Função para limpar o estado (útil para logout)
+export function clearDiscordAuth() {
+  auth = null;
+  isInitialized = false;
 }
