@@ -1,8 +1,10 @@
 // pages/game/hangman.js
+import { useRouter } from 'next/router';
 import { useEffect, useState, useRef } from 'react';
 import { FaArrowLeft, FaRedo, FaLightbulb } from 'react-icons/fa';
 
 export default function Hangman() {
+  const router = useRouter();
   const [secretWord, setSecretWord] = useState('');
   const [hint, setHint] = useState('');
   const [guessedLetters, setGuessedLetters] = useState([]);
@@ -15,6 +17,10 @@ export default function Hangman() {
   
   const canvasRef = useRef(null);
   const maxMistakes = 6;
+
+  const handleExit = () => {
+    router.push('/');
+  };
 
   // Busca palavra da API
   const fetchWord = async () => {
@@ -154,7 +160,7 @@ export default function Hangman() {
       <div className="fixed top-0 left-0 right-0 bg-[#0f0f12]/80 backdrop-blur-sm border-b border-white/5 z-10">
         <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex gap-2">
-            <a href="/" className="p-2 text-gray-400 hover:text-white transition-colors">
+            <a onClick={handleExit} className="p-2 text-gray-400 hover:text-white transition-colors">
               <FaArrowLeft size={20} />
             </a>
             <button onClick={handleRestart} className="p-2 text-gray-400 hover:text-white transition-colors">
