@@ -1,78 +1,188 @@
-import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
+// pages/index.js
+import React from 'react';
+import { FaSkull, FaChess, FaLock, FaGamepad } from 'react-icons/fa';
+import { FiUser, FiCpu, FiZap } from 'react-icons/fi';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+const games = [
+  {
+    id: "ttt",
+    badge: "ESTRATÉGIA",
+    title: "Jogo da Velha",
+    desc: "Desafie uma IA baseada no algoritmo Minimax em um duelo tático de inteligência.",
+    color: "emerald",
+    icon: <FaChess size={28} />,
+    path: "/game/ttt"
+  },
+  {
+    id: "hangman",
+    badge: "LÓGICA",
+    title: "Jogo da Forca",
+    desc: "Decifre a palavra secreta gerada por IA antes que suas tentativas se esgotem.",
+    color: "purple",
+    icon: <FaLock size={28} />,
+    path: "/game/hangman"
+  },
+  {
+    id: "snake",
+    badge: "ARCADE",
+    title: "Snake",
+    desc: "Controle a serpente faminta, colete pontos e evite colidir com o próprio corpo.",
+    color: "cyan",
+    icon: <FiZap size={28} />,
+    path: "/game/snake"
+  },
+  {
+    id: "guess",
+    badge: "MATEMÁTICA",
+    title: "Adivinhe o Número",
+    desc: "Use a lógica para descobrir o número secreto com base nos feedbacks de temperatura.",
+    color: "orange",
+    icon: <FiUser size={28} />,
+    path: "/game/guess"
+  },
+  {
+    id: "2048",
+    badge: "PUZZLE",
+    title: "2048",
+    desc: "Combine os números estrategicamente para alcançar o mítico bloco 2048.",
+    color: "blue",
+    icon: <FiCpu size={28} />,
+    path: "/game/2048"
+  },
+  {
+    id: "zombies",
+    badge: "AÇÃO",
+    title: "Zombie Apocalypse",
+    desc: "Sobreviva ao ataque dos zumbis em uma arena de sobrevivência intensa.",
+    color: "red",
+    icon: <FaSkull size={28} />,
+    path: "/game/zombies"
+  }
+];
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-export default function Home() {
+export default function GameHub() {
   return (
-    <div
-      className={`${geistSans.className} ${geistMono.className} flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black`}
-    >
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the index.js file.
+    <div className="min-h-screen bg-[#0f0f12]">
+      {/* Background subtle gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/[0.02] via-transparent to-purple-500/[0.02] pointer-events-none" />
+
+      {/* Header */}
+      <div className="fixed top-0 left-0 right-0 bg-[#0f0f12]/80 backdrop-blur-sm border-b border-white/5 z-10">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
+                <FaGamepad size={18} className="text-white" />
+              </div>
+              <span className="text-xl font-bold text-white">Peepe</span>
+            </div>
+            <div className="flex gap-4 text-sm">
+              <span className="text-gray-500">🎮 6 jogos disponíveis</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="pt-24 pb-16 px-6 max-w-7xl mx-auto">
+        {/* Hero Section */}
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-6">
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+            <span className="text-xs text-gray-400 uppercase tracking-wider">Game Hub</span>
+          </div>
+          
+          <h1 className="text-5xl md:text-6xl font-bold mb-4">
+            <span className="text-white">Biblioteca de </span>
+            <span className="bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent">Jogos</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          
+          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+            Escolha seu jogo favorito e desafie suas habilidades
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs/pages/getting-started?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Games Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {games.map((game) => {
+            const colorClasses = {
+              emerald: "hover:border-emerald-500/50 group-hover:bg-emerald-500/5",
+              purple: "hover:border-purple-500/50 group-hover:bg-purple-500/5",
+              cyan: "hover:border-cyan-500/50 group-hover:bg-cyan-500/5",
+              orange: "hover:border-orange-500/50 group-hover:bg-orange-500/5",
+              blue: "hover:border-blue-500/50 group-hover:bg-blue-500/5",
+              red: "hover:border-red-500/50 group-hover:bg-red-500/5"
+            };
+            
+            const buttonColors = {
+              emerald: "bg-emerald-500 hover:bg-emerald-600",
+              purple: "bg-purple-500 hover:bg-purple-600",
+              cyan: "bg-cyan-500 hover:bg-cyan-600",
+              orange: "bg-orange-500 hover:bg-orange-600",
+              blue: "bg-blue-500 hover:bg-blue-600",
+              red: "bg-red-500 hover:bg-red-600"
+            };
+
+            const iconColors = {
+              emerald: "text-emerald-400",
+              purple: "text-purple-400",
+              cyan: "text-cyan-400",
+              orange: "text-orange-400",
+              blue: "text-blue-400",
+              red: "text-red-400"
+            };
+
+            return (
+              <a
+                key={game.id}
+                href={game.path}
+                className="group relative bg-white/5 border border-white/10 rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+              >
+                <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${colorClasses[game.color]}`} />
+                
+                <div className="relative p-6">
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-4">
+                    <span className="text-xs font-mono text-gray-500 tracking-wider">
+                      {game.badge}
+                    </span>
+                    <div className={`${iconColors[game.color]} group-hover:scale-110 transition-transform duration-300`}>
+                      {game.icon}
+                    </div>
+                  </div>
+
+                  {/* Title */}
+                  <h2 className="text-xl font-bold text-white mb-2">
+                    {game.title}
+                  </h2>
+                  
+                  {/* Description */}
+                  <p className="text-gray-400 text-sm leading-relaxed mb-5">
+                    {game.desc}
+                  </p>
+
+                  {/* Play Button */}
+                  <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                    <span className="text-xs text-gray-500">Clique para jogar</span>
+                    <div className={`w-8 h-8 rounded-full ${buttonColors[game.color]} flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-1`}>
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </a>
+            );
+          })}
         </div>
-      </main>
+
+        {/* Footer */}
+        <div className="mt-16 text-center">
+          <p className="text-gray-500 text-xs">
+            Desenvolvido com ❤️ para a comunidade Peepe
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
