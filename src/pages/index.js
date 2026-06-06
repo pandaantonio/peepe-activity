@@ -7,13 +7,13 @@ import { useEffect, useState } from 'react';
 
 const games = [
   {
-    id: "ttt",
+    id: "tttai",
     badge: "ESTRATÉGIA",
-    title: "Jogo da Velha",
+    title: "Jogo da Velha (IA)",
     desc: "Desafie uma IA baseada no algoritmo Minimax em um duelo tático de inteligência.",
     color: "emerald",
     icon: <FaChess size={28} />,
-    path: "/game/ttt"
+    path: "/game/tttai"
   },
   {
     id: "hangman",
