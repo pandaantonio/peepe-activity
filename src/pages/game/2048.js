@@ -1,7 +1,7 @@
 // /games/2048.js
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function Game2048() {
@@ -12,6 +12,7 @@ export default function Game2048() {
   const [gameOver, setGameOver] = useState(false);
   const [touchStartX, setTouchStartX] = useState(0);
   const [touchStartY, setTouchStartY] = useState(0);
+  const gameBoardRef = useRef(null);
 
   const addRandomTile = (currentGrid) => {
     let empty = [];
@@ -45,7 +46,9 @@ export default function Game2048() {
     return arr;
   };
 
-  const move = (dir) => {
+  const move = useCallback((dir) => {
+    if (gameOver) return;
+    
     let newGrid = grid.map(row => [...row]);
     let moved = false;
 
@@ -83,7 +86,7 @@ export default function Game2048() {
       setGrid(newGrid);
       if (isGameOverFunc(newGrid)) setGameOver(true);
     }
-  };
+  }, [grid, gameOver]);
 
   const isGameOverFunc = (g) => {
     for (let r = 0; r < size; r++) {
@@ -96,8 +99,59 @@ export default function Game2048() {
     return true;
   };
 
-  useEffect(() => { initGame(); }, [initGame]);
+  // Touch handlers para mobile
+  const handleTouchStart = (e) => {
+    const touch = e.touches[0];
+    setTouchStartX(touch.clientX);
+    setTouchStartY(touch.clientY);
+    e.preventDefault();
+  };
 
+  const handleTouchEnd = (e) => {
+    if (touchStartX === 0 && touchStartY === 0) return;
+    
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    
+    const deltaX = touchEndX - touchStartX;
+    const deltaY = touchEndY - touchStartY;
+    
+    // Definir sensibilidade do swipe (mínimo de 20px)
+    const minSwipeDistance = 20;
+    
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
+      // Swipe horizontal
+      if (deltaX > 0) {
+        move('right');
+      } else {
+        move('left');
+      }
+    } else if (Math.abs(deltaY) > minSwipeDistance) {
+      // Swipe vertical
+      if (deltaY > 0) {
+        move('down');
+      } else {
+        move('up');
+      }
+    }
+    
+    // Resetar valores
+    setTouchStartX(0);
+    setTouchStartY(0);
+    e.preventDefault();
+  };
+
+  const handleTouchCancel = (e) => {
+    setTouchStartX(0);
+    setTouchStartY(0);
+    e.preventDefault();
+  };
+
+  useEffect(() => { 
+    initGame(); 
+  }, [initGame]);
+
+  // Keyboard handlers
   useEffect(() => {
     const handleKey = (e) => {
       if (gameOver) return;
@@ -108,20 +162,31 @@ export default function Game2048() {
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [grid, gameOver]);
+  }, [move, gameOver]);
 
   const handleExit = () => {
     router.push('/');
   };
 
   const getTileClass = (v) => {
-    const map = {2:'bg-slate-200 text-slate-900',4:'bg-slate-300 text-slate-900',8:'bg-orange-400 text-white',16:'bg-orange-500 text-white',32:'bg-red-400 text-white',64:'bg-red-500 text-white',128:'bg-yellow-400 text-slate-900',256:'bg-yellow-500 text-white',512:'bg-lime-400 text-slate-900',1024:'bg-cyan-400 text-white',2048:'bg-purple-500 text-white'};
+    const map = {
+      2:'bg-slate-200 text-slate-900',
+      4:'bg-slate-300 text-slate-900',
+      8:'bg-orange-400 text-white',
+      16:'bg-orange-500 text-white',
+      32:'bg-red-400 text-white',
+      64:'bg-red-500 text-white',
+      128:'bg-yellow-400 text-slate-900',
+      256:'bg-yellow-500 text-white',
+      512:'bg-lime-400 text-slate-900',
+      1024:'bg-cyan-400 text-white',
+      2048:'bg-purple-500 text-white'
+    };
     return map[v] || 'bg-purple-600 text-white';
   };
 
   return (
     <div className="fixed inset-0 bg-zinc-950 flex items-center justify-center z-50">
-      {/* Botão Voltar - POSICIONADO CORRETAMENTE FORA DO CONTAINER DO JOGO */}
       <button
         onClick={handleExit}
         className="fixed top-6 left-6 z-50 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 px-6 py-3 rounded-2xl font-medium active:scale-95 transition-all"
@@ -138,7 +203,13 @@ export default function Game2048() {
           </div>
         </div>
 
-        <div className="bg-zinc-900 p-3 rounded-3xl shadow-2xl relative">
+        <div 
+          ref={gameBoardRef}
+          className="bg-zinc-900 p-3 rounded-3xl shadow-2xl relative"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchCancel}
+        >
           <div className="grid grid-cols-4 gap-2 bg-zinc-800 p-3 rounded-2xl">
             {grid.flat().map((v, i) => (
               <div key={i} className={`aspect-square flex items-center justify-center text-4xl font-bold rounded-2xl transition-all ${v ? getTileClass(v) : 'bg-zinc-800'}`}>
@@ -151,7 +222,7 @@ export default function Game2048() {
             <div className="absolute inset-0 bg-black/90 rounded-3xl flex flex-col items-center justify-center">
               <h2 className="text-5xl font-black text-orange-500 mb-4">Fim de Jogo!</h2>
               <p className="text-2xl mb-8">Score: {score}</p>
-              <button onClick={initGame} className="px-10 py-4 bg-orange-500 hover:bg-orange-600 rounded-2xl font-bold mr-3">Jogar Novamente</button>
+              <button onClick={() => initGame()} className="px-10 py-4 bg-orange-500 hover:bg-orange-600 rounded-2xl font-bold mb-3">Jogar Novamente</button>
               <button onClick={handleExit} className="px-10 py-4 bg-zinc-700 hover:bg-zinc-600 rounded-2xl font-bold">Voltar ao Hub</button>
             </div>
           )}

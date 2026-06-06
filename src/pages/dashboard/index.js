@@ -2,6 +2,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { useDiscord } from '@/contexts/DiscordContext';
+import Link from 'next/link';
+import { FaArrowLeft, FaDiscord, FaShieldAlt, FaLink, FaCog } from 'react-icons/fa';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -31,9 +33,8 @@ export default function Dashboard() {
 
     async function fetchGuilds() {
       try {
-        console.log('Buscando guilds via API com token...');
+        console.log('Buscando guilds via API...');
         
-        // Usando o endpoint correto /api/discord/guilds com access_token
         const response = await fetch(`/api/discord/guilds?access_token=${auth.access_token}`, {
           method: 'GET',
           headers: {
@@ -99,6 +100,10 @@ export default function Dashboard() {
     }, 2000);
   };
 
+  const handleConfigureGuild = (guildId) => {
+    router.push(`/dashboard/${guildId}`);
+  };
+
   if (discordLoading || loading) {
     return (
       <div className="min-h-screen bg-[#0f0f12] flex items-center justify-center">
@@ -152,17 +157,16 @@ export default function Dashboard() {
       <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/[0.03] via-transparent to-purple-500/[0.03] pointer-events-none" />
       
       <div className="relative max-w-7xl mx-auto px-6 py-8">
+        {/* Botão Voltar */}
         <button
           onClick={handleBackToHub}
           className="group flex items-center gap-2 px-4 py-2 mb-8 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-300 text-gray-400 hover:text-white"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <line x1="19" y1="12" x2="5" y2="12" />
-            <polyline points="12 19 5 12 12 5" />
-          </svg>
+          <FaArrowLeft size={14} />
           <span className="text-sm font-medium">Voltar ao HUB</span>
         </button>
 
+        {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold mb-3">
             <span className="text-white">Peepe </span>
@@ -205,6 +209,7 @@ export default function Dashboard() {
                     className="group relative bg-white/5 border border-white/10 rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-emerald-500/30"
                   >
                     <div className="relative p-6">
+                      {/* Header com ícone e status */}
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-shrink-0">
                           {iconUrl ? (
@@ -215,46 +220,72 @@ export default function Dashboard() {
                             />
                           ) : (
                             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center">
-                              <span className="text-white font-bold text-lg">{initials}</span>
+                              <FaDiscord size={24} className="text-white" />
                             </div>
                           )}
                         </div>
-                        <div className="px-2 py-1 rounded-md bg-white/5 border border-white/10">
-                          <span className="text-[10px] font-bold text-gray-500 tracking-wider">DISPONÍVEL</span>
+                        <div className="px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20">
+                          <span className="text-[10px] font-bold text-emerald-400 tracking-wider">DISPONÍVEL</span>
                         </div>
                       </div>
 
-                      <h3 className="text-xl font-bold text-white mb-1">{guild.name}</h3>
-                      <p className="text-gray-500 text-xs font-mono mb-5">ID: {guild.id}</p>
+                      {/* Informações do servidor */}
+                      <h3 className="text-xl font-bold text-white mb-1 truncate">{guild.name}</h3>
+                      <p className="text-gray-500 text-xs font-mono mb-4">ID: {guild.id}</p>
 
-                      <button
-                        onClick={() => {
-                          router.push({
-                            pathname: `/guild/${guild.id}`,
-                            query: { name: guild.name, icon: guild.icon || '' }
-                          });
-                        }}
-                        className="w-full py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm transition-all duration-300 flex items-center justify-center gap-2 group/btn"
-                      >
-                        <span>CONFIGURAR MÓDULOS</span>
-                        <svg 
-                          className="w-4 h-4 transition-transform duration-300 group-hover/btn:translate-x-1" 
-                          fill="none" 
-                          stroke="currentColor" 
-                          viewBox="0 0 24 24"
+                      {/* Features do servidor */}
+                      <div className="flex flex-wrap gap-2 mb-5">
+                        {guild.features?.includes('COMMUNITY') && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400">Comunidade</span>
+                        )}
+                        {guild.features?.includes('VERIFIED') && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400">Verificado</span>
+                        )}
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-gray-400">
+                          {guild.approximate_member_count || '?'} membros
+                        </span>
+                      </div>
+
+                      {/* Botões de ação */}
+                      <div className="space-y-2">
+                        <button
+                          onClick={() => handleConfigureGuild(guild.id)}
+                          className="w-full py-2.5 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold text-sm transition-all duration-300 flex items-center justify-center gap-2 group/btn"
                         >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                      </button>
+                          <FaCog size={14} />
+                          <span>CONFIGURAR MÓDULOS</span>
+                        </button>
+                        
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleConfigureGuild(guild.id)}
+                            className="flex-1 py-2 rounded-lg bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 text-xs font-medium transition-all flex items-center justify-center gap-1"
+                          >
+                            <FaShieldAlt size={10} />
+                            Anti Invite
+                          </button>
+                          <button
+                            onClick={() => handleConfigureGuild(guild.id)}
+                            className="flex-1 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 text-blue-400 text-xs font-medium transition-all flex items-center justify-center gap-1"
+                          >
+                            <FaLink size={10} />
+                            Anti Link
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );
               })}
             </div>
             
+            {/* Footer com info */}
             <div className="mt-8 text-center">
               <p className="text-gray-500 text-xs">
                 {guilds.length} servidor(es) disponível(eis) para gerenciamento
+              </p>
+              <p className="text-gray-600 text-xs mt-2">
+                Clique em "Configurar Módulos" para acessar as proteções Anti Invite e Anti Link
               </p>
             </div>
           </>

@@ -50,16 +50,7 @@ const games = [
     color: "blue",
     icon: <FiCpu size={28} />,
     path: "/game/2048"
-  },
-  {
-    id: "zombies",
-    badge: "AÇÃO",
-    title: "Zombie Apocalypse",
-    desc: "Sobreviva ao ataque dos zumbis em uma arena de sobrevivência intensa.",
-    color: "red",
-    icon: <FaSkull size={28} />,
-    path: "/game/zombies"
-  },
+  }
 ];
 
 export default function GameHub() {
@@ -109,13 +100,6 @@ export default function GameHub() {
       text: "text-blue-400",
       button: "bg-blue-500 hover:bg-blue-600",
       badge: "bg-blue-500/10 border-blue-500/20 text-blue-400"
-    },
-    red: {
-      border: "hover:border-red-500/50",
-      bg: "group-hover:bg-red-500/5",
-      text: "text-red-400",
-      button: "bg-red-500 hover:bg-red-600",
-      badge: "bg-red-500/10 border-red-500/20 text-red-400"
     }
   };
 
@@ -151,7 +135,7 @@ export default function GameHub() {
             <div className="w-64 h-6 bg-white/5 rounded-lg mx-auto animate-pulse" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map(i => (
+            {[1, 2, 3, 4, 5].map(i => (
               <div key={i} className="h-64 bg-white/5 rounded-2xl animate-pulse" />
             ))}
           </div>
