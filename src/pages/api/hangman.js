@@ -46,7 +46,7 @@ Regras:
 - Apenas letras minusculas.
 - Sem acentos.
 - Sem espacos.
-- Relacionada a tecnologia, programacao, jogos ou ficcao cientifica.
+- Relacionada a qualquer coisa.
 - Nenhum texto fora do JSON.
 `
                 }
