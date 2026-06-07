@@ -16,15 +16,6 @@ const games = [
     path: "/game/tttai"
   },
   {
-    id: "tttai",
-    badge: "ESTRATÉGIA",
-    title: "Jogo da Velha (Multijogador)",
-    desc: "Desafie uma IA baseada no algoritmo Minimax em um duelo tático de inteligência.",
-    color: "emerald",
-    icon: <FaChess size={28} />,
-    path: "/game/tttmultiplayer"
-  },
-  {
     id: "hangman",
     badge: "LÓGICA",
     title: "Jogo da Forca",
