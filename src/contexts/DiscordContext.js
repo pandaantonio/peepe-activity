@@ -19,13 +19,14 @@ export function DiscordProvider({ children }) {
         // Verifica se está no Discord
         const params = new URLSearchParams(window.location.search);
         const frameId = params.get('frame_id');
-        setIsDiscordFrame(!!frameId);
+        const isFrame = !!frameId;
+        setIsDiscordFrame(isFrame);
         
         const sdk = getDiscordSDK();
         setDiscordSdk(sdk);
         
         // Só tenta autenticar se estiver no Discord
-        if (frameId) {
+        if (isFrame) {
           const userAuth = await setupDiscordSdk();
           setAuth(userAuth);
         } else {
@@ -49,7 +50,7 @@ export function DiscordProvider({ children }) {
     loading,
     error,
     isDiscordFrame,
-    isAuthenticated: !!auth
+    isAuthenticated: !!auth && !!auth?.user
   };
 
   return (
@@ -60,13 +61,13 @@ export function DiscordProvider({ children }) {
 }
 
 // Exportar o hook useDiscord
-export function useDiscord() {
+export const useDiscord = () => {
   const context = useContext(DiscordContext);
   if (!context) {
     throw new Error('useDiscord must be used within DiscordProvider');
   }
   return context;
-}
+};
 
 // Exportação padrão
 export default DiscordProvider;

@@ -1,7 +1,9 @@
+// pages/index.js
 import Link from 'next/link';
 import { FaGamepad, FaChess, FaUsers, FaLock } from 'react-icons/fa';
 import { FiZap, FiUser, FiCpu } from 'react-icons/fi';
 import { useEffect, useState } from 'react';
+import { useDiscord } from '@/contexts/DiscordContext';
 
 const games = [
   {
@@ -61,13 +63,11 @@ const games = [
 ];
 
 export default function GameHub() {
-  const [isDiscordFrame, setIsDiscordFrame] = useState(false);
+  const { auth, isAuthenticated, loading, isDiscordFrame } = useDiscord();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    const params = new URLSearchParams(window.location.search);
-    setIsDiscordFrame(!!params.get('frame_id'));
   }, []);
 
   const colorClasses = {
@@ -108,7 +108,7 @@ export default function GameHub() {
     }
   };
 
-  if (!mounted) {
+  if (!mounted || loading) {
     return (
       <div className="min-h-screen bg-[#0f0f12]">
         <div className="fixed top-0 left-0 right-0 bg-[#0f0f12]/80 backdrop-blur-md border-b border-white/10 z-50">
@@ -169,10 +169,18 @@ export default function GameHub() {
             
             <div className="flex items-center gap-3">
               {isDiscordFrame ? (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all duration-300 bg-emerald-500/10 border-emerald-500/20">
-                  <div className="w-2 h-2 rounded-full animate-pulse bg-emerald-500" />
-                  <span className="text-xs font-medium text-emerald-400">
-                    Discord Activity
+                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all duration-300 ${
+                  isAuthenticated 
+                    ? 'bg-emerald-500/10 border-emerald-500/20' 
+                    : 'bg-yellow-500/10 border-yellow-500/20'
+                }`}>
+                  <div className={`w-2 h-2 rounded-full animate-pulse ${
+                    isAuthenticated ? 'bg-emerald-500' : 'bg-yellow-500'
+                  }`} />
+                  <span className={`text-xs font-medium ${
+                    isAuthenticated ? 'text-emerald-400' : 'text-yellow-400'
+                  }`}>
+                    {isAuthenticated ? auth?.user?.username || 'Conectado' : 'Conectando...'}
                   </span>
                 </div>
               ) : (
