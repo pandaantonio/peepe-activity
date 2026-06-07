@@ -1,395 +1,370 @@
 // pages/dashboard/[id].js
-import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 import { useDiscord } from '@/contexts/DiscordContext';
 import Link from 'next/link';
-import { FaShieldAlt, FaLink, FaArrowLeft, FaDiscord, FaGlobe, FaSave, FaTrash } from 'react-icons/fa';
-import { FiSettings, FiAlertTriangle, FiCheckCircle } from 'react-icons/fi';
+import { 
+  FaArrowLeft, 
+  FaDiscord, 
+  FaUserPlus, 
+  FaShieldAlt, 
+  FaRobot, 
+  FaCog,
+  FaChevronRight,
+  FaUsers
+} from 'react-icons/fa';
 
 export default function GuildDashboard() {
   const router = useRouter();
   const { id } = router.query;
-  const { auth, isDiscordFrame } = useDiscord();
-  
+  const { auth, isDiscordFrame, loading: discordLoading } = useDiscord();
   const [guild, setGuild] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
-  
-  // Configurações
-  const [antiInvite, setAntiInvite] = useState({
-    enabled: false,
-    action: 'delete', // delete, kick, ban, warn
-    message: '❌ Convites não são permitidos neste servidor!'
-  });
-  
-  const [antiLink, setAntiLink] = useState({
-    enabled: false,
-    action: 'delete', // delete, kick, ban, warn
-    whitelist: ['youtube.com', 'youtu.be', 'twitch.tv', 'github.com', 'discord.gg'], // links permitidos
-    message: '🔗 Links externos não são permitidos neste servidor!'
-  });
-  
-  const [whitelistInput, setWhitelistInput] = useState('');
 
-  // Buscar configurações do servidor
   useEffect(() => {
-    if (!id) return;
-    
-    const fetchGuildSettings = async () => {
+    if (!id || discordLoading) return;
+
+    if (!isDiscordFrame) {
+      setError('Dashboard disponível apenas dentro do Discord.');
+      setLoading(false);
+      return;
+    }
+
+    if (!auth?.access_token) {
+      setError('Não autenticado no Discord. Tente novamente.');
+      setLoading(false);
+      return;
+    }
+
+    async function fetchGuildInfo() {
       try {
-        setLoading(true);
-        const response = await fetch(`/api/discord/guild/${id}/settings`, {
-          headers: {
-            'Authorization': `Bearer ${auth?.access_token}`
-          }
-        });
+        console.log(`Buscando informações do servidor ${id}...`);
         
-        if (response.ok) {
-          const data = await response.json();
-          if (data.antiInvite) setAntiInvite(data.antiInvite);
-          if (data.antiLink) setAntiLink(data.antiLink);
+        const response = await fetch(`/api/discord/guilds?access_token=${auth.access_token}`);
+        
+        if (!response.ok) {
+          throw new Error(`Erro ${response.status} ao buscar servidores`);
         }
+        
+        const guilds = await response.json();
+        const foundGuild = guilds.find(g => g.id === id);
+        
+        if (!foundGuild) {
+          setError('Servidor não encontrado ou você não tem permissão para gerenciá-lo.');
+          setLoading(false);
+          return;
+        }
+        
+        setGuild(foundGuild);
       } catch (err) {
-        console.error('Erro ao carregar configurações:', err);
+        console.error('Erro ao buscar informações do servidor:', err);
+        setError(err.message);
       } finally {
         setLoading(false);
       }
-    };
-    
-    if (auth?.access_token) {
-      fetchGuildSettings();
-    } else {
-      setLoading(false);
     }
-  }, [id, auth]);
 
-  // Buscar informações do servidor
-  useEffect(() => {
-    if (!id || !auth?.access_token) return;
-    
-    const fetchGuild = async () => {
-      try {
-        const response = await fetch(`/api/discord/guilds?access_token=${auth.access_token}`);
-        const data = await response.json();
-        const foundGuild = data.find(g => g.id === id);
-        if (foundGuild) setGuild(foundGuild);
-      } catch (err) {
-        console.error('Erro ao buscar servidor:', err);
-      }
-    };
-    
-    fetchGuild();
-  }, [id, auth]);
+    fetchGuildInfo();
+  }, [id, auth, isDiscordFrame, discordLoading]);
 
-  const addToWhitelist = () => {
-    if (whitelistInput && !antiLink.whitelist.includes(whitelistInput.toLowerCase())) {
-      setAntiLink(prev => ({
-        ...prev,
-        whitelist: [...prev.whitelist, whitelistInput.toLowerCase()]
-      }));
-      setWhitelistInput('');
-    }
+  const handleBackToDashboard = () => router.push('/dashboard');
+
+  const getIconUrl = () => {
+    if (!guild?.icon) return null;
+    return `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png?size=128`;
   };
 
-  const removeFromWhitelist = (domain) => {
-    setAntiLink(prev => ({
-      ...prev,
-      whitelist: prev.whitelist.filter(d => d !== domain)
-    }));
-  };
-
-  const saveSettings = async () => {
-    setSaving(true);
-    setError(null);
-    setSuccess(null);
-    
-    try {
-      const response = await fetch(`/api/discord/guild/${id}/settings`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${auth?.access_token}`
-        },
-        body: JSON.stringify({
-          antiInvite,
-          antiLink
-        })
-      });
-      
-      if (!response.ok) throw new Error('Erro ao salvar configurações');
-      
-      setSuccess('✅ Configurações salvas com sucesso!');
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
-      setError(err.message);
-      setTimeout(() => setError(null), 3000);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const ActionButton = ({ action, currentAction, onChange, label }) => (
-    <button
-      onClick={() => onChange(action)}
-      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-        currentAction === action
-          ? 'bg-emerald-500/20 border border-emerald-500 text-emerald-400'
-          : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10'
-      }`}
-    >
-      {label}
-    </button>
-  );
-
-  const getActionLabel = (action) => {
-    const labels = {
-      delete: '🗑️ Deletar',
-      kick: '👢 Kickar',
-      ban: '🔨 Banir',
-      warn: '⚠️ Avisar'
-    };
-    return labels[action] || action;
-  };
-
-  if (loading) {
+  if (discordLoading || loading) {
     return (
       <div className="min-h-screen bg-[#0f0f12] flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">Carregando configurações...</p>
+          <p className="text-gray-400">
+            Carregando informações do servidor...
+          </p>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-[#0f0f12]">
-      {/* Background */}
-      <div className="fixed inset-0 bg-gradient-to-br from-emerald-500/[0.02] via-transparent to-purple-500/[0.02] pointer-events-none" />
-
-      {/* Header */}
-      <div className="fixed top-0 left-0 right-0 bg-[#0f0f12]/80 backdrop-blur-md border-b border-white/10 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/dashboard" className="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
-                <FaArrowLeft className="text-gray-400" />
-              </Link>
-              <div className="flex items-center gap-3">
-                {guild?.icon ? (
-                  <img
-                    src={`https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png?size=64`}
-                    alt={guild?.name}
-                    className="w-10 h-10 rounded-xl"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
-                    <FaDiscord className="text-white" />
-                  </div>
-                )}
-                <div>
-                  <h1 className="text-xl font-bold text-white">{guild?.name || 'Servidor'}</h1>
-                  <p className="text-xs text-gray-500">ID: {id}</p>
-                </div>
-              </div>
-            </div>
-            
-            <button
-              onClick={saveSettings}
-              disabled={saving}
-              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 rounded-xl font-medium text-white transition-all disabled:opacity-50"
-            >
-              {saving ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Salvando...</span>
-                </>
-              ) : (
-                <>
-                  <FaSave size={16} />
-                  <span>Salvar Configurações</span>
-                </>
-              )}
-            </button>
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#0f0f12] flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-500/10 mb-4">
+            <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
           </div>
+          <h2 className="text-xl font-bold text-white mb-2">Erro</h2>
+          <p className="text-gray-400 mb-6">{error}</p>
+          <button
+            onClick={handleBackToDashboard}
+            className="px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors"
+          >
+            Voltar ao Dashboard
+          </button>
         </div>
       </div>
+    );
+  }
 
-      {/* Main Content */}
-      <div className="relative pt-24 pb-12 px-6 max-w-5xl mx-auto">
-        {/* Success/Error Messages */}
-        {success && (
-          <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-3">
-            <FiCheckCircle className="text-emerald-400" size={20} />
-            <span className="text-emerald-400">{success}</span>
+  if (!guild) {
+    return (
+      <div className="min-h-screen bg-[#0f0f12] flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-yellow-500/10 mb-4">
+            <FaDiscord size={32} className="text-yellow-400" />
           </div>
-        )}
-        
-        {error && (
-          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3">
-            <FiAlertTriangle className="text-red-400" size={20} />
-            <span className="text-red-400">{error}</span>
-          </div>
-        )}
+          <h2 className="text-xl font-bold text-white mb-2">Servidor não encontrado</h2>
+          <p className="text-gray-400 mb-6">
+            O servidor que você está procurando não existe ou você não tem acesso a ele.
+          </p>
+          <button
+            onClick={handleBackToDashboard}
+            className="px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors"
+          >
+            Voltar ao Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-        {/* Anti Invite Card */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden mb-6">
-          <div className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
-                  <FaDiscord size={24} className="text-red-400" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-white">Anti Invite</h2>
-                  <p className="text-sm text-gray-400">Bloqueia convites de Discord no servidor</p>
-                </div>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={antiInvite.enabled}
-                  onChange={(e) => setAntiInvite(prev => ({ ...prev, enabled: e.target.checked }))}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-              </label>
-            </div>
+  const iconUrl = getIconUrl();
 
-            {antiInvite.enabled && (
-              <div className="space-y-4 mt-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Ação ao detectar convite</label>
-                  <div className="flex gap-2 flex-wrap">
-                    <ActionButton action="delete" currentAction={antiInvite.action} onChange={(a) => setAntiInvite(prev => ({ ...prev, action: a }))} label="🗑️ Deletar" />
-                    <ActionButton action="warn" currentAction={antiInvite.action} onChange={(a) => setAntiInvite(prev => ({ ...prev, action: a }))} label="⚠️ Avisar" />
-                    <ActionButton action="kick" currentAction={antiInvite.action} onChange={(a) => setAntiInvite(prev => ({ ...prev, action: a }))} label="👢 Kickar" />
-                    <ActionButton action="ban" currentAction={antiInvite.action} onChange={(a) => setAntiInvite(prev => ({ ...prev, action: a }))} label="🔨 Banir" />
-                  </div>
-                </div>
+  // Cards de configuração
+  const configCards = [
+    {
+      id: 'autorole',
+      title: 'Auto Role',
+      description: 'Configure cargos automáticos para novos membros entrarem no servidor.',
+      icon: <FaUserPlus size={28} />,
+      color: 'emerald',
+      path: `/dashboard/${guild.id}/autorole`,
+      enabled: true
+    },
+    {
+      id: 'moderation',
+      title: 'Moderação',
+      description: 'Configure sistemas de moderação como warns, mutas e bans.',
+      icon: <FaShieldAlt size={28} />,
+      color: 'red',
+      path: `/dashboard/${guild.id}/moderation`,
+      enabled: false
+    },
+    {
+      id: 'welcome',
+      title: 'Mensagens de Boas-Vindas',
+      description: 'Personalize mensagens de entrada e saída de membros.',
+      icon: <FaUsers size={28} />,
+      color: 'blue',
+      path: `/dashboard/${guild.id}/welcome`,
+      enabled: false
+    },
+    {
+      id: 'bot-config',
+      title: 'Configurações do Bot',
+      description: 'Configure prefixo, logs e outras preferências do bot.',
+      icon: <FaRobot size={28} />,
+      color: 'purple',
+      path: `/dashboard/${guild.id}/config`,
+      enabled: false
+    },
+    {
+      id: 'general',
+      title: 'Configurações Gerais',
+      description: 'Configurações gerais do servidor e integrações.',
+      icon: <FaCog size={28} />,
+      color: 'gray',
+      path: `/dashboard/${guild.id}/general`,
+      enabled: false
+    }
+  ];
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Mensagem de resposta</label>
-                  <textarea
-                    value={antiInvite.message}
-                    onChange={(e) => setAntiInvite(prev => ({ ...prev, message: e.target.value }))}
-                    className="w-full px-4 py-2 bg-black/30 border border-white/10 rounded-lg text-white resize-none"
-                    rows="2"
-                    placeholder="Mensagem enviada ao usuário..."
-                  />
-                </div>
+  const colorClasses = {
+    emerald: {
+      border: "hover:border-emerald-500/50",
+      bg: "group-hover:bg-emerald-500/5",
+      text: "text-emerald-400",
+      button: "bg-emerald-500 hover:bg-emerald-600",
+      badge: "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+    },
+    red: {
+      border: "hover:border-red-500/50",
+      bg: "group-hover:bg-red-500/5",
+      text: "text-red-400",
+      button: "bg-red-500 hover:bg-red-600",
+      badge: "bg-red-500/10 border-red-500/20 text-red-400"
+    },
+    blue: {
+      border: "hover:border-blue-500/50",
+      bg: "group-hover:bg-blue-500/5",
+      text: "text-blue-400",
+      button: "bg-blue-500 hover:bg-blue-600",
+      badge: "bg-blue-500/10 border-blue-500/20 text-blue-400"
+    },
+    purple: {
+      border: "hover:border-purple-500/50",
+      bg: "group-hover:bg-purple-500/5",
+      text: "text-purple-400",
+      button: "bg-purple-500 hover:bg-purple-600",
+      badge: "bg-purple-500/10 border-purple-500/20 text-purple-400"
+    },
+    gray: {
+      border: "hover:border-gray-500/50",
+      bg: "group-hover:bg-gray-500/5",
+      text: "text-gray-400",
+      button: "bg-gray-500 hover:bg-gray-600",
+      badge: "bg-gray-500/10 border-gray-500/20 text-gray-400"
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0f0f12] relative">
+      <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/[0.03] via-transparent to-purple-500/[0.03] pointer-events-none" />
+      
+      <div className="relative max-w-7xl mx-auto px-6 py-8">
+        {/* Botão Voltar */}
+        <button
+          onClick={handleBackToDashboard}
+          className="group flex items-center gap-2 px-4 py-2 mb-8 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-300 text-gray-400 hover:text-white"
+        >
+          <FaArrowLeft size={14} />
+          <span className="text-sm font-medium">Voltar ao Dashboard</span>
+        </button>
+
+        {/* Header do Servidor */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-8">
+          <div className="flex items-center gap-4">
+            {iconUrl ? (
+              <img
+                src={iconUrl}
+                alt={guild.name}
+                className="w-20 h-20 rounded-2xl object-cover ring-2 ring-white/10"
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center">
+                <FaDiscord size={40} className="text-white" />
               </div>
             )}
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold text-white mb-1">{guild.name}</h1>
+              <div className="flex flex-wrap gap-2">
+                <span className="text-xs px-2 py-1 rounded-full bg-white/5 text-gray-400 font-mono">
+                  ID: {guild.id}
+                </span>
+                {guild.features?.includes('COMMUNITY') && (
+                  <span className="text-xs px-2 py-1 rounded-full bg-blue-500/10 text-blue-400">
+                    Comunidade
+                  </span>
+                )}
+                {guild.features?.includes('VERIFIED') && (
+                  <span className="text-xs px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400">
+                    Verificado
+                  </span>
+                )}
+                <span className="text-xs px-2 py-1 rounded-full bg-white/5 text-gray-400">
+                  {guild.approximate_member_count || '?'} membros
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Anti Link Card */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden mb-6">
-          <div className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-                  <FaLink size={24} className="text-blue-400" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-white">Anti Link</h2>
-                  <p className="text-sm text-gray-400">Bloqueia links suspeitos no servidor</p>
-                </div>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={antiLink.enabled}
-                  onChange={(e) => setAntiLink(prev => ({ ...prev, enabled: e.target.checked }))}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-              </label>
-            </div>
-
-            {antiLink.enabled && (
-              <div className="space-y-4 mt-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Ação ao detectar link</label>
-                  <div className="flex gap-2 flex-wrap">
-                    <ActionButton action="delete" currentAction={antiLink.action} onChange={(a) => setAntiLink(prev => ({ ...prev, action: a }))} label="🗑️ Deletar" />
-                    <ActionButton action="warn" currentAction={antiLink.action} onChange={(a) => setAntiLink(prev => ({ ...prev, action: a }))} label="⚠️ Avisar" />
-                    <ActionButton action="kick" currentAction={antiLink.action} onChange={(a) => setAntiLink(prev => ({ ...prev, action: a }))} label="👢 Kickar" />
-                    <ActionButton action="ban" currentAction={antiLink.action} onChange={(a) => setAntiLink(prev => ({ ...prev, action: a }))} label="🔨 Banir" />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Whitelist (domínios permitidos)</label>
-                  <div className="flex gap-2 mb-3">
-                    <input
-                      type="text"
-                      value={whitelistInput}
-                      onChange={(e) => setWhitelistInput(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && addToWhitelist()}
-                      className="flex-1 px-4 py-2 bg-black/30 border border-white/10 rounded-lg text-white"
-                      placeholder="Ex: youtube.com"
-                    />
-                    <button
-                      onClick={addToWhitelist}
-                      className="px-4 py-2 bg-emerald-500/20 border border-emerald-500/30 rounded-lg text-emerald-400 hover:bg-emerald-500/30 transition-all"
-                    >
-                      Adicionar
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {antiLink.whitelist.map(domain => (
-                      <div key={domain} className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg">
-                        <FaGlobe size={12} className="text-emerald-400" />
-                        <span className="text-sm text-gray-300">{domain}</span>
-                        <button
-                          onClick={() => removeFromWhitelist(domain)}
-                          className="text-red-400 hover:text-red-300 transition-colors"
-                        >
-                          <FaTrash size={12} />
-                        </button>
+        {/* Grid de Configurações */}
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <FaCog size={18} className="text-emerald-400" />
+            Módulos Disponíveis
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {configCards.map((card) => {
+              const colors = colorClasses[card.color];
+              
+              if (!card.enabled) {
+                return (
+                  <div
+                    key={card.id}
+                    className="relative bg-white/5 border border-white/10 rounded-2xl overflow-hidden opacity-60"
+                  >
+                    <div className="relative p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className={`${colors.text}`}>
+                          {card.icon}
+                        </div>
+                        <div className="px-2 py-1 rounded-md bg-gray-500/10 border border-gray-500/20">
+                          <span className="text-[10px] font-bold text-gray-400 tracking-wider">EM BREVE</span>
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                  {antiLink.whitelist.length === 0 && (
-                    <p className="text-sm text-gray-500">Nenhum domínio na whitelist. Todos os links serão bloqueados.</p>
-                  )}
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Mensagem de resposta</label>
-                  <textarea
-                    value={antiLink.message}
-                    onChange={(e) => setAntiLink(prev => ({ ...prev, message: e.target.value }))}
-                    className="w-full px-4 py-2 bg-black/30 border border-white/10 rounded-lg text-white resize-none"
-                    rows="2"
-                    placeholder="Mensagem enviada ao usuário..."
-                  />
-                </div>
-              </div>
-            )}
+                      <h3 className="text-xl font-bold text-white mb-2">
+                        {card.title}
+                      </h3>
+                      
+                      <p className="text-gray-400 text-sm leading-relaxed mb-5">
+                        {card.description}
+                      </p>
+
+                      <div className="flex items-center justify-between pt-3 border-t border-white/10">
+                        <span className="text-xs text-gray-500 font-mono">Em desenvolvimento</span>
+                        <div className="w-9 h-9 rounded-full bg-gray-500/20 flex items-center justify-center">
+                          <FaChevronRight size={14} className="text-gray-400" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+              
+              return (
+                <Link
+                  key={card.id}
+                  href={card.path}
+                  className="group cursor-pointer"
+                >
+                  <div className={`relative bg-white/5 border border-white/10 rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl ${colors.border}`}>
+                    <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${colors.bg}`} />
+                    
+                    <div className="relative p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className={`${colors.text} transition-all duration-300 group-hover:scale-110 group-hover:rotate-3`}>
+                          {card.icon}
+                        </div>
+                        <div className={`px-2 py-1 rounded-md ${colors.badge}`}>
+                          <span className="text-[10px] font-bold tracking-wider">DISPONÍVEL</span>
+                        </div>
+                      </div>
+
+                      <h3 className="text-xl font-bold text-white mb-2 group-hover:translate-x-1 transition-transform duration-300">
+                        {card.title}
+                      </h3>
+                      
+                      <p className="text-gray-400 text-sm leading-relaxed mb-5">
+                        {card.description}
+                      </p>
+
+                      <div className="flex items-center justify-between pt-3 border-t border-white/10">
+                        <span className="text-xs text-gray-500 font-mono">Clique para configurar</span>
+                        <div className={`w-9 h-9 rounded-full ${colors.button} flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:translate-x-1 shadow-lg`}>
+                          <FaChevronRight size={14} className="text-white" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
 
-        {/* Info Card */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center flex-shrink-0">
-              <FiSettings size={20} className="text-purple-400" />
-            </div>
-            <div>
-              <h3 className="text-white font-medium mb-1">Sobre as configurações</h3>
-              <p className="text-sm text-gray-400">
-                • <strong>Deletar</strong>: Remove a mensagem automaticamente<br />
-                • <strong>Avisar</strong>: Envia um aviso para o usuário<br />
-                • <strong>Kickar</strong>: Expulsa o usuário do servidor<br />
-                • <strong>Banir</strong>: Bane o usuário permanentemente<br />
-                • <strong>Whitelist</strong>: Domínios que não serão bloqueados
-              </p>
-            </div>
-          </div>
+        {/* Footer */}
+        <div className="mt-8 pt-8 border-t border-white/5 text-center">
+          <p className="text-gray-600 text-xs">
+            Gerencie as configurações do servidor {guild.name}
+          </p>
         </div>
       </div>
     </div>

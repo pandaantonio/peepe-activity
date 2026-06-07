@@ -1,6 +1,6 @@
 // pages/index.js
 import Link from 'next/link';
-import { FaGamepad, FaChess, FaUsers, FaLock } from 'react-icons/fa';
+import { FaGamepad, FaChess, FaUsers, FaLock, FaDiscord, FaCog } from 'react-icons/fa';
 import { FiZap, FiUser, FiCpu } from 'react-icons/fi';
 import { useEffect, useState } from 'react';
 import { useDiscord } from '@/contexts/DiscordContext';
@@ -168,6 +168,16 @@ export default function GameHub() {
             </Link>
             
             <div className="flex items-center gap-3">
+              {/* Botão Dashboard - aparece apenas dentro do Discord e autenticado */}
+              {isDiscordFrame && isAuthenticated && (
+                <Link href="/dashboard">
+                  <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all duration-300 group">
+                    <FaCog size={14} className="text-emerald-400 group-hover:rotate-90 transition-transform duration-300" />
+                    <span className="text-xs font-medium text-emerald-400">Dashboard</span>
+                  </button>
+                </Link>
+              )}
+              
               {isDiscordFrame ? (
                 <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all duration-300 ${
                   isAuthenticated 
@@ -211,6 +221,19 @@ export default function GameHub() {
           <p className="text-gray-400 text-lg max-w-2xl mx-auto animate-fade-in-up animation-delay-100">
             Escolha seu jogo favorito e desafie suas habilidades em experiências únicas
           </p>
+          
+          {/* Botão Dashboard alternativo no centro */}
+          {isDiscordFrame && isAuthenticated && (
+            <div className="mt-6 animate-fade-in-up animation-delay-150">
+              <Link href="/dashboard">
+                <button className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-medium text-sm transition-all duration-300 shadow-lg hover:shadow-xl">
+                  <FaDiscord size={16} />
+                  <span>Acessar Dashboard de Servidores</span>
+                  <FaCog size={14} className="ml-1" />
+                </button>
+              </Link>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -302,6 +325,9 @@ export default function GameHub() {
         }
         .animation-delay-100 {
           animation-delay: 100ms;
+        }
+        .animation-delay-150 {
+          animation-delay: 150ms;
         }
         .animation-delay-1000 {
           animation-delay: 1000ms;

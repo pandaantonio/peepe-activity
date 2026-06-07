@@ -3,6 +3,9 @@
 const cache = new Map();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 
+// Permissões necessárias: ADMINISTRATOR ou MANAGE_GUILD
+const REQUIRED_PERMISSIONS = 0x8 | 0x20; // 0x8 = ADMINISTRATOR, 0x20 = MANAGE_GUILD
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -47,13 +50,26 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     
+    // Filtrar servidores onde o usuário é dono OU tem permissão de admin OU manage_guild
+    const filteredGuilds = data.filter(guild => {
+      // Verificar se o usuário é dono
+      if (guild.owner) return true;
+      
+      // Verificar permissões
+      const permissions = BigInt(guild.permissions);
+      const requiredPerms = BigInt(REQUIRED_PERMISSIONS);
+      
+      // Usuário tem permissão de ADMINISTRATOR ou MANAGE_GUILD
+      return (permissions & requiredPerms) > 0;
+    });
+    
     // Armazenar em cache
     cache.set(access_token, {
-      data,
+      data: filteredGuilds,
       timestamp: Date.now()
     });
 
-    return res.status(200).json(data);
+    return res.status(200).json(filteredGuilds);
   } catch (error) {
     console.error('Error fetching guilds:', error);
     return res.status(500).json({ error: 'Internal server error' });

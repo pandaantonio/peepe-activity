@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { useDiscord } from '@/contexts/DiscordContext';
 import Link from 'next/link';
-import { FaArrowLeft, FaDiscord, FaShieldAlt, FaLink, FaCog } from 'react-icons/fa';
+import { FaArrowLeft, FaDiscord, FaCog } from 'react-icons/fa';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -56,16 +56,10 @@ export default function Dashboard() {
         const data = await response.json();
         console.log(`Encontrados ${data.length} servidores`);
 
-        // Filtrar servidores onde o usuário é Administrador (0x8) ou tem permissão de Gerenciar (0x20)
-        const adminGuilds = data.filter(guild => {
-          const perms = BigInt(guild.permissions);
-          const isAdmin = (perms & 0x8n) === 0x8n;
-          const canManage = (perms & 0x20n) === 0x20n;
-          return isAdmin || canManage;
-        });
-
-        console.log(`${adminGuilds.length} servidores com permissão de admin/gerenciamento`);
-        setGuilds(adminGuilds);
+        // A API já retorna os servidores filtrados (admin/manage_guild)
+        // Não precisa filtrar novamente
+        console.log(`${data.length} servidores com permissão de admin/gerenciamento`);
+        setGuilds(data);
         setError(null);
         hasFetched.current = true;
       } catch (err) {
@@ -246,33 +240,14 @@ export default function Dashboard() {
                         </span>
                       </div>
 
-                      {/* Botões de ação */}
-                      <div className="space-y-2">
-                        <button
-                          onClick={() => handleConfigureGuild(guild.id)}
-                          className="w-full py-2.5 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold text-sm transition-all duration-300 flex items-center justify-center gap-2 group/btn"
-                        >
-                          <FaCog size={14} />
-                          <span>CONFIGURAR MÓDULOS</span>
-                        </button>
-                        
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleConfigureGuild(guild.id)}
-                            className="flex-1 py-2 rounded-lg bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 text-xs font-medium transition-all flex items-center justify-center gap-1"
-                          >
-                            <FaShieldAlt size={10} />
-                            Anti Invite
-                          </button>
-                          <button
-                            onClick={() => handleConfigureGuild(guild.id)}
-                            className="flex-1 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 text-blue-400 text-xs font-medium transition-all flex items-center justify-center gap-1"
-                          >
-                            <FaLink size={10} />
-                            Anti Link
-                          </button>
-                        </div>
-                      </div>
+                      {/* Botão de configuração único */}
+                      <button
+                        onClick={() => handleConfigureGuild(guild.id)}
+                        className="w-full py-3 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold text-sm transition-all duration-300 flex items-center justify-center gap-2 group/btn"
+                      >
+                        <FaCog size={14} />
+                        <span>GERENCIAR SERVIDOR</span>
+                      </button>
                     </div>
                   </div>
                 );
@@ -283,9 +258,6 @@ export default function Dashboard() {
             <div className="mt-8 text-center">
               <p className="text-gray-500 text-xs">
                 {guilds.length} servidor(es) disponível(eis) para gerenciamento
-              </p>
-              <p className="text-gray-600 text-xs mt-2">
-                Clique em "Configurar Módulos" para acessar as proteções Anti Invite e Anti Link
               </p>
             </div>
           </>
