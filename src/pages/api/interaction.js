@@ -1,4 +1,6 @@
 import nacl from "tweetnacl";
+import { glob } from "glob";
+import { resolve } from "path";
 
 export const config = {
     api: {
@@ -55,7 +57,7 @@ export default async function handler(req, res) {
 
             if (
                 commandName === "user" &&
-                subcommand?.name === "avatar"
+                (subcommand?.name === "avatar" || subcommand?.name === "banner")
             ) {
                 const userId = subcommand.options?.find(
                     option => option.name === "user"
@@ -69,23 +71,71 @@ export default async function handler(req, res) {
                     user = interaction.member?.user || interaction.user;
                 }
 
-                const avatarURL = user.avatar
-                    ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=4096`
-                    : "https://cdn.discordapp.com/embed/avatars/0.png";
+                // Avatar
+                if (subcommand.name === "avatar") {
+                    const avatarURL = user.avatar
+                        ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=4096`
+                        : "https://cdn.discordapp.com/embed/avatars/0.png";
 
-                return res.status(200).json({
-                    type: 4,
-                    data: {
-                        embeds: [
-                            {
-                                title: `Avatar de ${user.username}`,
-                                image: {
-                                    url: avatarURL
+                    return res.status(200).json({
+                        type: 4,
+                        data: {
+                            embeds: [
+                                {
+                                    title: `Avatar de ${user.username}`,
+                                    image: {
+                                        url: avatarURL
+                                    }
                                 }
+                            ]
+                        }
+                    });
+                }
+
+                // Banner
+                if (subcommand.name === "banner") {
+                    const response = await fetch(
+                        `https://discord.com/api/v10/users/${user.id}`,
+                        {
+                            headers: {
+                                Authorization: `Bot ${process.env.BOT_TOKEN}`
                             }
-                        ]
+                        }
+                    );
+
+                    const fullUser = await response.json();
+
+                    if (!fullUser.banner) {
+                        return res.status(200).json({
+                            type: 4,
+                            data: {
+                                content: `${user.username} não possui banner.`,
+                                flags: 64
+                            }
+                        });
                     }
-                });
+
+                    const extension = fullUser.banner.startsWith("a_")
+                        ? "gif"
+                        : "png";
+
+                    const bannerURL =
+                        `https://cdn.discordapp.com/banners/${user.id}/${fullUser.banner}.${extension}?size=4096`;
+
+                    return res.status(200).json({
+                        type: 4,
+                        data: {
+                            embeds: [
+                                {
+                                    title: `Banner de ${user.username}`,
+                                    image: {
+                                        url: bannerURL
+                                    }
+                                }
+                            ]
+                        }
+                    });
+                }
             }
 
             return res.status(200).json({
