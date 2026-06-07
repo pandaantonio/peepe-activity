@@ -63,6 +63,30 @@ const games = [
   }
 ];
 
+// Componente do anúncio para reutilização
+const AdComponent = () => {
+  useEffect(() => {
+    try {
+      if (window.adsbygoogle) {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      }
+    } catch (e) {
+      console.error('AdSense error:', e);
+    }
+  }, []);
+
+  return (
+    <ins
+      className="adsbygoogle"
+      style={{ display: 'block' }}
+      data-ad-client="ca-pub-4342538765415358"
+      data-ad-slot="1338528204"
+      data-ad-format="auto"
+      data-full-width-responsive="true"
+    />
+  );
+};
+
 export default function GameHub() {
   const { auth, isAuthenticated, loading, isDiscordFrame } = useDiscord();
   const [mounted, setMounted] = useState(false);
@@ -119,7 +143,6 @@ export default function GameHub() {
           strategy="afterInteractive"
         />
         <div className="min-h-screen bg-[#0f0f12]">
-          {/* ... seu código de loading existente ... */}
           <div className="fixed top-0 left-0 right-0 bg-[#0f0f12]/80 backdrop-blur-md border-b border-white/10 z-50">
             <div className="max-w-7xl mx-auto px-6 py-4">
               <div className="flex items-center justify-between">
@@ -174,7 +197,7 @@ export default function GameHub() {
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl animate-pulse animation-delay-1000" />
         </div>
 
-        {/* Header existente */}
+        {/* Header */}
         <div className="fixed top-0 left-0 right-0 bg-[#0f0f12]/80 backdrop-blur-md border-b border-white/10 z-50">
           <div className="max-w-7xl mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
@@ -223,17 +246,10 @@ export default function GameHub() {
           </div>
         </div>
 
-        {/* Anúncio Superior (Banner) */}
-        <div className="relative pt-28 pb-4 px-6 max-w-7xl mx-auto">
-          <div className="mb-8 flex justify-center">
-            <ins
-              className="adsbygoogle"
-              style={{ display: 'block', minWidth: '320px', maxWidth: '970px', width: '100%', height: '90px' }}
-              data-ad-client="ca-pub-4342538765415358"
-              data-ad-slot="YOUR_AD_SLOT_1"
-              data-ad-format="horizontal"
-              data-full-width-responsive="true"
-            />
+        {/* Anúncio - Topo da página */}
+        <div className="relative pt-28 pb-2 px-6 max-w-7xl mx-auto">
+          <div className="mb-6 bg-white/5 rounded-xl overflow-hidden">
+            <AdComponent />
           </div>
         </div>
 
@@ -268,9 +284,9 @@ export default function GameHub() {
             )}
           </div>
 
-          {/* Grid de Jogos com Anúncio no Meio */}
+          {/* Grid de Jogos */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {games.slice(0, 3).map((game, index) => {
+            {games.map((game, index) => {
               const colors = colorClasses[game.color];
               
               return (
@@ -316,77 +332,11 @@ export default function GameHub() {
                 </Link>
               );
             })}
-
-            {/* Anúncio na posição 4 (entre os jogos) */}
-            <div className="animate-fade-in-up bg-white/5 border border-white/10 rounded-2xl p-6 flex items-center justify-center min-h-[300px]">
-              <ins
-                className="adsbygoogle"
-                style={{ display: 'block', width: '100%', height: '250px' }}
-                data-ad-client="ca-pub-4342538765415358"
-                data-ad-slot="YOUR_AD_SLOT_2"
-                data-ad-format="rectangle"
-                data-full-width-responsive="true"
-              />
-            </div>
-
-            {games.slice(3, 6).map((game, index) => {
-              const colors = colorClasses[game.color];
-              
-              return (
-                <Link 
-                  key={game.id} 
-                  href={game.path}
-                  className="group animate-fade-in-up"
-                  style={{ animationDelay: `${150 + (index + 3) * 50}ms` }}
-                >
-                  <div className={`relative bg-white/5 border border-white/10 rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl ${colors.border}`}>
-                    <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${colors.bg}`} />
-                    
-                    <div className="relative p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className={`px-2 py-1 rounded-md ${colors.badge}`}>
-                          <span className="text-[10px] font-bold tracking-wider">
-                            {game.badge}
-                          </span>
-                        </div>
-                        <div className={`${colors.text} transition-all duration-300 group-hover:scale-110 group-hover:rotate-3`}>
-                          {game.icon}
-                        </div>
-                      </div>
-
-                      <h2 className="text-xl font-bold text-white mb-2 group-hover:translate-x-1 transition-transform duration-300">
-                        {game.title}
-                      </h2>
-                      
-                      <p className="text-gray-400 text-sm leading-relaxed mb-5 line-clamp-2">
-                        {game.desc}
-                      </p>
-
-                      <div className="flex items-center justify-between pt-3 border-t border-white/10">
-                        <span className="text-xs text-gray-500 font-mono">Clique para jogar</span>
-                        <div className={`w-9 h-9 rounded-full ${colors.button} flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:translate-x-1 shadow-lg`}>
-                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
           </div>
 
-          {/* Anúncio Inferior */}
-          <div className="mt-12 flex justify-center">
-            <ins
-              className="adsbygoogle"
-              style={{ display: 'block', width: '100%', maxWidth: '728px', height: '90px' }}
-              data-ad-client="ca-pub-4342538765415358"
-              data-ad-slot="YOUR_AD_SLOT_3"
-              data-ad-format="horizontal"
-              data-full-width-responsive="true"
-            />
+          {/* Anúncio - Rodapé */}
+          <div className="mt-12 bg-white/5 rounded-xl overflow-hidden">
+            <AdComponent />
           </div>
 
           <div className="mt-20 pt-8 border-t border-white/5 text-center">
