@@ -10,40 +10,72 @@ async function getRawBody(req) {
     const chunks = [];
 
     for await (const chunk of req) {
-        chunks.push(chunk);
+        chunks.push(
+            typeof chunk === "string" ? Buffer.from(chunk) : chunk
+        );
     }
 
     return Buffer.concat(chunks);
 }
 
 export default async function handler(req, res) {
-    const rawBody = await getRawBody(req);
+    try {
+        const rawBody = await getRawBody(req);
 
-    const signature = req.headers["x-signature-ed25519"];
-    const timestamp = req.headers["x-signature-timestamp"];
+        const signature = req.headers["x-signature-ed25519"];
+        const timestamp = req.headers["x-signature-timestamp"];
 
-    const isValid = nacl.sign.detached.verify(
-        Buffer.from(timestamp + rawBody.toString()),
-        Buffer.from(signature, "hex"),
-        Buffer.from(process.env.DISCORD_PUBLIC_KEY, "hex")
-    );
+        if (!signature || !timestamp) {
+            return res.status(401).send("Missing signature headers");
+        }
 
-    if (!isValid) {
-        return res.status(401).send("invalid request signature");
-    }
+        const isValid = nacl.sign.detached.verify(
+            Buffer.from(timestamp + rawBody.toString("utf8")),
+            Buffer.from(signature, "hex"),
+            Buffer.from(process.env.DISCORD_PUBLIC_KEY, "hex")
+        );
 
-    const interaction = JSON.parse(rawBody.toString());
+        if (!isValid) {
+            return res.status(401).send("Invalid request signature");
+        }
 
-    if (interaction.type === 1) {
-        return res.json({ type: 1 });
-    }
+        const interaction = JSON.parse(rawBody.toString("utf8"));
 
-    if (interaction.type === 2) {
-        return res.json({
-            type: 4,
-            data: {
-                content: "Teste"
+        // Ping do Discord
+        if (interaction.type === 1) {
+            return res.status(200).json({
+                type: 1,
+            });
+        }
+
+        // Slash Commands
+        if (interaction.type === 2) {
+            const commandName = interaction.data.name;
+
+            if (commandName === "user") {
+                return res.status(200).json({
+                    type: 4,
+                    data: {
+                        content: "Teste",
+                    },
+                });
             }
+
+            return res.status(200).json({
+                type: 4,
+                data: {
+                    content: `Comando /${commandName} não encontrado.`,
+                    flags: 64,
+                },
+            });
+        }
+
+        return res.status(200).end();
+    } catch (error) {
+        console.error(error);
+
+        return res.status(500).json({
+            error: "Internal Server Error",
         });
     }
 }
