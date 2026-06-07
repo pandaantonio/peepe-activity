@@ -16,11 +16,20 @@ const games = [
     path: "/game/tttai"
   },
   {
+    id: "tttmultiplayer",
+    badge: "MULTIJOGADOR",
+    title: "Jogo da Velha (Online)",
+    desc: "Crie uma sala privada ou entre usando um código para desafiar seus amigos em tempo real.",
+    color: "purple",
+    icon: <FaUsers size={28} />,
+    path: "/game/tttmultiplayer"
+  },
+  {
     id: "hangman",
     badge: "LÓGICA",
     title: "Jogo da Forca",
     desc: "Decifre a palavra secreta gerada por IA antes que suas tentativas se esgotem.",
-    color: "purple",
+    color: "orange",
     icon: <FaLock size={28} />,
     path: "/game/hangman"
   },
@@ -64,7 +73,6 @@ export default function GameHub() {
     setIsDiscordFrame(!!params.get('frame_id'));
   }, []);
 
-  // Adicionada a chave 'cyan' que estava faltando e travando o map de renderização
   const colorClasses = {
     emerald: {
       border: "hover:border-emerald-500/50",
