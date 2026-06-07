@@ -1,6 +1,4 @@
-// pages/index.js
 import Link from 'next/link';
-import { useDiscord } from '@/contexts/DiscordContext';
 import { FaGamepad, FaChess, FaUsers, FaLock } from 'react-icons/fa';
 import { FiZap, FiUser, FiCpu } from 'react-icons/fi';
 import { useEffect, useState } from 'react';
@@ -63,7 +61,6 @@ const games = [
 ];
 
 export default function GameHub() {
-  const { auth, isAuthenticated } = useDiscord();
   const [isDiscordFrame, setIsDiscordFrame] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -172,18 +169,10 @@ export default function GameHub() {
             
             <div className="flex items-center gap-3">
               {isDiscordFrame ? (
-                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all duration-300 ${
-                  isAuthenticated 
-                    ? 'bg-emerald-500/10 border-emerald-500/20' 
-                    : 'bg-yellow-500/10 border-yellow-500/20'
-                }`}>
-                  <div className={`w-2 h-2 rounded-full animate-pulse ${
-                    isAuthenticated ? 'bg-emerald-500' : 'bg-yellow-500'
-                  }`} />
-                  <span className={`text-xs font-medium ${
-                    isAuthenticated ? 'text-emerald-400' : 'text-yellow-400'
-                  }`}>
-                    {isAuthenticated ? auth?.user?.username || 'Conectado' : 'Conectando...'}
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all duration-300 bg-emerald-500/10 border-emerald-500/20">
+                  <div className="w-2 h-2 rounded-full animate-pulse bg-emerald-500" />
+                  <span className="text-xs font-medium text-emerald-400">
+                    Discord Activity
                   </span>
                 </div>
               ) : (
@@ -271,6 +260,51 @@ export default function GameHub() {
           </p>
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes fade-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes fade-in-up {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes gradient {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.6s ease-out;
+        }
+        .animate-fade-in-up {
+          animation: fade-in-up 0.6s ease-out forwards;
+          opacity: 0;
+        }
+        .animate-gradient {
+          background-size: 200% auto;
+          animation: gradient 3s linear infinite;
+        }
+        .animation-delay-100 {
+          animation-delay: 100ms;
+        }
+        .animation-delay-1000 {
+          animation-delay: 1000ms;
+        }
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+      `}</style>
     </div>
   );
 }
