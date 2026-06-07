@@ -51,26 +51,40 @@ export default async function handler(req, res) {
         // Slash Commands
         if (interaction.type === 2) {
             const commandName = interaction.data.name;
-            const subcommandName = interaction.data.options?.[0]?.name;
+            const subcommand = interaction.data.options?.[0];
 
-            if (commandName === "user" && subcommandName === "avatar") {
+            if (
+                commandName === "user" &&
+                subcommand?.name === "avatar"
+            ) {
                 const userId = subcommand.options?.find(
                     option => option.name === "user"
                 )?.value;
 
-                const user =
-                    interaction.data.resolved?.users?.[userId] ||
-                    interaction.member.user;
+                let user;
+
+                if (userId) {
+                    user = interaction.data.resolved?.users?.[userId];
+                } else {
+                    user = interaction.member?.user || interaction.user;
+                }
 
                 const avatarURL = user.avatar
                     ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=4096`
-                    : `https://cdn.discordapp.com/embed/avatars/0.png`;
+                    : "https://cdn.discordapp.com/embed/avatars/0.png";
 
                 return res.status(200).json({
                     type: 4,
                     data: {
-                        content: avatarURL,
-                    },
+                        embeds: [
+                            {
+                                title: `Avatar de ${user.username}`,
+                                image: {
+                                    url: avatarURL
+                                }
+                            }
+                        ]
+                    }
                 });
             }
 
