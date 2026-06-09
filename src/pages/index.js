@@ -1,6 +1,6 @@
 // pages/index.js
 import Link from 'next/link';
-import { FaGamepad, FaChess, FaUsers, FaLock, FaDiscord, FaCog } from 'react-icons/fa';
+import { FaGamepad, FaChess, FaUsers, FaLock, FaDiscord, FaCog, FaExternalLinkAlt } from 'react-icons/fa';
 import { FiZap, FiUser, FiCpu } from 'react-icons/fi';
 import { useEffect, useState } from 'react';
 import { useDiscord } from '@/contexts/DiscordContext';
@@ -63,7 +63,6 @@ const games = [
   }
 ];
 
-// Componente do anúncio para reutilização
 const AdComponent = () => {
   useEffect(() => {
     try {
@@ -181,7 +180,6 @@ export default function GameHub() {
 
   return (
     <>
-      {/* Google AdSense Script */}
       <Script
         async
         src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4342538765415358"
@@ -339,10 +337,18 @@ export default function GameHub() {
             <AdComponent />
           </div>
 
-          <div className="mt-20 pt-8 border-t border-white/5 text-center">
-            <p className="text-gray-600 text-xs">
+          {/* Rodapé customizado com o botão solicitado */}
+          <div className="mt-20 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-gray-600 text-xsorder-2 sm:order-1">
               Desenvolvido com <span className="text-red-400">❤️</span> para a comunidade Peepe
             </p>
+            
+            <Link href="/surpresa" className="order-1 sm:order-2">
+              <button className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 text-purple-400 hover:text-purple-300 text-xs font-semibold tracking-wide uppercase transition-all duration-300 shadow-md group">
+                {/*<span>Clique aqui</span>*/}
+                <FaExternalLinkAlt size={10} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              </button>
+            </Link>
           </div>
         </div>
 

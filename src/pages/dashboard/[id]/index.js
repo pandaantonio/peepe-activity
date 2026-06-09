@@ -11,7 +11,9 @@ import {
   FaRobot, 
   FaCog,
   FaChevronRight,
-  FaUsers
+  FaUsers,
+  FaLink,      // Adicionado para o Anti-Link
+  FaUserShield // Adicionado para o Anti-Invite
 } from 'react-icons/fa';
 
 export default function GuildDashboard() {
@@ -143,6 +145,24 @@ export default function GuildDashboard() {
       icon: <FaUserPlus size={28} />,
       color: 'emerald',
       path: `/dashboard/${guild.id}/autorole`,
+      enabled: true
+    },
+    {
+      id: 'antilink',
+      title: 'Anti-Link',
+      description: 'Bloqueie links maliciosos ou não autorizados enviados nos canais de texto.',
+      icon: <FaLink size={26} />,
+      color: 'purple',
+      path: `/dashboard/${guild.id}/antilink`,
+      enabled: true
+    },
+    {
+      id: 'antiinvite',
+      title: 'Anti-Invite',
+      description: 'Evite a divulgação de outros servidores do Discord bloqueando convites externos.',
+      icon: <FaUserShield size={26} />,
+      color: 'red',
+      path: `/dashboard/${guild.id}/antiinvite`,
       enabled: true
     },
     {
