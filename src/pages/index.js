@@ -129,8 +129,29 @@ export default function GameHub() {
       text: "text-blue-400",
       button: "bg-blue-500 hover:bg-blue-600",
       badge: "bg-blue-500/10 border-blue-500/20 text-blue-400"
+    },
+    indigo: {
+      border: "hover:border-indigo-500/50",
+      bg: "group-hover:bg-indigo-500/5",
+      text: "text-indigo-400",
+      button: "bg-indigo-500 hover:bg-indigo-600",
+      badge: "bg-indigo-500/10 border-indigo-500/20 text-indigo-400"
     }
   };
+
+  // Cria a lista final de itens na grid incluindo o painel se estiver autenticado no Discord
+  const displayItems = [...games];
+  if (isDiscordFrame && isAuthenticated) {
+    displayItems.push({
+      id: "discord-dashboard",
+      badge: "PAINEL",
+      title: "Gerenciar Servidores",
+      desc: "Configure o bot Peepe, gerencie permissões e visualize as estatísticas dos seus servidores do Discord.",
+      color: "indigo",
+      icon: <FaDiscord size={28} />,
+      path: "/dashboard"
+    });
+  }
 
   if (!mounted || loading) {
     return (
@@ -200,29 +221,17 @@ export default function GameHub() {
             <p className="text-gray-400 text-lg max-w-2xl mx-auto animate-fade-in-up animation-delay-100">
               Escolha seu jogo favorito e desafie suas habilidades em experiências únicas
             </p>
-            
-            {isDiscordFrame && isAuthenticated && (
-              <div className="mt-6 animate-fade-in-up animation-delay-150">
-                <Link href="/dashboard">
-                  <button className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-medium text-sm transition-all duration-300 shadow-lg hover:shadow-xl">
-                    <FaDiscord size={16} />
-                    <span>Acessar Dashboard de Servidores</span>
-                    <FaCog size={14} className="ml-1" />
-                  </button>
-                </Link>
-              </div>
-            )}
           </div>
 
-          {/* Grid de Jogos */}
+          {/* Grid de Jogos + Card de Gerenciamento se elegível */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {games.map((game, index) => {
-              const colors = colorClasses[game.color];
+            {displayItems.map((item, index) => {
+              const colors = colorClasses[item.color];
               
               return (
                 <Link 
-                  key={game.id} 
-                  href={game.path}
+                  key={item.id} 
+                  href={item.path}
                   className="group animate-fade-in-up"
                   style={{ animationDelay: `${150 + index * 50}ms` }}
                 >
@@ -233,24 +242,26 @@ export default function GameHub() {
                       <div className="flex items-start justify-between mb-4">
                         <div className={`px-2 py-1 rounded-md ${colors.badge}`}>
                           <span className="text-[10px] font-bold tracking-wider">
-                            {game.badge}
+                            {item.badge}
                           </span>
                         </div>
                         <div className={`${colors.text} transition-all duration-300 group-hover:scale-110 group-hover:rotate-3`}>
-                          {game.icon}
+                          {item.icon}
                         </div>
                       </div>
 
                       <h2 className="text-xl font-bold text-white mb-2 group-hover:translate-x-1 transition-transform duration-300">
-                        {game.title}
+                        {item.title}
                       </h2>
                       
                       <p className="text-gray-400 text-sm leading-relaxed mb-5 line-clamp-2">
-                        {game.desc}
+                        {item.desc}
                       </p>
 
                       <div className="flex items-center justify-between pt-3 border-t border-white/10">
-                        <span className="text-xs text-gray-500 font-mono">Clique para jogar</span>
+                        <span className="text-xs text-gray-500 font-mono">
+                          {item.id === "discord-dashboard" ? "Clique para configurar" : "Clique para jogar"}
+                        </span>
                         <div className={`w-9 h-9 rounded-full ${colors.button} flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:translate-x-1 shadow-lg`}>
                           <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
