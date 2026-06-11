@@ -142,26 +142,7 @@ export default function GameHub() {
           strategy="afterInteractive"
         />
         <div className="min-h-screen bg-[#0f0f12]">
-          <div className="fixed top-0 left-0 right-0 bg-[#0f0f12]/80 backdrop-blur-md border-b border-white/10 z-50">
-            <div className="max-w-7xl mx-auto px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center">
-                    <FaGamepad size={18} className="text-white" />
-                  </div>
-                  <span className="text-xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-                    Peepe
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-20 h-8 bg-white/5 rounded-lg animate-pulse" />
-                  <div className="w-24 h-8 bg-white/5 rounded-full animate-pulse" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-28 pb-16 px-6 max-w-7xl mx-auto">
+          <div className="pt-16 pb-16 px-6 max-w-7xl mx-auto">
             <div className="text-center mb-16">
               <div className="w-32 h-8 bg-white/5 rounded-full mx-auto mb-6 animate-pulse" />
               <div className="w-96 h-16 bg-white/5 rounded-xl mx-auto mb-4 animate-pulse" />
@@ -195,57 +176,8 @@ export default function GameHub() {
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl animate-pulse animation-delay-1000" />
         </div>
 
-        {/* Header */}
-        <div className="fixed top-0 left-0 right-0 bg-[#0f0f12]/80 backdrop-blur-md border-b border-white/10 z-50">
-          <div className="max-w-7xl mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
-              <Link href="/" className="flex items-center gap-3 group cursor-pointer">
-                <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300">
-                  <FaGamepad size={18} className="text-white" />
-                </div>
-                <span className="text-xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-                  Peepe
-                </span>
-              </Link>
-              
-              <div className="flex items-center gap-3">
-                {isDiscordFrame && isAuthenticated && (
-                  <Link href="/dashboard">
-                    <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all duration-300 group">
-                      <FaCog size={14} className="text-emerald-400 group-hover:rotate-90 transition-transform duration-300" />
-                      <span className="text-xs font-medium text-emerald-400">Dashboard</span>
-                    </button>
-                  </Link>
-                )}
-                
-                {isDiscordFrame ? (
-                  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all duration-300 ${
-                    isAuthenticated 
-                      ? 'bg-emerald-500/10 border-emerald-500/20' 
-                      : 'bg-yellow-500/10 border-yellow-500/20'
-                  }`}>
-                    <div className={`w-2 h-2 rounded-full animate-pulse ${
-                      isAuthenticated ? 'bg-emerald-500' : 'bg-yellow-500'
-                    }`} />
-                    <span className={`text-xs font-medium ${
-                      isAuthenticated ? 'text-emerald-400' : 'text-yellow-400'
-                    }`}>
-                      {isAuthenticated ? auth?.user?.username || 'Conectado' : 'Conectando...'}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-500/10 border border-gray-500/20 rounded-full">
-                    <div className="w-2 h-2 bg-gray-500 rounded-full" />
-                    <span className="text-xs text-gray-400 font-medium">Modo Demo</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Anúncio - Topo da página */}
-        <div className="relative pt-28 pb-2 px-6 max-w-7xl mx-auto">
+        <div className="relative pt-16 pb-2 px-6 max-w-7xl mx-auto">
           <div className="mb-6 bg-white/5 rounded-xl overflow-hidden">
             <AdComponent />
           </div>
@@ -337,18 +269,11 @@ export default function GameHub() {
             <AdComponent />
           </div>
 
-          {/* Rodapé customizado com o botão solicitado */}
+          {/* Rodapé customizado */}
           <div className="mt-20 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-gray-600 text-xsorder-2 sm:order-1">
+            <p className="text-gray-600 text-xs">
               Desenvolvido com <span className="text-red-400">❤️</span> para a comunidade Peepe
             </p>
-            
-            <Link href="/surpresa" className="order-1 sm:order-2">
-              <button className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 text-purple-400 hover:text-purple-300 text-xs font-semibold tracking-wide uppercase transition-all duration-300 shadow-md group">
-                {/*<span>Clique aqui</span>*/}
-                <FaExternalLinkAlt size={10} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-              </button>
-            </Link>
           </div>
         </div>
 
