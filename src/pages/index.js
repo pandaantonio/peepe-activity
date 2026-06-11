@@ -10,7 +10,7 @@ const games = [
   {
     id: "tttai",
     badge: "ESTRATÉGIA",
-    title: "Jogo da Velha (IA)",
+    title: "🤖 Jogo da Velha (IA)",
     desc: "Desafie uma IA baseada no algoritmo Minimax em um duelo tático de inteligência.",
     color: "emerald",
     icon: <FaChess size={28} />,
@@ -19,7 +19,7 @@ const games = [
   {
     id: "tttmultiplayer",
     badge: "MULTIJOGADOR",
-    title: "Jogo da Velha (Online)",
+    title: "⚔️ Jogo da Velha (Online)",
     desc: "Crie uma sala privada ou entre usando um código para desafiar seus amigos em tempo real.",
     color: "purple",
     icon: <FaUsers size={28} />,
@@ -28,7 +28,7 @@ const games = [
   {
     id: "hangman",
     badge: "LÓGICA",
-    title: "Jogo da Forca",
+    title: "🪓 Jogo da Forca",
     desc: "Decifre a palavra secreta gerada por IA antes que suas tentativas se esgotem.",
     color: "orange",
     icon: <FaLock size={28} />,
@@ -37,7 +37,7 @@ const games = [
   {
     id: "snake",
     badge: "ARCADE",
-    title: "Snake",
+    title: "🐍 Snake",
     desc: "Controle a serpente faminta, colete pontos e evite colidir com o próprio corpo.",
     color: "cyan",
     icon: <FiZap size={28} />,
@@ -46,7 +46,7 @@ const games = [
   {
     id: "guess",
     badge: "MATEMÁTICA",
-    title: "Adivinhe o Número",
+    title: "🔮 Adivinhe o Número",
     desc: "Use a lógica para descobrir o número secreto com base nos feedbacks de temperatura.",
     color: "orange",
     icon: <FiUser size={28} />,
@@ -55,7 +55,7 @@ const games = [
   {
     id: "2048",
     badge: "PUZZLE",
-    title: "2048",
+    title: "🧩 2048",
     desc: "Combine os números estrategicamente para alcançar o mítico bloco 2048.",
     color: "blue",
     icon: <FiCpu size={28} />,
@@ -139,13 +139,12 @@ export default function GameHub() {
     }
   };
 
-  // Cria a lista final de itens na grid incluindo o painel se estiver autenticado no Discord
   const displayItems = [...games];
   if (isDiscordFrame && isAuthenticated) {
     displayItems.push({
       id: "discord-dashboard",
       badge: "PAINEL",
-      title: "Gerenciar Servidores",
+      title: "👑 Gerenciar Servidores",
       desc: "Configure o bot Peepe, gerencie permissões e visualize as estatísticas dos seus servidores do Discord.",
       color: "indigo",
       icon: <FaDiscord size={28} />,
@@ -208,7 +207,7 @@ export default function GameHub() {
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 mb-6 animate-fade-in">
               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-              <span className="text-xs text-gray-400 uppercase tracking-wider font-mono">Game Hub</span>
+              <span className="text-xs text-gray-400 uppercase tracking-wider font-mono">🕹️ Game Hub</span>
             </div>
             
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-4 animate-fade-in-up">
@@ -260,7 +259,7 @@ export default function GameHub() {
 
                       <div className="flex items-center justify-between pt-3 border-t border-white/10">
                         <span className="text-xs text-gray-500 font-mono">
-                          {item.id === "discord-dashboard" ? "Clique para configurar" : "Clique para jogar"}
+                          {item.id === "discord-dashboard" ? "⚙️ Clique para configurar" : "🎮 Clique para jogar"}
                         </span>
                         <div className={`w-9 h-9 rounded-full ${colors.button} flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:translate-x-1 shadow-lg`}>
                           <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
