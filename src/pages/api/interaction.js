@@ -113,7 +113,7 @@ export default async function handler(req, res) {
             return res.status(200).json({
                 type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
                 data: {
-                    content: resultText,
+                    content: `\`\`\`${resultText}\`\`\``,
                     flags: isEphemeral ? 64 : 0
                 }
             });
