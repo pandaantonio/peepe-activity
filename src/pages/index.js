@@ -8,6 +8,16 @@ import Script from 'next/script';
 
 const games = [
   {
+    id: "hexagon",
+    badge: "NOVIDADE",
+    title: "🤖 Hexagon Color Rush",
+    desc: "Controle um robô em um grid de hexágonos coloridos. 5 segundos para pisar na cor certa ou caia no abismo!",
+    color: "purple",
+    icon: <FiZap size={28} />,
+    path: "/game/hexagon",
+    banner: "/imgs/hexagon.png"
+  },
+  {
     id: "tttai",
     badge: "ESTRATÉGIA",
     title: "🤖 Jogo da Velha (IA)",
@@ -60,7 +70,7 @@ const games = [
     color: "blue",
     icon: <FiCpu size={28} />,
     path: "/game/2048"
-  }
+  },
 ];
 
 const AdComponent = () => {
@@ -209,14 +219,15 @@ export default function GameHub() {
               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
               <span className="text-xs text-gray-400 uppercase tracking-wider font-mono">🕹️ Game Hub</span>
             </div>
-            
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-4 animate-fade-in-up">
+
+            {/* Título Estilizado com Efeito Liquid Glass */}
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-4 tracking-tight py-4 flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up">
               <span className="text-white">Biblioteca de </span>
-              <span className="bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 bg-clip-text text-transparent animate-gradient">
+              <span className="liquid-glass text-emerald-400 px-6 py-2 rounded-2xl relative overflow-hidden inline-block">
                 Jogos
               </span>
             </h1>
-            
+
             <p className="text-gray-400 text-lg max-w-2xl mx-auto animate-fade-in-up animation-delay-100">
               Escolha seu jogo favorito e desafie suas habilidades em experiências únicas
             </p>
@@ -226,17 +237,30 @@ export default function GameHub() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {displayItems.map((item, index) => {
               const colors = colorClasses[item.color];
-              
+
               return (
-                <Link 
-                  key={item.id} 
+                <Link
+                  key={item.id}
                   href={item.path}
                   className="group animate-fade-in-up"
                   style={{ animationDelay: `${150 + index * 50}ms` }}
                 >
                   <div className={`relative bg-white/5 border border-white/10 rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl ${colors.border}`}>
                     <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${colors.bg}`} />
-                    
+
+                    {/* Exibe o Banner mantendo a proporção original nativa da imagem */}
+                    {item.banner && (
+                      <div className="w-full relative border-b border-white/10 bg-black/20">
+                        <img 
+                          src={item.banner} 
+                          alt={item.title} 
+                          width={1506}
+                          height={1024}
+                          className="w-full h-auto block transition-transform duration-500 group-hover:scale-[1.02]"
+                        />
+                      </div>
+                    )}
+
                     <div className="relative p-6">
                       <div className="flex items-start justify-between mb-4">
                         <div className={`px-2 py-1 rounded-md ${colors.badge}`}>
@@ -252,7 +276,7 @@ export default function GameHub() {
                       <h2 className="text-xl font-bold text-white mb-2 group-hover:translate-x-1 transition-transform duration-300">
                         {item.title}
                       </h2>
-                      
+
                       <p className="text-gray-400 text-sm leading-relaxed mb-5 line-clamp-2">
                         {item.desc}
                       </p>
@@ -288,6 +312,30 @@ export default function GameHub() {
         </div>
 
         <style jsx>{`
+          /* Estilização Liquid Glass */
+          .liquid-glass {
+            background: linear-gradient(135deg, rgba(52, 211, 153, 0.12), rgba(16, 185, 129, 0.04));
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(52, 211, 153, 0.25);
+            box-shadow: 
+              inset 0 1px 2px rgba(255, 255, 255, 0.15),
+              0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            text-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
+          }
+          
+          /* Brilho reflexivo interno do vidro liquido */
+          .liquid-glass::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.08), transparent);
+            pointer-events: none;
+          }
+
           @keyframes fade-in {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -302,21 +350,12 @@ export default function GameHub() {
               transform: translateY(0);
             }
           }
-          @keyframes gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-          }
           .animate-fade-in {
             animation: fade-in 0.6s ease-out;
           }
           .animate-fade-in-up {
             animation: fade-in-up 0.6s ease-out forwards;
             opacity: 0;
-          }
-          .animate-gradient {
-            background-size: 200% auto;
-            animation: gradient 3s linear infinite;
           }
           .animation-delay-100 {
             animation-delay: 100ms;
