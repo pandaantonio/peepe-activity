@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@discord/embedded-app-sdk": "^2.5.0",
+    "discord-interactions": "^4.4.0",
     "firebase": "^12.14.0",
     "firebase-admin": "^13.10.0",
     "framer-motion": "^12.40.0",
