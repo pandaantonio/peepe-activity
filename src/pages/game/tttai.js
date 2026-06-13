@@ -296,8 +296,8 @@ export default function TicTacToe() {
   ]));
 
   const boardGrid = React.createElement('div', {
-    className: 'grid grid-cols-3 gap-2 p-3 rounded-2xl bg-[#050507]/60 border border-white/5 shadow-inner backdrop-blur-md w-full',
-    style: { containerType: 'inline-size', aspectRatio: '1/1', maxWidth: 'min(90%, 400px)', margin: '0 auto' }
+    className: 'grid grid-cols-3 gap-2 p-3 rounded-2xl bg-[#050507]/60 border border-white/5 shadow-inner backdrop-blur-md w-full h-full',
+    style: { containerType: 'inline-size' }
   }, boardCells.flat());
 
   const gameOverOverlay = (winner || isDraw) && React.createElement('div', {
@@ -455,27 +455,40 @@ export default function TicTacToe() {
       width: min(92vw, 440px);
     }
 
-    /* Landscape mobile: linha lado a lado */
+    /* Landscape mobile: linha lado a lado - CORRIGIDO */
     @media (orientation: landscape) and (max-height: 540px) {
       .ttt-layout {
         flex-direction: row;
-        align-items: stretch;
+        align-items: center;
         justify-content: center;
         height: 100%;
-        gap: 10px;
+        gap: 12px;
+        padding: 8px 0;
       }
       .ttt-board {
         flex: 0 0 auto;
         width: auto;
         height: 100%;
+        max-height: 100%;
+        aspect-ratio: 1 / 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .ttt-board > div:first-child {
+        width: 100%;
+        height: 100%;
+        max-width: none;
         aspect-ratio: 1 / 1;
       }
       .ttt-panel {
-        flex: 1 1 0;
+        flex: 0 0 auto;
         width: auto;
-        min-width: 180px;
-        max-width: 280px;
+        min-width: 200px;
+        max-width: 320px;
         height: 100%;
+        max-height: 100%;
+        overflow-y: auto;
       }
     }
 
