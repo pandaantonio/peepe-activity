@@ -1,4 +1,4 @@
-/* TicTacToe.module.css - Versão corrigida */
+/* TicTacToe.module.css */
 
 .container {
   min-height: 100vh;
@@ -20,243 +20,999 @@
   z-index: 0;
 }
 
-.bgBlur1, .bgBlur2 {
+.bgBlur1 {
   position: absolute;
+  top: 0;
+  left: 25%;
+  width: 600px;
+  height: 600px;
+  background: rgba(16, 185, 129, 0.02);
   border-radius: 50%;
   filter: blur(120px);
-  opacity: 0.6;
-}
-
-.bgBlur1 {
-  top: -10%;
-  left: 20%;
-  width: 500px;
-  height: 500px;
-  background: rgba(16, 185, 129, 0.08);
 }
 
 .bgBlur2 {
-  bottom: -10%;
-  right: 20%;
-  width: 450px;
-  height: 450px;
-  background: rgba(168, 85, 247, 0.06);
+  position: absolute;
+  bottom: 0;
+  right: 25%;
+  width: 500px;
+  height: 500px;
+  background: rgba(168, 85, 247, 0.02);
+  border-radius: 50%;
+  filter: blur(100px);
 }
 
 /* Topbar */
 .topbar {
-  background: rgba(15, 15, 18, 0.95);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  z-index: 20;
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+  z-index: 10;
+  position: relative;
 }
 
 .topbarContent {
+  width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 10px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.buttonGroup {
-  display: flex;
-  gap: 8px;
-}
-
-.iconButton {
-  padding: 10px;
-  color: #9ca3af;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 10px;
-  transition: all 0.2s;
-}
-
-.iconButton:hover {
-  color: white;
-  background: rgba(255,255,255,0.1);
-}
-
-/* Status */
-.statusBox {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 20px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 9999px;
-  font-size: 13px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.statusDot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: #34d399;
-  animation: pulse 2s infinite;
-}
-
-.resetButton {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 14px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(244, 63, 94, 0.2);
-  color: #f87171;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-/* Main Layout */
-.mainContent {
-  flex: 1;
-  padding: 16px;
-  display: flex;
-  justify-content: center;
-}
-
-.gameLayout {
-  display: flex;
-  gap: 20px;
-  width: 100%;
-  max-width: 1100px;
-}
-
-/* Score Card */
-.scoreCard {
-  background: rgba(15, 15, 18, 0.8);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px;
-  padding: 16px;
-  width: 180px;
-  flex-shrink: 0;
+  padding: 12px 24px;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.scoreItem {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 12px;
-  padding: 12px 14px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+@media (min-width: 640px) {
+  .topbarContent {
+    flex-direction: row;
+    padding: 16px 24px;
+    gap: 0;
+    align-items: center;
+    justify-content: space-between;
+  }
 }
 
-.scoreIcon {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
+@media (orientation: landscape) {
+  .topbarContent {
+    padding: 8px 24px;
+    flex-direction: row;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+  }
 }
 
-.scoreIconPlayer { background: rgba(52, 211, 153, 0.15); color: #34d399; }
-.scoreIconAI { background: rgba(244, 63, 94, 0.15); color: #f87171; }
+.buttonGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
-.scoreLabelText {
-  font-size: 12px;
+.iconButton {
+  padding: 12px;
   color: #9ca3af;
-  font-weight: 500;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  transition: all 0.2s;
+  cursor: pointer;
 }
 
-.scoreValue {
-  font-size: 28px;
-  font-weight: 900;
-  margin-left: auto;
+.iconButton:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
 }
 
-/* Draw item */
-.drawItem {
-  background: rgba(251, 191, 36, 0.1);
-  border: 1px solid rgba(251, 191, 36, 0.2);
+.iconButton:active {
+  transform: scale(0.95);
+}
+
+@media (orientation: landscape) {
+  .iconButton {
+    padding: 8px;
+  }
+}
+
+.statusContainer {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.statusBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+  max-width: 320px;
+}
+
+@media (min-width: 640px) {
+  .statusBox {
+    max-width: none;
+  }
+}
+
+@media (orientation: landscape) {
+  .statusBox {
+    padding: 6px 12px;
+    font-size: 10px;
+    max-width: none;
+  }
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.statusDotActive {
+  background: #34d399;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.statusDotInactive {
+  background: #f43f5e;
+}
+
+.statusText {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.statusTextWinX {
+  color: #34d399;
+  text-shadow: 0 0 8px rgba(52, 211, 153, 0.3);
+}
+
+.statusTextWinO {
+  color: #f43f5e;
+  text-shadow: 0 0 8px rgba(244, 63, 94, 0.3);
+}
+
+.statusTextDraw {
   color: #fbbf24;
 }
 
-/* Board */
-.boardCard {
-  flex: 1;
-  background: rgba(15, 15, 18, 0.7);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px;
-  padding: 20px;
+.statusTextTurn {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.statusTextAITurn {
+  color: rgba(255, 255, 255, 0.3);
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.resetButton {
+  padding: 12px;
+  color: #6b7280;
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  transition: all 0.2s;
+  cursor: pointer;
   display: flex;
-  justify-content: center;
   align-items: center;
-  max-width: 520px;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.resetButton:hover {
+  color: #fb7185;
+  background: rgba(244, 63, 94, 0.05);
+}
+
+.resetButton:active {
+  transform: scale(0.95);
+}
+
+@media (orientation: landscape) {
+  .resetButton {
+    padding: 8px;
+  }
+}
+
+.resetButton span {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .resetButton span {
+    display: inline;
+  }
+}
+
+/* Main Content */
+.mainContent {
+  flex: 1;
+  width: 100%;
+  max-width: 1280px;
   margin: 0 auto;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  position: relative;
+  overflow: hidden;
+}
+
+@media (orientation: landscape) {
+  .mainContent {
+    padding: 8px 24px;
+  }
+}
+
+.gameLayout {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (min-width: 1024px) {
+  .gameLayout {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 32px;
+  }
+}
+
+@media (orientation: landscape) {
+  .gameLayout {
+    flex-direction: row;
+    gap: 16px;
+    align-items: stretch;
+    justify-content: center;
+    height: 100%;
+  }
+}
+
+/* Score Card */
+.scoreCard {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-radius: 16px;
+  padding: 16px;
+  gap: 16px;
+  order: 2;
+}
+
+@media (min-width: 1024px) {
+  .scoreCard {
+    grid-column: span 5;
+    padding: 24px;
+    order: 1;
+  }
+}
+
+@media (orientation: landscape) {
+  .scoreCard {
+    padding: 12px;
+    gap: 12px;
+    max-width: 200px;
+    flex-shrink: 0;
+    justify-content: center;
+    align-self: stretch;
+    order: 1;
+  }
+}
+
+.scoreHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+@media (orientation: landscape) {
+  .scoreHeader {
+    display: none;
+  }
+}
+
+.scoreLabel {
+  font-size: 10px;
+  font-weight: bold;
+  color: #34d399;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.scoreTitle {
+  font-size: 18px;
+  font-weight: 900;
+  color: white;
+}
+
+@media (min-width: 640px) {
+  .scoreTitle {
+    font-size: 20px;
+  }
+}
+
+.scorePanel {
+  background: rgba(5, 5, 7, 0.5);
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+}
+
+@media (orientation: landscape) {
+  .scorePanel {
+    padding: 12px;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+  }
+}
+
+.scoreGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  align-items: center;
+  text-align: center;
+}
+
+@media (orientation: landscape) {
+  .scoreGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+}
+
+.scoreItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (orientation: landscape) {
+  .scoreItem {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 8px;
+    background: rgba(5, 5, 7, 0.5);
+    border-radius: 12px;
+    padding: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+}
+
+.scoreIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+@media (min-width: 640px) {
+  .scoreIcon {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+@media (orientation: landscape) {
+  .scoreIcon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+}
+
+.scoreIconPlayer {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.scoreIconAI {
+  background: rgba(244, 63, 94, 0.1);
+  border: 1px solid rgba(244, 63, 94, 0.2);
+}
+
+.scoreIconText {
+  font-size: 16px;
+}
+
+.scoreLabelText {
+  font-size: 10px;
+  font-weight: bold;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+@media (orientation: landscape) {
+  .scoreLabelText {
+    display: none;
+  }
+}
+
+.scoreValue {
+  font-size: 24px;
+  font-weight: 900;
+  color: white;
+}
+
+@media (min-width: 640px) {
+  .scoreValue {
+    font-size: 30px;
+  }
+}
+
+@media (orientation: landscape) {
+  .scoreValue {
+    font-size: 20px;
+  }
+}
+
+.drawItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 0 4px;
+}
+
+@media (orientation: landscape) {
+  .drawItem {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(5, 5, 7, 0.5);
+    border-radius: 12px;
+    padding: 8px;
+  }
+}
+
+.drawValue {
+  font-size: 20px;
+  font-weight: 900;
+  color: rgba(251, 191, 36, 0.9);
+}
+
+@media (min-width: 640px) {
+  .drawValue {
+    font-size: 24px;
+  }
+}
+
+@media (orientation: landscape) {
+  .drawValue {
+    font-size: 18px;
+  }
+}
+
+.drawLabel {
+  font-size: 10px;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+@media (orientation: landscape) {
+  .drawLabel {
+    display: none;
+  }
+}
+
+.drawTotal {
+  font-size: 10px;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+@media (orientation: landscape) {
+  .drawTotal {
+    display: none;
+  }
+}
+
+/* Progress Bar */
+.progressBar {
+  margin-top: 24px;
+  display: flex;
+  height: 6px;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+}
+
+@media (orientation: landscape) {
+  .progressBar {
+    display: none;
+  }
+}
+
+.progressPlayer {
+  background: rgba(52, 211, 153, 0.8);
+  transition: all 0.5s;
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.5);
+}
+
+.progressDraw {
+  background: rgba(251, 191, 36, 0.6);
+  transition: all 0.5s;
+}
+
+.progressAI {
+  background: rgba(244, 63, 94, 0.8);
+  transition: all 0.5s;
+  box-shadow: 0 0 8px rgba(244, 63, 94, 0.5);
+}
+
+/* Tip Card */
+.tipCard {
+  padding: 16px;
+  background: rgba(168, 85, 247, 0.02);
+  border-left: 4px solid rgba(168, 85, 247, 0.4);
+  border-radius: 0 12px 12px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@media (orientation: landscape) {
+  .tipCard {
+    display: none;
+  }
+}
+
+.tipIcon {
+  color: #c084fc;
+  margin-top: 2px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 6px rgba(192, 132, 252, 0.4));
+}
+
+.tipContent {
+  text-align: left;
+  font-size: 12px;
+}
+
+.tipTitle {
+  font-weight: bold;
+  color: rgba(192, 132, 252, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tipText {
+  color: #9ca3af;
+  margin-top: 4px;
+  line-height: 1.625;
+  font-size: 13px;
+}
+
+/* Board Card */
+.boardCard {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-radius: 16px;
+  padding: 16px;
+  position: relative;
+}
+
+@media (min-width: 640px) {
+  .boardCard {
+    padding: 24px;
+  }
+}
+
+@media (min-width: 768px) {
+  .boardCard {
+    padding: 32px;
+  }
+}
+
+@media (orientation: landscape) {
+  .boardCard {
+    padding: 12px;
+    flex: 1;
+    max-width: min(70vh, 500px);
+    margin: 0 auto;
+    order: 2;
+  }
+}
+
+@media (min-width: 1024px) {
+  .boardCard {
+    grid-column: span 7;
+    order: 2;
+  }
+}
+
+.boardWrapper {
+  width: 100%;
+  max-width: min(92vw, 550px);
+  margin: 0 auto;
+}
+
+@media (orientation: landscape) {
+  .boardWrapper {
+    max-width: min(65vh, 480px);
+  }
 }
 
 .board {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  background: rgba(0,0,0,0.3);
-  padding: 14px;
+  gap: 10px;
+  padding: 12px;
+  background: rgba(5, 5, 7, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
   aspect-ratio: 1 / 1;
-  max-width: 460px;
-  width: 100%;
 }
 
+@media (min-width: 640px) {
+  .board {
+    gap: 12px;
+    padding: 16px;
+  }
+}
+
+@media (min-width: 768px) {
+  .board {
+    gap: 16px;
+  }
+}
+
+@media (orientation: landscape) {
+  .board {
+    gap: 8px;
+    padding: 8px;
+  }
+}
+
+/* Grid Cell */
 .gridCell {
-  aspect-ratio: 1/1;
-  border-radius: 12px;
+  aspect-ratio: 1 / 1;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 4.5rem;
   font-weight: 900;
-  transition: all 0.2s;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.03);
+  transition: all 0.3s;
+  user-select: none;
+  touch-action: manipulation;
+  cursor: pointer;
+  min-height: min(22vw, 100px);
+  min-width: min(22vw, 100px);
+}
+
+@media (orientation: landscape) {
+  .gridCell {
+    min-height: min(22vh, 100px);
+    min-width: min(22vh, 100px);
+  }
+}
+
+.gridCellEmpty {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .gridCellEmpty:hover {
-  background: rgba(255,255,255,0.08);
-  transform: scale(1.03);
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.1);
+  transform: scale(1.02);
 }
 
-.cellX { color: #34d399; }
-.cellO { color: #fb7185; }
+.gridCellEmpty:active {
+  transform: scale(0.95);
+}
+
+.gridCellFilled {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
 
 .gridCellWinning {
-  background: rgba(52, 211, 153, 0.15) !important;
-  border-color: #34d399 !important;
-  box-shadow: 0 0 20px rgba(52, 211, 153, 0.4);
+  background: rgba(16, 185, 129, 0.1) !important;
+  border-color: rgba(52, 211, 153, 0.4) !important;
+  box-shadow: 0 0 25px rgba(52, 211, 153, 0.25);
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.gridCellLastMove {
+  outline: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.gridCellDisabled {
+  cursor: not-allowed;
+}
+
+.cellX {
+  color: #34d399;
+  filter: drop-shadow(0 0 12px rgba(52, 211, 153, 0.4));
+  font-size: clamp(2rem, 6vh, 4.5rem);
+}
+
+@media (orientation: landscape) {
+  .cellX {
+    font-size: clamp(1.5rem, 5vh, 3.5rem);
+  }
+}
+
+.cellO {
+  color: #fb7185;
+  filter: drop-shadow(0 0 12px rgba(244, 63, 94, 0.4));
+  font-size: clamp(2rem, 6vh, 4.5rem);
+}
+
+@media (orientation: landscape) {
+  .cellO {
+    font-size: clamp(1.5rem, 5vh, 3.5rem);
+  }
 }
 
 /* Overlay */
 .overlay {
   position: absolute;
   inset: 0;
-  background: rgba(10,10,12,0.96);
+  background: rgba(10, 10, 12, 0.95);
   backdrop-filter: blur(12px);
   border-radius: 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 20px;
-  z-index: 30;
+  gap: 16px;
+  z-index: 20;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  animation: fadeIn 0.25s ease-out forwards;
 }
 
-/* Animações */
+@media (orientation: landscape) {
+  .overlay {
+    gap: 12px;
+    padding: 16px;
+  }
+}
+
+.overlayIcon {
+  width: 80px;
+  height: 80px;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+@media (min-width: 640px) {
+  .overlayIcon {
+    width: 96px;
+    height: 96px;
+  }
+}
+
+@media (orientation: landscape) {
+  .overlayIcon {
+    width: 56px;
+    height: 56px;
+  }
+}
+
+.overlayIconWinX {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.overlayIconWinO {
+  background: rgba(244, 63, 94, 0.1);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+}
+
+.overlayIconDraw {
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.overlaySymbol {
+  font-size: 48px;
+  font-weight: 900;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+}
+
+@media (min-width: 640px) {
+  .overlaySymbol {
+    font-size: 60px;
+  }
+}
+
+@media (orientation: landscape) {
+  .overlaySymbol {
+    font-size: 30px;
+  }
+}
+
+.overlaySymbolX {
+  color: #34d399;
+}
+
+.overlaySymbolO {
+  color: #fb7185;
+}
+
+.overlaySymbolDraw {
+  color: #fbbf24;
+}
+
+.overlayContent {
+  text-align: center;
+  max-width: 280px;
+}
+
+@media (min-width: 640px) {
+  .overlayContent {
+    max-width: 384px;
+  }
+}
+
+@media (orientation: landscape) {
+  .overlayContent {
+    max-width: 200px;
+  }
+}
+
+.overlayTitle {
+  font-size: 24px;
+  font-weight: 900;
+  margin-bottom: 8px;
+  letter-spacing: 0.025em;
+}
+
+@media (min-width: 640px) {
+  .overlayTitle {
+    font-size: 30px;
+  }
+}
+
+@media (orientation: landscape) {
+  .overlayTitle {
+    font-size: 20px;
+    margin-bottom: 4px;
+  }
+}
+
+.overlayTitleWinX {
+  color: #34d399;
+  text-shadow: 0 0 8px rgba(52, 211, 153, 0.3);
+}
+
+.overlayTitleWinO {
+  color: #f43f5e;
+  text-shadow: 0 0 8px rgba(244, 63, 94, 0.3);
+}
+
+.overlayTitleDraw {
+  color: #fbbf24;
+}
+
+.overlayText {
+  color: #9ca3af;
+  font-size: 14px;
+  line-height: 1.625;
+}
+
+@media (min-width: 640px) {
+  .overlayText {
+    font-size: 16px;
+  }
+}
+
+@media (orientation: landscape) {
+  .overlayText {
+    font-size: 12px;
+  }
+}
+
+.overlayButton {
+  padding: 16px 40px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  font-weight: bold;
+  font-size: 16px;
+  border-radius: 16px;
+  transition: all 0.2s;
+  cursor: pointer;
+  width: 100%;
+}
+
+.overlayButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.overlayButton:active {
+  transform: scale(0.95);
+}
+
+@media (orientation: landscape) {
+  .overlayButton {
+    padding: 8px 24px;
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 640px) {
+  .overlayButton {
+    width: auto;
+  }
+}
+
+/* Glass Card Effect */
+.glassCard {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* Animations */
+@keyframes scaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animateScaleUp {
+  animation: scaleUp 0.18s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
