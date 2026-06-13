@@ -1,5 +1,40 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, memo, useMemo } from 'react';
 import { useRouter } from 'next/router';
+import { FaArrowLeft, FaRedo, FaTrophy, FaRobot, FaUser, FaTrashAlt } from 'react-icons/fa';
+
+// Sub-componente otimizado para as células do tabuleiro
+const GridCell = memo(({ cell, rowIndex, colIndex, isWinning, isLastMove, gameOver, currentPlayer, onClick }) => {
+  return (
+    <button
+      onClick={() => onClick(rowIndex, colIndex)}
+      disabled={gameOver || currentPlayer !== 'X' || cell !== ''}
+      className={`
+        aspect-square rounded-2xl flex items-center justify-center text-5xl md:text-6xl font-black
+        transition-all duration-300 select-none touch-manipulation cursor-pointer
+        ${cell === '' 
+          ? 'bg-white/[0.02] border border-white/5 hover:bg-white/[0.07] hover:border-white/10 hover:scale-[1.02] active:scale-95 shadow-inner' 
+          : 'bg-white/[0.04] border border-white/10 shadow-md'
+        }
+        ${isWinning ? '!bg-emerald-500/10 !border-emerald-500/40 shadow-[0_0_25px_rgba(52,211,153,0.25)] animate-pulse' : ''}
+        ${isLastMove && !isWinning ? 'ring-2 ring-white/10' : ''}
+        disabled:cursor-not-allowed
+      `}
+    >
+      {cell === 'X' && (
+        <span className="text-emerald-400 drop-shadow-[0_0_12px_rgba(52,211,153,0.4)] animate-[scaleUp_0.18s_ease-out]">
+          X
+        </span>
+      )}
+      {cell === 'O' && (
+        <span className="text-rose-400 drop-shadow-[0_0_12px_rgba(244,63,94,0.4)] animate-[scaleUp_0.18s_ease-out]">
+          O
+        </span>
+      )}
+    </button>
+  );
+});
+
+GridCell.displayName = 'GridCell';
 
 export default function TicTacToe() {
   const router = useRouter();
@@ -23,12 +58,9 @@ export default function TicTacToe() {
 
   const checkVictory = useCallback((player, currentBoard) => {
     const lines = [
-      // Linhas
-      [[0,0],[0,1],[0,2]], [[1,0],[1,1],[1,2]], [[2,0],[2,1],[2,2]],
-      // Colunas
-      [[0,0],[1,0],[2,0]], [[0,1],[1,1],[2,1]], [[0,2],[1,2],[2,2]],
-      // Diagonais
-      [[0,0],[1,1],[2,2]], [[0,2],[1,1],[2,0]]
+      [[0,0],[0,1],[0,2]], [[1,0],[1,1],[1,2]], [[2,0],[2,1],[2,2]], 
+      [[0,0],[1,0],[2,0]], [[0,1],[1,1],[2,1]], [[0,2],[1,2],[2,2]], 
+      [[0,0],[1,1],[2,2]], [[0,2],[1,1],[2,0]]                       
     ];
 
     for (const line of lines) {
@@ -89,13 +121,14 @@ export default function TicTacToe() {
   const findBestMove = useCallback((currentBoard) => {
     let bestScore = -Infinity;
     let bestMove = null;
+    const boardClone = currentBoard.map(row => [...row]);
 
     for (let i = 0; i < 3; i++) {
       for (let j = 0; j < 3; j++) {
-        if (currentBoard[i][j] === '') {
-          currentBoard[i][j] = 'O';
-          let score = minimax(currentBoard, false, 0);
-          currentBoard[i][j] = '';
+        if (boardClone[i][j] === '') {
+          boardClone[i][j] = 'O';
+          let score = minimax(boardClone, false, 0);
+          boardClone[i][j] = '';
 
           if (score > bestScore) {
             bestScore = score;
@@ -146,24 +179,23 @@ export default function TicTacToe() {
   }, [checkVictory, getEmptyCells]);
 
   const handleCellClick = useCallback((row, col) => {
-    if (gameOver) return;
-    if (currentPlayer !== 'X') return;
-    if (board[row][col] !== '') return;
+    if (gameOver || currentPlayer !== 'X' || board[row][col] !== '') return;
 
     playMove(row, col, 'X');
     setCurrentPlayer('O');
   }, [gameOver, currentPlayer, board, playMove]);
 
   useEffect(() => {
-    if (gameOver) return;
-    if (currentPlayer !== 'O') return;
+    if (gameOver || currentPlayer !== 'O') return;
 
     const timer = setTimeout(() => {
+      if (gameOver || currentPlayer !== 'O') return;
+
       const emptyCells = getEmptyCells(board);
       if (emptyCells.length === 0) return;
 
       let move;
-      if (Math.random() < 0.25) {
+      if (Math.random() < 0.15) { // 15% de chance de erro tático da IA para manter divertido
         const randomIndex = Math.floor(Math.random() * emptyCells.length);
         move = emptyCells[randomIndex];
       } else {
@@ -174,7 +206,7 @@ export default function TicTacToe() {
         playMove(move.row, move.col, 'O');
         setCurrentPlayer('X');
       }
-    }, 600);
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [currentPlayer, gameOver, board, getEmptyCells, findBestMove, playMove]);
@@ -199,19 +231,19 @@ export default function TicTacToe() {
   };
 
   const getStatusText = () => {
-    if (winner === 'X') return "Você venceu";
-    if (winner === 'O') return "IA venceu";
-    if (isDraw) return "Empate";
-    if (currentPlayer === 'X') return "Sua vez";
-    return "IA pensando...";
+    if (winner === 'X') return "SISTEMA DESCRIPTOGRAFADO";
+    if (winner === 'O') return "PERDA DE CONTROLO INTEGRAL";
+    if (isDraw) return "REDE EM EQUILÍBRIO";
+    if (currentPlayer === 'X') return "A SUA VEZ DE AGIR";
+    return "IA CALCULANDO VETORES...";
   };
 
   const getStatusColor = () => {
-    if (winner === 'X') return 'text-emerald-400';
-    if (winner === 'O') return 'text-red-400';
+    if (winner === 'X') return 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]';
+    if (winner === 'O') return 'text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.3)]';
     if (isDraw) return 'text-amber-400';
-    if (currentPlayer === 'X') return 'text-white/70';
-    return 'text-white/40';
+    if (currentPlayer === 'X') return 'text-white/80';
+    return 'text-white/30 animate-pulse';
   };
 
   const isWinningCell = (row, col) => {
@@ -219,197 +251,202 @@ export default function TicTacToe() {
     return winningLine.some(([r, c]) => r === row && c === col);
   };
 
+  const totalGames = useMemo(() => {
+    return scores.player + scores.ai + scores.draws;
+  }, [scores]);
+
   return (
-    <div className="fixed inset-0 bg-[#0a0a0c] flex flex-col items-center justify-center z-50 overflow-hidden">
-      {/* Background ambient */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-1/4 left-1/3 w-[400px] h-[400px] bg-purple-500/[0.03] rounded-full blur-[100px]" />
-        <div className="absolute bottom-1/4 right-1/3 w-[300px] h-[300px] bg-emerald-500/[0.03] rounded-full blur-[80px]" />
+    <div className="min-h-screen bg-[#0a0a0c] text-[#ededed] select-none font-sans antialiased flex flex-col relative overflow-hidden">
+      
+      {/* Background ambient luminoso idêntico ao Hub */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-emerald-500/[0.02] rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-purple-500/[0.02] rounded-full blur-[100px]" />
       </div>
 
-      {/* Back button */}
-      <button
-        onClick={handleExit}
-        className="fixed top-6 left-6 z-50 glass-btn px-5 py-2.5 rounded-xl text-sm font-medium text-white/60 hover:text-white/90 transition-all active:scale-95 flex items-center gap-2"
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
-        Voltar
-      </button>
-
-      <div className="relative w-full max-w-[420px] px-5">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-pill mb-4">
-            <div className={`w-1.5 h-1.5 rounded-full ${currentPlayer === 'X' ? 'bg-emerald-400 animate-pulse' : 'bg-red-400 animate-pulse'}`} />
-            <span className="text-[10px] text-gray-500 uppercase tracking-[0.15em] font-medium">vs IA</span>
+      {/* Topbar Glassmorphism */}
+      <div className="bg-white/[0.02] backdrop-blur-xl border-b border-white/5 shrink-0 z-10 relative">
+        <div className="w-full max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={handleExit} 
+              className="p-3 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-all active:scale-95 cursor-pointer border border-white/5"
+            >
+              <FaArrowLeft size={18} />
+            </button>
+            <button 
+              onClick={resetGame} 
+              className="p-3 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-all active:scale-95 cursor-pointer border border-white/5"
+            >
+              <FaRedo size={16} />
+            </button>
           </div>
 
-          <h1 className="text-3xl font-semibold text-white/90 tracking-tight mb-2">
-            Jogo da Velha
-          </h1>
-          <p className={`text-sm font-medium transition-colors duration-300 ${getStatusColor()}`}>
-            {getStatusText()}
-          </p>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.02] border border-white/10 text-xs font-bold uppercase tracking-wider">
+            <div className={`w-2 h-2 rounded-full ${currentPlayer === 'X' && !gameOver ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'}`} />
+            <span className={getStatusColor()}>{getStatusText()}</span>
+          </div>
+
+          <button 
+            onClick={resetScores}
+            className="p-3 text-gray-500 hover:text-rose-400 bg-white/[0.01] hover:bg-rose-500/5 rounded-xl transition-all active:scale-95 cursor-pointer border border-white/5 flex items-center gap-2 text-xs font-bold uppercase tracking-wider"
+            title="Zerar Placar"
+          >
+            <FaTrashAlt size={14} />
+            <span className="hidden sm:inline">Limpar</span>
+          </button>
         </div>
+      </div>
 
-        {/* Scoreboard */}
-        <div className="glass-card rounded-2xl p-4 mb-5">
-          <div className="flex items-center justify-between">
-            {/* Player score */}
-            <div className="flex flex-col items-center gap-1 flex-1">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                <span className="text-lg font-bold text-emerald-400">X</span>
-              </div>
-              <span className="text-[10px] text-gray-500 uppercase tracking-wider">Você</span>
-              <span className="text-2xl font-semibold text-white/90">{scores.player}</span>
+      {/* Main Content Area - Grelha Unificada Panorâmica */}
+      <div className="flex-1 w-full max-w-7xl mx-auto px-4 md:px-8 py-6 flex items-center justify-center z-10 relative">
+        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+          
+          {/* COLUNA ESQUERDA: Placar de Desempenho e Estatísticas */}
+          <div className="lg:col-span-5 flex flex-col justify-between glass-card rounded-2xl p-6 shadow-2xl gap-6">
+            
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest block">Módulo do Placar</span>
+              <h2 className="text-xl font-black text-white">Consola de Desempenho</h2>
             </div>
 
-            {/* Draws */}
-            <div className="flex flex-col items-center gap-1 px-4">
-              <span className="text-[10px] text-gray-600 uppercase tracking-wider">Empates</span>
-              <span className="text-xl font-semibold text-amber-400/80">{scores.draws}</span>
-            </div>
+            {/* Placar Principal Premium */}
+            <div className="bg-[#050507]/50 rounded-2xl p-6 border border-white/5 shadow-inner backdrop-blur-md">
+              <div className="grid grid-cols-3 gap-2 items-center text-center">
+                
+                {/* Score Jogador */}
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shadow-md">
+                    <FaUser className="text-emerald-400 drop-shadow-[0_0_6px_rgba(52,211,153,0.3)]" size={18} />
+                  </div>
+                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Você (X)</span>
+                  <span className="text-3xl font-black text-white">{scores.player}</span>
+                </div>
 
-            {/* AI score */}
-            <div className="flex flex-col items-center gap-1 flex-1">
-              <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
-                <span className="text-lg font-bold text-red-400">O</span>
-              </div>
-              <span className="text-[10px] text-gray-500 uppercase tracking-wider">IA</span>
-              <span className="text-2xl font-semibold text-white/90">{scores.ai}</span>
-            </div>
-          </div>
+                {/* Empates */}
+                <div className="flex flex-col items-center gap-1 border-x border-white/5 px-2">
+                  <span className="text-[10px] text-gray-600 font-bold uppercase tracking-wider">Empates</span>
+                  <span className="text-2xl font-black text-amber-400/90">{scores.draws}</span>
+                  <span className="text-[10px] text-gray-600 font-medium">Partidas: {totalGames}</span>
+                </div>
 
-          {/* Progress bar */}
-          <div className="mt-3 flex h-1 rounded-full overflow-hidden bg-white/5">
-            <div 
-              className="bg-emerald-500/60 transition-all duration-500"
-              style={{ width: `${scores.player + scores.ai + scores.draws > 0 ? (scores.player / (scores.player + scores.ai + scores.draws)) * 100 : 50}%` }}
-            />
-            <div 
-              className="bg-red-500/60 transition-all duration-500"
-              style={{ width: `${scores.player + scores.ai + scores.draws > 0 ? (scores.ai / (scores.player + scores.ai + scores.draws)) * 100 : 50}%` }}
-            />
-          </div>
-        </div>
+                {/* Score IA */}
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shadow-md">
+                    <FaRobot className="text-rose-400 drop-shadow-[0_0_6px_rgba(244,63,94,0.3)]" size={18} />
+                  </div>
+                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">IA (O)</span>
+                  <span className="text-3xl font-black text-white">{scores.ai}</span>
+                </div>
 
-        {/* Game Board */}
-        <div className="relative">
-          <div className="grid grid-cols-3 gap-2 p-3 rounded-2xl glass-card">
-            {board.map((row, rowIndex) =>
-              row.map((cell, colIndex) => {
-                const isWinning = isWinningCell(rowIndex, colIndex);
-                const isLastMove = moveHistory.length > 0 && 
-                  moveHistory[moveHistory.length - 1].row === rowIndex && 
-                  moveHistory[moveHistory.length - 1].col === colIndex;
-
-                return (
-                  <button
-                    key={`${rowIndex}-${colIndex}`}
-                    onClick={() => handleCellClick(rowIndex, colIndex)}
-                    disabled={gameOver || currentPlayer !== 'X' || cell !== ''}
-                    className={`
-                      aspect-square rounded-xl flex items-center justify-center text-4xl font-bold
-                      transition-all duration-300
-                      ${cell === '' 
-                        ? 'bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-white/[0.1] hover:scale-[1.02] active:scale-95' 
-                        : 'bg-white/[0.05] border border-white/[0.08]'
-                      }
-                      ${isWinning ? 'bg-emerald-500/10 border-emerald-500/30 shadow-[0_0_20px_rgba(52,211,153,0.15)] animate-pulse' : ''}
-                      ${isLastMove && !isWinning ? 'ring-1 ring-white/10' : ''}
-                      disabled:cursor-not-allowed
-                    `}
-                  >
-                    {cell === 'X' && (
-                      <span className="text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]">
-                        X
-                      </span>
-                    )}
-                    {cell === 'O' && (
-                      <span className="text-red-400 drop-shadow-[0_0_8px_rgba(248,113,113,0.3)]">
-                        O
-                      </span>
-                    )}
-                  </button>
-                );
-              })
-            )}
-          </div>
-
-          {/* Game Over Overlay */}
-          {(winner || isDraw) && (
-            <div className="absolute inset-0 bg-[#0a0a0c]/90 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center gap-5 animate-fade-in">
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${
-                winner === 'X' ? 'bg-emerald-500/10 border border-emerald-500/20' :
-                winner === 'O' ? 'bg-red-500/10 border border-red-500/20' :
-                'bg-amber-500/10 border border-amber-500/20'
-              }`}>
-                <span className={`text-3xl font-bold ${
-                  winner === 'X' ? 'text-emerald-400' :
-                  winner === 'O' ? 'text-red-400' :
-                  'text-amber-400'
-                }`}>
-                  {winner === 'X' ? 'X' : winner === 'O' ? 'O' : '='}
-                </span>
               </div>
 
-              <div className="text-center">
-                <h2 className={`text-2xl font-semibold mb-1 ${
-                  winner === 'X' ? 'text-emerald-400' :
-                  winner === 'O' ? 'text-red-400' :
-                  'text-amber-400'
-                }`}>
-                  {winner === 'X' && 'Vitória!'}
-                  {winner === 'O' && 'Derrota'}
-                  {isDraw && 'Empate'}
-                </h2>
-                <p className="text-gray-500 text-sm">
-                  {winner === 'X' && 'Você derrotou a IA'}
-                  {winner === 'O' && 'A IA foi mais rápida'}
-                  {isDraw && 'Ninguém venceu dessa vez'}
+              {/* Barra de Distribuição Fluida */}
+              <div className="mt-6 flex h-1.5 rounded-full overflow-hidden bg-white/5 shadow-inner">
+                <div 
+                  className="bg-emerald-400/80 transition-all duration-500 shadow-[0_0_8px_rgba(52,211,153,0.5)]"
+                  style={{ width: `${totalGames > 0 ? (scores.player / totalGames) * 100 : 33.3}%` }}
+                />
+                <div 
+                  className="bg-amber-400/60 transition-all duration-500"
+                  style={{ width: `${totalGames > 0 ? (scores.draws / totalGames) * 100 : 33.4}%` }}
+                />
+                <div 
+                  className="bg-rose-500/80 transition-all duration-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]"
+                  style={{ width: `${totalGames > 0 ? (scores.ai / totalGames) * 100 : 33.3}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Módulo de Histórico Recente / Dica Visual */}
+            <div className="p-4 bg-purple-500/[0.02] border-l-4 border-purple-500/40 rounded-r-xl flex items-start gap-3 border border-white/5">
+              <FaTrophy size={16} className="text-purple-400 mt-0.5 flex-shrink-0 drop-shadow-[0_0_6px_rgba(192,132,252,0.4)]" />
+              <div className="text-left">
+                <span className="text-[10px] font-bold text-purple-400/80 uppercase tracking-wider">Algoritmo de Análise</span>
+                <p className="text-gray-400 text-xs mt-0.5 leading-relaxed">
+                  A inteligência artificial opera através de previsões em árvore com base no método Minimax. Bloqueie as linhas adjacentes imediatamente.
                 </p>
               </div>
+            </div>
 
-              <div className="flex gap-3">
+          </div>
+
+          {/* COLUNA DIREITA: Tabuleiro de Alta Escala (Grid de Jogo) */}
+          <div className="lg:col-span-7 flex flex-col justify-center glass-card rounded-2xl p-6 md:p-8 shadow-2xl relative">
+            <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-[#050507]/50 border border-white/5 shadow-inner max-w-[550px] w-full mx-auto backdrop-blur-md">
+              {board.map((row, rowIndex) =>
+                row.map((cell, colIndex) => {
+                  const isWinning = isWinningCell(rowIndex, colIndex);
+                  const isLastMove = moveHistory.length > 0 && 
+                    moveHistory[moveHistory.length - 1].row === rowIndex && 
+                    moveHistory[moveHistory.length - 1].col === colIndex;
+
+                  return (
+                    <GridCell
+                      key={`${rowIndex}-${colIndex}`}
+                      cell={cell}
+                      rowIndex={rowIndex}
+                      colIndex={colIndex}
+                      isWinning={isWinning}
+                      isLastMove={isLastMove}
+                      gameOver={gameOver}
+                      currentPlayer={currentPlayer}
+                      onClick={handleCellClick}
+                    />
+                  );
+                })
+              )}
+            </div>
+
+            {/* Overlay Modular Acoplado de Fim de Jogo */}
+            {(winner || isDraw) && (
+              <div className="absolute inset-0 bg-[#0a0a0c]/90 backdrop-blur-md rounded-2xl flex flex-col items-center justify-center gap-5 p-6 z-20 animate-[fadeIn_0.25s_ease-out] border border-white/10 mx-px my-px">
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg ${
+                  winner === 'X' ? 'bg-emerald-500/10 border border-emerald-500/30' :
+                  winner === 'O' ? 'bg-rose-500/10 border border-rose-500/30' :
+                  'bg-amber-500/10 border border-amber-500/30'
+                }`}>
+                  <span className={`text-3xl font-black ${
+                    winner === 'X' ? 'text-emerald-400' :
+                    winner === 'O' ? 'text-rose-400' :
+                    'text-amber-400'
+                  }`}>
+                    {winner === 'X' ? 'X' : winner === 'O' ? 'O' : '='}
+                  </span>
+                </div>
+
+                <div className="text-center">
+                  <h2 className={`text-2xl font-black mb-1 tracking-wide ${
+                    winner === 'X' ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]' :
+                    winner === 'O' ? 'text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.3)]' :
+                    'text-amber-400'
+                  }`}>
+                    {winner === 'X' && 'CONEXÃO BEM-SUCEDIDA'}
+                    {winner === 'O' && 'ALVO BLOQUEADO'}
+                    {isDraw && 'EMPATE DETETADO'}
+                  </h2>
+                  <p className="text-gray-400 text-sm max-w-xs mx-auto leading-relaxed">
+                    {winner === 'X' && 'Conseguiu ultrapassar as barreiras lógicas do adversário.'}
+                    {winner === 'O' && 'O algoritmo da IA previu as suas jogadas finais.'}
+                    {isDraw && 'Nenhum dos sistemas conseguiu obter vantagem espacial.'}
+                  </p>
+                </div>
+
                 <button
                   onClick={resetGame}
-                  className="px-6 py-3 bg-white/10 hover:bg-white/15 border border-white/10 rounded-xl font-medium text-sm text-white/90 transition-all active:scale-95 flex items-center gap-2"
+                  className="px-8 py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white font-bold text-sm rounded-xl transition-all shadow-xl cursor-pointer active:scale-95 flex items-center gap-2"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  Jogar Novamente
+                  Reiniciar Vetores
                 </button>
               </div>
-            </div>
-          )}
-        </div>
+            )}
 
-        {/* Footer actions */}
-        <div className="mt-5 flex items-center justify-center gap-3">
-          <button
-            onClick={resetGame}
-            className="glass-btn px-4 py-2 rounded-lg text-xs text-gray-500 hover:text-gray-300 transition-all active:scale-95 flex items-center gap-1.5"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            Reiniciar
-          </button>
-          <button
-            onClick={resetScores}
-            className="glass-btn px-4 py-2 rounded-lg text-xs text-gray-500 hover:text-gray-300 transition-all active:scale-95 flex items-center gap-1.5"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-            Zerar Placar
-          </button>
+          </div>
+
         </div>
       </div>
 
+      {/* Estilos CSS Embutidos para manter a coerência visual */}
       <style jsx>{`
         .glass-card {
           background: rgba(255, 255, 255, 0.03);
@@ -420,33 +457,10 @@ export default function TicTacToe() {
             0 1px 2px rgba(0, 0, 0, 0.1),
             inset 0 1px 0 rgba(255, 255, 255, 0.04);
         }
-
-        .glass-btn {
-          background: rgba(255, 255, 255, 0.03);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-        }
-
-        .glass-btn:hover {
-          background: rgba(255, 255, 255, 0.06);
-          border-color: rgba(255, 255, 255, 0.1);
-        }
-
-        .glass-pill {
-          background: rgba(255, 255, 255, 0.03);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-          border: 1px solid rgba(255, 255, 255, 0.06);
-        }
-
-        @keyframes fade-in {
-          from { opacity: 0; transform: scale(0.95); }
+        
+        @keyframes scaleUp {
+          from { opacity: 0; transform: scale(0.7); }
           to { opacity: 1; transform: scale(1); }
-        }
-        .animate-fade-in {
-          animation: fade-in 0.3s ease-out;
         }
       `}</style>
     </div>

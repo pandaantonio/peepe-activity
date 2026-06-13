@@ -83,6 +83,10 @@ export default function HexagonGame() {
     const mount = mountRef.current
     if (!mount) return () => {}
 
+    // Coletores de lixo locais para limpeza cirúrgica da VRAM
+    const geometriesToDispose = []
+    const materialsToDispose = []
+
     while (mount.firstChild) mount.removeChild(mount.firstChild)
 
     const scene = new THREE.Scene()
@@ -91,8 +95,9 @@ export default function HexagonGame() {
 
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000)
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true })
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" })
     renderer.setSize(window.innerWidth, window.innerHeight)
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)) // Evita borrão em telas mobile de alta densidade
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = THREE.PCFSoftShadowMap
     mount.appendChild(renderer.domElement)
@@ -115,6 +120,8 @@ export default function HexagonGame() {
     // Hexagons
     const hexGeometry = new THREE.CylinderGeometry(HEX_RADIUS, HEX_RADIUS, HEX_HEIGHT, 6)
     hexGeometry.rotateY(Math.PI / 6)
+    geometriesToDispose.push(hexGeometry)
+
     const hexagons = generateHexGrid()
     const hexMeshes = []
     const hexMaterials = []
@@ -122,6 +129,7 @@ export default function HexagonGame() {
     hexagons.forEach((hex) => {
       const material = new THREE.MeshStandardMaterial({ color: hex.color, metalness: 0.15, roughness: 0.7 })
       hexMaterials.push(material)
+      materialsToDispose.push(material)
       const mesh = new THREE.Mesh(hexGeometry, material)
       mesh.position.set(hex.x, 0, hex.z)
       mesh.receiveShadow = true
@@ -137,9 +145,11 @@ export default function HexagonGame() {
     const robotDarkMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50, metalness: 0.5, roughness: 0.3 })
     const robotAccentMat = new THREE.MeshStandardMaterial({ color: 0xe74c3c, metalness: 0.3, roughness: 0.4 })
     const eyeMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc })
+    materialsToDispose.push(robotMat, robotDarkMat, robotAccentMat, eyeMat)
 
     // Torso
     const torsoGeo = new THREE.BoxGeometry(0.5, 0.6, 0.35)
+    geometriesToDispose.push(torsoGeo)
     const torso = new THREE.Mesh(torsoGeo, robotMat)
     torso.position.y = 0.9
     torso.castShadow = true
@@ -147,18 +157,21 @@ export default function HexagonGame() {
 
     // Peito / painel
     const chestGeo = new THREE.BoxGeometry(0.3, 0.2, 0.05)
+    geometriesToDispose.push(chestGeo)
     const chest = new THREE.Mesh(chestGeo, robotDarkMat)
     chest.position.set(0, 1.0, 0.18)
     robotGroup.add(chest)
 
     // Luz do peito
     const chestLightGeo = new THREE.SphereGeometry(0.06, 8, 8)
+    geometriesToDispose.push(chestLightGeo)
     const chestLight = new THREE.Mesh(chestLightGeo, eyeMat)
     chestLight.position.set(0, 1.0, 0.21)
     robotGroup.add(chestLight)
 
     // Cabeça
     const headGeo = new THREE.BoxGeometry(0.4, 0.35, 0.4)
+    geometriesToDispose.push(headGeo)
     const head = new THREE.Mesh(headGeo, robotMat)
     head.position.y = 1.45
     head.castShadow = true
@@ -166,6 +179,7 @@ export default function HexagonGame() {
 
     // Olhos
     const eyeGeo = new THREE.SphereGeometry(0.07, 8, 8)
+    geometriesToDispose.push(eyeGeo)
     const leftEye = new THREE.Mesh(eyeGeo, eyeMat)
     leftEye.position.set(-0.1, 1.45, 0.22)
     robotGroup.add(leftEye)
@@ -175,16 +189,19 @@ export default function HexagonGame() {
 
     // Antena
     const antennaGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.3, 6)
+    geometriesToDispose.push(antennaGeo)
     const antenna = new THREE.Mesh(antennaGeo, robotDarkMat)
     antenna.position.set(0, 1.8, 0)
     robotGroup.add(antenna)
     const antennaBallGeo = new THREE.SphereGeometry(0.05, 8, 8)
+    geometriesToDispose.push(antennaBallGeo)
     const antennaBall = new THREE.Mesh(antennaBallGeo, eyeMat)
     antennaBall.position.set(0, 1.95, 0)
     robotGroup.add(antennaBall)
 
     // Braços (com pivô para animação)
     const armGeo = new THREE.BoxGeometry(0.12, 0.5, 0.12)
+    geometriesToDispose.push(armGeo)
     
     const leftArmGroup = new THREE.Group()
     leftArmGroup.position.set(-0.35, 1.05, 0)
@@ -204,6 +221,7 @@ export default function HexagonGame() {
 
     // Pernas (com pivô para animação)
     const legGeo = new THREE.BoxGeometry(0.15, 0.5, 0.15)
+    geometriesToDispose.push(legGeo)
     
     const leftLegGroup = new THREE.Group()
     leftLegGroup.position.set(-0.15, 0.5, 0)
@@ -223,6 +241,7 @@ export default function HexagonGame() {
 
     // Pés
     const footGeo = new THREE.BoxGeometry(0.18, 0.08, 0.25)
+    geometriesToDispose.push(footGeo)
     const leftFoot = new THREE.Mesh(footGeo, robotAccentMat)
     leftFoot.position.set(0, -0.5, 0.05)
     leftLegGroup.add(leftFoot)
@@ -232,7 +251,6 @@ export default function HexagonGame() {
 
     // Glow do robô
     const robotGlow = new THREE.PointLight(0x00ffcc, 0.6, 5)
-    robotGlow.position.set(0, 1.2, 0)
     robotGroup.add(robotGlow)
 
     robotGroup.position.set(0, 0, 0)
@@ -240,7 +258,9 @@ export default function HexagonGame() {
 
     // Target ring
     const ringGeo = new THREE.RingGeometry(HEX_RADIUS * 0.5, HEX_RADIUS * 0.7, 32)
+    geometriesToDispose.push(ringGeo)
     const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, side: THREE.DoubleSide })
+    materialsToDispose.push(ringMat)
     const targetRing = new THREE.Mesh(ringGeo, ringMat)
     targetRing.rotation.x = -Math.PI / 2
     targetRing.position.y = 0.1
@@ -248,13 +268,14 @@ export default function HexagonGame() {
 
     // Arrow pointing to target
     const arrowGeo = new THREE.ConeGeometry(0.12, 0.4, 8)
+    geometriesToDispose.push(arrowGeo)
     const arrowMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 })
+    materialsToDispose.push(arrowMat)
     const arrow = new THREE.Mesh(arrowGeo, arrowMat)
     arrow.rotation.x = Math.PI
     arrow.position.y = 2.3
     robotGroup.add(arrow)
 
-    const raycaster = new THREE.Raycaster()
     const mouse = new THREE.Vector2()
 
     let currentRound = 0
@@ -298,8 +319,9 @@ export default function HexagonGame() {
       mouse.y = -(e.clientY / window.innerHeight) * 2 + 1
     }
 
-    // Joystick touch handlers
+    // Joystick touch handlers protegidos contra scroll acidental nativo do mobile
     const handleJoystickStart = (e) => {
+      if (e.cancelable) e.preventDefault()
       const touch = e.touches[0]
       const js = joystickRef.current
       js.active = true
@@ -315,6 +337,7 @@ export default function HexagonGame() {
     }
 
     const handleJoystickMove = (e) => {
+      if (e.cancelable) e.preventDefault()
       const js = joystickRef.current
       if (!js.active) return
       const touch = e.touches[0]
@@ -333,7 +356,7 @@ export default function HexagonGame() {
       setJoystickKnob({ x: dx, y: dy })
     }
 
-    const handleJoystickEnd = () => {
+    const handleJoystickEnd = (e) => {
       const js = joystickRef.current
       js.active = false
       js.dx = 0
@@ -342,14 +365,14 @@ export default function HexagonGame() {
       setJoystickKnob({ x: 0, y: 0 })
     }
 
-    window.addEventListener('keydown', handleKeyDown)
-    window.addEventListener('keyup', handleKeyUp)
-    window.addEventListener('mousedown', handleMouseDown)
-    window.addEventListener('mouseup', handleMouseUp)
-    window.addEventListener('mousemove', handleMouseMove)
-    window.addEventListener('touchstart', handleJoystickStart, { passive: false })
+    window.addEventListener('keydown', handleKeyDown, { passive: true })
+    window.addEventListener('keyup', handleKeyUp, { passive: true })
+    window.addEventListener('mousedown', handleMouseDown, { passive: true })
+    window.addEventListener('mouseup', handleMouseUp, { passive: true })
+    window.addEventListener('mousemove', handleMouseMove, { passive: true })
+    mount.addEventListener('touchstart', handleJoystickStart, { passive: false })
     window.addEventListener('touchmove', handleJoystickMove, { passive: false })
-    window.addEventListener('touchend', handleJoystickEnd)
+    window.addEventListener('touchend', handleJoystickEnd, { passive: true })
 
     function checkColorMatch() {
       const hex = getHexAtPosition(playerPos.x, playerPos.z, hexagons)
@@ -382,8 +405,8 @@ export default function HexagonGame() {
           robotGroup.position.y -= fallVelocity
           leftArmGroup.rotation.z = Math.sin(performance.now() * 0.01) * 2
           rightArmGroup.rotation.z = Math.cos(performance.now() * 0.01) * 2
-          leftLegGroup.rotation.x = Math.sin(performance.now() * 0.015) * 1
-          rightLegGroup.rotation.x = Math.cos(performance.now() * 0.015) * 1
+          leftLegGroup.rotation.x = Math.sin(performance.now() * 0.01) * 1
+          rightLegGroup.rotation.x = Math.cos(performance.now() * 0.01) * 1
           robotGroup.rotation.x += 0.02
           robotGroup.rotation.z += 0.01
           requestAnimationFrame(fallPlayer)
@@ -645,23 +668,32 @@ export default function HexagonGame() {
       camera.aspect = window.innerWidth / window.innerHeight
       camera.updateProjectionMatrix()
       renderer.setSize(window.innerWidth, window.innerHeight)
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)) // Garante nitidez consistente no resize/ajuste de orientação
     }
-    window.addEventListener('resize', handleResize)
+    window.addEventListener('resize', handleResize, { passive: true })
 
     animate()
 
     return () => {
-      cancelAnimationFrame(animFrameId)
+      // Cancela loops pendentes para evitar concorrência e loops duplicados
+      if (animFrameId) cancelAnimationFrame(animFrameId)
+      
+      // Limpeza estrita de todos os manipuladores com suas exatas assinaturas
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
       window.removeEventListener('mousedown', handleMouseDown)
       window.removeEventListener('mouseup', handleMouseUp)
       window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('touchstart', handleJoystickStart)
+      mount.removeEventListener('touchstart', handleJoystickStart)
       window.removeEventListener('touchmove', handleJoystickMove)
       window.removeEventListener('touchend', handleJoystickEnd)
       window.removeEventListener('resize', handleResize)
+      
+      // Desaloca explicitamente geometrias e materiais da VRAM
+      geometriesToDispose.forEach(g => g.dispose())
+      materialsToDispose.forEach(m => m.dispose())
       renderer.dispose()
+      
       if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement)
     }
   }, [])
@@ -679,10 +711,11 @@ export default function HexagonGame() {
     <>
       <Head>
         <title>Hexagon Color Rush</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, max-scale=1, user-scalable=no, viewport-fit=cover" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
       </Head>
 
-      <div className="relative w-full h-screen overflow-hidden bg-black select-none touch-none">
+      <div className="relative w-full h-screen overflow-hidden bg-black select-none touch-none pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
         <div ref={mountRef} className="absolute inset-0 cursor-crosshair" />
 
         {/* Botão Voltar pro Hub */}
