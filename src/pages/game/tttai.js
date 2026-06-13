@@ -25,12 +25,12 @@ const GridCell = memo(({ cell, rowIndex, colIndex, isWinning, isLastMove, gameOv
       `}
     >
       {cell === 'X' && (
-        <span className="text-emerald-400 drop-shadow-[0_0_12px_rgba(52,211,153,0.4)] animate-[scaleUp_0.18s_ease-out]">
+        <span className="text-emerald-400 drop-shadow-[0_0_12px_rgba(52,211,153,0.4)] animate-scaleUp">
           X
         </span>
       )}
       {cell === 'O' && (
-        <span className="text-rose-400 drop-shadow-[0_0_12px_rgba(244,63,94,0.4)] animate-[scaleUp_0.18s_ease-out]">
+        <span className="text-rose-400 drop-shadow-[0_0_12px_rgba(244,63,94,0.4)] animate-scaleUp">
           O
         </span>
       )}
@@ -88,8 +88,8 @@ export default function TicTacToe() {
   }, []);
 
   const minimax = useCallback((currentBoard, isMaximizing, depth) => {
-    const winLine = checkVictory('O', currentBoard);
-    if (winLine) return 10 - depth;
+    // BUG FIX 1: O Minimax precisa avaliar o estado terminal de forma estática antes de verificar empate.
+    if (checkVictory('O', currentBoard)) return 10 - depth;
     if (checkVictory('X', currentBoard)) return depth - 10;
     if (getEmptyCells(currentBoard).length === 0) return 0;
 
@@ -189,6 +189,7 @@ export default function TicTacToe() {
     setCurrentPlayer('O');
   }, [gameOver, currentPlayer, board, playMove]);
 
+  // BUG FIX 2: Sincronização do turno da IA baseada no estado atualizado do tabuleiro externo
   useEffect(() => {
     if (gameOver || currentPlayer !== 'O') return;
 
@@ -232,6 +233,7 @@ export default function TicTacToe() {
 
   const resetScores = () => {
     setScores({ player: 0, ai: 0, draws: 0 });
+    scoreLockRef.current = false;
   };
 
   const getStatusText = () => {
@@ -262,16 +264,16 @@ export default function TicTacToe() {
   return (
     <div className="min-h-screen bg-[#0a0a0c] text-[#ededed] select-none font-sans antialiased flex flex-col relative overflow-hidden">
 
-      {/* Background ambient luminoso idêntico ao Hub */}
+      {/* Background ambient luminoso */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-emerald-500/[0.02] rounded-full blur-[120px]" />
         <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-purple-500/[0.02] rounded-full blur-[100px]" />
       </div>
 
-      {/* Topbar Glassmorphism - Compacta em landscape */}
+      {/* Topbar Glassmorphism */}
       <div className="bg-white/[0.02] backdrop-blur-xl border-b border-white/5 shrink-0 z-10 relative landscape:py-2">
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 landscape:py-2 flex flex-col sm:flex-row gap-3 sm:gap-0 sm:items-center sm:justify-between landscape:flex-row landscape:gap-2 landscape:items-center landscape:justify-between">
-          {/* Botões de ação */}
+          
           <div className="flex items-center gap-2 order-1 sm:order-1 landscape:order-1">
             <button 
               onClick={handleExit} 
@@ -287,7 +289,6 @@ export default function TicTacToe() {
             </button>
           </div>
 
-          {/* Status Central */}
           <div className="flex-1 flex justify-center order-2 sm:order-2 landscape:order-2 landscape:flex-none landscape:justify-center">
             <div className="flex items-center gap-2 px-4 py-2 landscape:px-3 landscape:py-1.5 rounded-xl bg-white/[0.02] border border-white/10 text-xs sm:text-sm landscape:text-xs font-bold uppercase tracking-wider text-center max-w-[320px] sm:max-w-none landscape:max-w-none">
               <div className={`w-2 h-2 rounded-full flex-shrink-0 ${currentPlayer === 'X' && !gameOver ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'}`} />
@@ -295,7 +296,6 @@ export default function TicTacToe() {
             </div>
           </div>
 
-          {/* Reset Scores */}
           <button 
             onClick={resetScores}
             className="p-3 landscape:p-2 text-gray-500 hover:text-rose-400 bg-white/[0.01] hover:bg-rose-500/5 rounded-xl transition-all active:scale-95 cursor-pointer border border-white/5 flex items-center gap-2 text-xs font-bold uppercase tracking-wider order-3 sm:order-3 landscape:order-3 flex-shrink-0"
@@ -307,11 +307,11 @@ export default function TicTacToe() {
         </div>
       </div>
 
-      {/* Main Content Area - Landscape: sempre lado a lado */}
+      {/* Main Content Area */}
       <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-4 landscape:py-2 flex items-center justify-center z-10 relative overflow-hidden">
         <div className="w-full flex flex-col lg:grid lg:grid-cols-12 gap-4 lg:gap-8 landscape:flex-row landscape:gap-4 landscape:items-stretch landscape:justify-center landscape:h-full">
 
-          {/* COLUNA ESQUERDA: Placar - Landscape: compacta ao lado */}
+          {/* COLUNA ESQUERDA: Placar */}
           <div className="lg:col-span-5 flex flex-col justify-between glass-card rounded-2xl p-4 sm:p-6 landscape:p-3 shadow-2xl gap-4 landscape:gap-3 landscape:max-w-[200px] landscape:flex-shrink-0 landscape:justify-center landscape:self-stretch order-2 lg:order-1 landscape:order-1">
 
             <div className="flex flex-col gap-1 landscape:hidden">
@@ -319,7 +319,6 @@ export default function TicTacToe() {
               <h2 className="text-lg sm:text-xl font-black text-white">Consola de Desempenho</h2>
             </div>
 
-            {/* Placar Principal Premium - Ultra compacto em landscape */}
             <div className="bg-[#050507]/50 rounded-2xl p-4 sm:p-6 landscape:p-3 border border-white/5 shadow-inner backdrop-blur-md landscape:bg-transparent landscape:border-0 landscape:shadow-none landscape:p-0 landscape:backdrop-blur-none">
               <div className="grid grid-cols-3 gap-3 sm:gap-2 items-center text-center landscape:flex landscape:flex-col landscape:gap-4 landscape:items-stretch">
 
@@ -350,7 +349,7 @@ export default function TicTacToe() {
 
               </div>
 
-              {/* Barra de Distribuição Fluida - Escondida em landscape */}
+              {/* Barra de Distribuição Fluida */}
               <div className="mt-6 flex h-1.5 rounded-full overflow-hidden bg-white/5 shadow-inner landscape:hidden">
                 <div 
                   className="bg-emerald-400/80 transition-all duration-500 shadow-[0_0_8px_rgba(52,211,153,0.5)]"
@@ -367,7 +366,7 @@ export default function TicTacToe() {
               </div>
             </div>
 
-            {/* Módulo de Dica - Escondido em landscape */}
+            {/* Módulo de Dica */}
             <div className="p-4 bg-purple-500/[0.02] border-l-4 border-purple-500/40 rounded-r-xl flex items-start gap-3 border border-white/5 landscape:hidden">
               <FaTrophy size={16} className="text-purple-400 mt-0.5 flex-shrink-0 drop-shadow-[0_0_6px_rgba(192,132,252,0.4)]" />
               <div className="text-left text-xs">
@@ -380,9 +379,8 @@ export default function TicTacToe() {
 
           </div>
 
-          {/* COLUNA DIREITA: Tabuleiro - Foco principal */}
+          {/* COLUNA DIREITA: Tabuleiro */}
           <div className="lg:col-span-7 flex flex-col justify-center glass-card rounded-2xl p-4 sm:p-6 md:p-8 landscape:p-3 shadow-2xl relative order-1 lg:order-2 landscape:order-2 landscape:flex-1 landscape:max-w-[min(70vh,500px)] landscape:mx-auto">
-            {/* Container do Tabuleiro com proporção quadrada fluida */}
             <div className="w-full max-w-[min(92vw,550px)] landscape:max-w-[min(65vh,480px)] mx-auto">
               <div className="grid grid-cols-3 gap-2.5 sm:gap-3 md:gap-4 landscape:gap-2 p-3 sm:p-4 landscape:p-2 rounded-2xl bg-[#050507]/50 border border-white/5 shadow-inner backdrop-blur-md aspect-square">
                 {board.map((row, rowIndex) =>
@@ -410,9 +408,9 @@ export default function TicTacToe() {
               </div>
             </div>
 
-            {/* Overlay de Fim de Jogo - Totalmente Responsivo */}
+            {/* Overlay de Fim de Jogo */}
             {(winner || isDraw) && (
-              <div className="absolute inset-0 bg-[#0a0a0c]/95 backdrop-blur-md rounded-2xl flex flex-col items-center justify-center gap-4 landscape:gap-3 p-6 sm:p-8 landscape:p-4 z-20 animate-[fadeIn_0.25s_ease-out] border border-white/10">
+              <div className="absolute inset-0 bg-[#0a0a0c]/95 backdrop-blur-md rounded-2xl flex flex-col items-center justify-center gap-4 landscape:gap-3 p-6 sm:p-8 landscape:p-4 z-20 animate-fadeIn border border-white/10">
                 <div className={`w-20 h-20 sm:w-24 sm:h-24 landscape:w-14 landscape:h-14 rounded-3xl flex items-center justify-center shadow-2xl ${
                   winner === 'X' ? 'bg-emerald-500/10 border border-emerald-500/30' :
                   winner === 'O' ? 'bg-rose-500/10 border border-rose-500/30' :
@@ -458,7 +456,7 @@ export default function TicTacToe() {
         </div>
       </div>
 
-      {/* Estilos CSS Embutidos */}
+      {/* Estilos CSS Corrigidos */}
       <style jsx>{`
         .glass-card {
           background: rgba(255, 255, 255, 0.03);
@@ -470,8 +468,16 @@ export default function TicTacToe() {
             inset 0 1px 0 rgba(255, 255, 255, 0.04);
         }
 
+        .animate-scaleUp {
+          animation: scaleUp 0.18s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        .animate-fadeIn {
+          animation: fadeIn 0.25s ease-out forwards;
+        }
+
         @keyframes scaleUp {
-          from { opacity: 0; transform: scale(0.7); }
+          from { opacity: 0; transform: scale(0.6); }
           to { opacity: 1; transform: scale(1); }
         }
 
