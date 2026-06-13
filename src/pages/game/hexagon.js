@@ -18,6 +18,8 @@ const PLAYER_SPEED = 0.12
 const CAMERA_HEIGHT = 5
 const CAMERA_DISTANCE = 8
 
+const HEX_COLLISION_RADIUS = HEX_RADIUS * 0.85
+
 function getHexPosition(q, r) {
   const x = HEX_RADIUS * 1.75 * q
   const z = HEX_RADIUS * 1.5 * r + (q % 2 !== 0 ? HEX_RADIUS * 0.75 : 0)
@@ -57,6 +59,15 @@ function getHexAtPosition(x, z, hexagons) {
     }
   }
   return closest
+}
+
+function isPositionOnActiveHex(x, z, hexagons) {
+  const hex = getHexAtPosition(x, z, hexagons)
+  if (!hex) return false
+  const dx = x - hex.x
+  const dz = z - hex.z
+  const dist = Math.sqrt(dx * dx + dz * dz)
+  return dist <= HEX_COLLISION_RADIUS
 }
 
 export default function HexagonGame() {
@@ -514,12 +525,26 @@ export default function HexagonGame() {
       playerPos.x += moveX
       playerPos.z += moveZ
 
-      const maxDist = GRID_RADIUS * HEX_RADIUS * 2
-      const distFromCenter = Math.sqrt(playerPos.x * playerPos.x + playerPos.z * playerPos.z)
-      if (distFromCenter > maxDist) {
-        const angle = Math.atan2(playerPos.z, playerPos.x)
-        playerPos.x = Math.cos(angle) * maxDist
-        playerPos.z = Math.sin(angle) * maxDist
+      const nextX = playerPos.x + moveX
+      const nextZ = playerPos.z + moveZ
+
+      // Só move se o destino estiver sobre um hexágono ativo
+      if (isPositionOnActiveHex(nextX, nextZ, hexagons)) {
+        playerPos.x = nextX
+        playerPos.z = nextZ
+      } else {
+        // Tenta mover só em X
+        if (isPositionOnActiveHex(nextX, playerPos.z, hexagons)) {
+          playerPos.x = nextX
+        }
+        // Tenta mover só em Z
+        else if (isPositionOnActiveHex(playerPos.x, nextZ, hexagons)) {
+          playerPos.z = nextZ
+        }
+        // Se não conseguir em nenhuma direção, fica parado (não cai!)
+        else {
+          isWalking = false
+        }
       }
 
       robotGroup.position.x = playerPos.x
