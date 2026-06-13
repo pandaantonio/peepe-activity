@@ -9,68 +9,72 @@ const games = [
   {
     id: "hexagon",
     badge: "NOVIDADE",
-    title: "🤖 Hexagon Color Rush",
+    title: "Hexagon Color Rush",
     desc: "Controle um robô em um grid de hexágonos coloridos. 5 segundos para pisar na cor certa ou caia no abismo!",
     color: "purple",
-    icon: <FiZap size={28} />,
+    icon: <FiZap size={24} />,
     path: "/game/hexagon",
     banner: "/imgs/hexagon.png"
   },
   {
     id: "tttai",
     badge: "ESTRATÉGIA",
-    title: "🤖 Jogo da Velha (IA)",
+    title: "Jogo da Velha (IA)",
     desc: "Desafie uma IA baseada no algoritmo Minimax em um duelo tático de inteligência.",
     color: "emerald",
-    icon: <FaChess size={28} />,
+    icon: <FaChess size={24} />,
     path: "/game/tttai",
     banner: "/imgs/tttai.png"
   },
   {
     id: "tttmultiplayer",
     badge: "MULTIJOGADOR",
-    title: "⚔️ Jogo da Velha (Online)",
+    title: "Jogo da Velha (Online)",
     desc: "Crie uma sala privada ou entre usando um código para desafiar seus amigos em tempo real.",
     color: "purple",
-    icon: <FaUsers size={28} />,
+    icon: <FaUsers size={24} />,
     path: "/game/tttmultiplayer",
-    banner: "/imgs/tttmultiplayer.png" // Banner adicionado aqui
+    banner: "/imgs/tttmultiplayer.png"
   },
   {
     id: "hangman",
     badge: "LÓGICA",
-    title: "🪓 Jogo da Forca",
+    title: "Jogo da Forca",
     desc: "Decifre a palavra secreta gerada por IA antes que suas tentativas se esgotem.",
     color: "orange",
-    icon: <FaLock size={28} />,
-    path: "/game/hangman"
+    icon: <FaLock size={24} />,
+    path: "/game/hangman",
+    banner: "/imgs/hangman.png"
   },
   {
     id: "snake",
     badge: "ARCADE",
-    title: "🐍 Snake",
+    title: "Snake",
     desc: "Controle a serpente faminta, colete pontos e evite colidir com o próprio corpo.",
     color: "cyan",
-    icon: <FiZap size={28} />,
-    path: "/game/snake"
+    icon: <FiZap size={24} />,
+    path: "/game/snake",
+    banner: "/imgs/snake.png"
   },
   {
     id: "guess",
     badge: "MATEMÁTICA",
-    title: "🔮 Adivinhe o Número",
+    title: "Adivinhe o Número",
     desc: "Use a lógica para descobrir o número secreto com base nos feedbacks de temperatura.",
     color: "orange",
-    icon: <FiUser size={28} />,
-    path: "/game/guess"
+    icon: <FiUser size={24} />,
+    path: "/game/guess",
+    banner: "/imgs/guess.png"
   },
   {
     id: "2048",
     badge: "PUZZLE",
-    title: "🧩 2048",
+    title: "2048",
     desc: "Combine os números estrategicamente para alcançar o mítico bloco 2048.",
     color: "blue",
-    icon: <FiCpu size={28} />,
-    path: "/game/2048"
+    icon: <FiCpu size={24} />,
+    path: "/game/2048",
+    banner: "/imgs/2048.jpg"
   },
 ];
 
@@ -84,75 +88,69 @@ export default function GameHub() {
 
   const colorClasses = {
     emerald: {
-      border: "hover:border-emerald-500/50",
-      bg: "group-hover:bg-emerald-500/5",
-      text: "text-emerald-400",
-      button: "bg-emerald-500 hover:bg-emerald-600",
-      badge: "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+      accent: "text-emerald-400",
+      glow: "shadow-emerald-500/20",
+      border: "border-emerald-500/15",
+      badge: "bg-emerald-500/8 text-emerald-400 border-emerald-500/20"
     },
     cyan: {
-      border: "hover:border-cyan-500/50",
-      bg: "group-hover:bg-cyan-500/5",
-      text: "text-cyan-400",
-      button: "bg-cyan-500 hover:bg-cyan-600",
-      badge: "bg-cyan-500/10 border-cyan-500/20 text-cyan-400"
+      accent: "text-cyan-400",
+      glow: "shadow-cyan-500/20",
+      border: "border-cyan-500/15",
+      badge: "bg-cyan-500/8 text-cyan-400 border-cyan-500/20"
     },
     purple: {
-      border: "hover:border-purple-500/50",
-      bg: "group-hover:bg-purple-500/5",
-      text: "text-purple-400",
-      button: "bg-purple-500 hover:bg-purple-600",
-      badge: "bg-purple-500/10 border-purple-500/20 text-purple-400"
+      accent: "text-purple-400",
+      glow: "shadow-purple-500/20",
+      border: "border-purple-500/15",
+      badge: "bg-purple-500/8 text-purple-400 border-purple-500/20"
     },
     orange: {
-      border: "hover:border-orange-500/50",
-      bg: "group-hover:bg-orange-500/5",
-      text: "text-orange-400",
-      button: "bg-orange-500 hover:bg-orange-600",
-      badge: "bg-orange-500/10 border-orange-500/20 text-orange-400"
+      accent: "text-orange-400",
+      glow: "shadow-orange-500/20",
+      border: "border-orange-500/15",
+      badge: "bg-orange-500/8 text-orange-400 border-orange-500/20"
     },
     blue: {
-      border: "hover:border-blue-500/50",
-      bg: "group-hover:bg-blue-500/5",
-      text: "text-blue-400",
-      button: "bg-blue-500 hover:bg-blue-600",
-      badge: "bg-blue-500/10 border-blue-500/20 text-blue-400"
+      accent: "text-blue-400",
+      glow: "shadow-blue-500/20",
+      border: "border-blue-500/15",
+      badge: "bg-blue-500/8 text-blue-400 border-blue-500/20"
     },
     indigo: {
-      border: "hover:border-indigo-500/50",
-      bg: "group-hover:bg-indigo-500/5",
-      text: "text-indigo-400",
-      button: "bg-indigo-500 hover:bg-indigo-600",
-      badge: "bg-indigo-500/10 border-indigo-500/20 text-indigo-400"
+      accent: "text-indigo-400",
+      glow: "shadow-indigo-500/20",
+      border: "border-indigo-500/15",
+      badge: "bg-indigo-500/8 text-indigo-400 border-indigo-500/20"
     }
   };
 
   const displayItems = [...games];
-  
+
   if (isDiscordFrame && isAuthenticated) {
     displayItems.push({
       id: "discord-dashboard",
       badge: "PAINEL",
-      title: "👑 Gerenciar Servidores",
+      title: "Gerenciar Servidores",
       desc: "Configure o bot Peepe, gerencie permissões e visualize as estatísticas dos seus servidores do Discord.",
       color: "indigo",
-      icon: <FaDiscord size={28} />,
+      icon: <FaDiscord size={24} />,
       path: "/dashboard"
     });
   }
 
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-[#0f0f12]">
-        <div className="pt-16 pb-16 px-6 max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="w-32 h-8 bg-white/5 rounded-full mx-auto mb-6 animate-pulse" />
-            <div className="w-96 h-16 bg-white/5 rounded-xl mx-auto mb-4 animate-pulse" />
-            <div className="w-64 h-6 bg-white/5 rounded-lg mx-auto animate-pulse" />
+      <div className="min-h-screen bg-[#0a0a0c]">
+        <div className="pt-24 pb-16 px-6 max-w-6xl mx-auto">
+          <div className="text-center mb-10">
+            <div className="w-28 h-7 bg-white/5 rounded-full mx-auto mb-8 animate-pulse" />
+            <div className="w-80 h-14 bg-white/5 rounded-2xl mx-auto mb-4 animate-pulse" />
+            <div className="w-56 h-5 bg-white/5 rounded-lg mx-auto animate-pulse" />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="h-64 bg-white/5 rounded-2xl animate-pulse" />
+              <div key={i} className="h-72 bg-white/5 rounded-2xl animate-pulse" />
             ))}
           </div>
         </div>
@@ -161,35 +159,31 @@ export default function GameHub() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f0f12]">
-      <div className="fixed inset-0 bg-gradient-to-br from-emerald-500/[0.02] via-transparent to-purple-500/[0.02] pointer-events-none" />
-
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl animate-pulse animation-delay-1000" />
+    <div className="min-h-screen bg-[#0a0a0c] relative overflow-hidden">
+      {/* Background ambient */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/3 w-[600px] h-[600px] bg-emerald-500/[0.03] rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-purple-500/[0.03] rounded-full blur-[100px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-white/[0.01] rounded-full blur-[150px]" />
       </div>
 
-      <div className="relative pt-16 pb-16 px-6 max-w-7xl mx-auto">
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 mb-6 animate-fade-in">
-            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-            <span className="text-xs text-gray-400 uppercase tracking-wider font-mono">🕹️ Game Hub</span>
-          </div>
-
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-4 tracking-tight py-4 flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up">
-            <span className="text-white">Biblioteca de </span>
-            <span className="liquid-glass text-emerald-400 px-6 py-2 rounded-2xl relative overflow-hidden inline-block">
+      <div className="relative pt-24 pb-16 px-6 max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-10">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-semibold mb-3 tracking-tight animate-fade-in-up">
+            <span className="text-white/90">Biblioteca de </span>
+            <span className="liquid-glass-title px-5 py-1.5 rounded-2xl inline-block">
               Jogos
             </span>
           </h1>
 
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto animate-fade-in-up animation-delay-100">
-            Escolha seu jogo favorito e desafie suas habilidades em experiências únicas
+          <p className="text-gray-500 text-base max-w-lg mx-auto animate-fade-in-up animation-delay-100">
+            Escolha seu jogo favorito e desafie suas habilidades
           </p>
         </div>
 
         {/* Grid de Jogos */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {displayItems.map((item, index) => {
             const colors = colorClasses[item.color];
 
@@ -198,50 +192,46 @@ export default function GameHub() {
                 key={item.id}
                 href={item.path}
                 className="group animate-fade-in-up"
-                style={{ animationDelay: `${150 + index * 50}ms` }}
+                style={{ animationDelay: `${100 + index * 60}ms` }}
               >
-                <div className={`relative bg-white/5 border border-white/10 rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl ${colors.border}`}>
-                  <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${colors.bg}`} />
+                <div className="glass-card rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-white/5 group-hover:border-white/15">
 
                   {item.banner && (
-                    <div className="w-full relative border-b border-white/10 bg-black/20">
-                      <img 
-                        src={item.banner} 
-                        alt={item.title} 
-                        width={1506}
-                        height={1024}
-                        className="w-full h-auto block transition-transform duration-500 group-hover:scale-[1.02]"
+                    <div className="w-full relative overflow-hidden">
+                      <img
+                        src={item.banner}
+                        alt={item.title}
+                        className="w-full h-44 object-cover block transition-all duration-700 group-hover:scale-105 group-hover:brightness-110"
                       />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0c] via-[#0a0a0c]/40 to-transparent" />
                     </div>
                   )}
 
-                  <div className="relative p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className={`px-2 py-1 rounded-md ${colors.badge}`}>
-                        <span className="text-[10px] font-bold tracking-wider">
-                          {item.badge}
-                        </span>
+                  <div className="relative p-5 -mt-8">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className={`px-2.5 py-1 rounded-md border text-[10px] font-semibold tracking-wider uppercase ${colors.badge}`}>
+                        {item.badge}
                       </div>
-                      <div className={`${colors.text} transition-all duration-300 group-hover:scale-110 group-hover:rotate-3`}>
+                      <div className={`${colors.accent} opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110`}>
                         {item.icon}
                       </div>
                     </div>
 
-                    <h2 className="text-xl font-bold text-white mb-2 group-hover:translate-x-1 transition-transform duration-300">
+                    <h2 className="text-lg font-semibold text-white/90 mb-2 group-hover:text-white transition-colors duration-300">
                       {item.title}
                     </h2>
 
-                    <p className="text-gray-400 text-sm leading-relaxed mb-5 line-clamp-2">
+                    <p className="text-gray-500 text-sm leading-relaxed mb-4 line-clamp-2">
                       {item.desc}
                     </p>
 
-                    <div className="flex items-center justify-between pt-3 border-t border-white/10">
-                      <span className="text-xs text-gray-500 font-mono">
-                        {item.id === "discord-dashboard" ? "⚙️ Clique para configurar" : "🎮 Clique para jogar"}
+                    <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                      <span className="text-[11px] text-gray-600 font-medium">
+                        {item.id === "discord-dashboard" ? "Configurar" : "Jogar agora"}
                       </span>
-                      <div className={`w-9 h-9 rounded-full ${colors.button} flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:translate-x-1 shadow-lg`}>
-                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                      <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center transition-all duration-300 group-hover:bg-white/10 group-hover:border-white/20 group-hover:translate-x-0.5">
+                        <svg className="w-3.5 h-3.5 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                       </div>
                     </div>
@@ -252,35 +242,45 @@ export default function GameHub() {
           })}
         </div>
 
-        {/* Rodapé */}
-        <div className="mt-20 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-gray-600 text-xs">
-            Desenvolvido com <span className="text-red-400">❤️</span> para a comunidade Peepe
-          </p>
-        </div>
       </div>
 
       <style jsx>{`
-        .liquid-glass {
-          background: linear-gradient(135deg, rgba(52, 211, 153, 0.12), rgba(16, 185, 129, 0.04));
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-          border: 1px solid rgba(52, 211, 153, 0.25);
+        .glass-card {
+          background: rgba(255, 255, 255, 0.03);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.06);
           box-shadow: 
-            inset 0 1px 2px rgba(255, 255, 255, 0.15),
-            0 8px 32px 0 rgba(0, 0, 0, 0.37);
-          text-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
+            0 1px 2px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.04);
         }
-        
-        .liquid-glass::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 50%;
-          background: linear-gradient(to bottom, rgba(255, 255, 255, 0.08), transparent);
-          pointer-events: none;
+
+        .glass-card:hover {
+          background: rgba(255, 255, 255, 0.05);
+          box-shadow: 
+            0 20px 40px rgba(0, 0, 0, 0.3),
+            0 0 0 1px rgba(255, 255, 255, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        }
+
+        .glass-pill {
+          background: rgba(255, 255, 255, 0.03);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border: 1px solid rgba(255, 255, 255, 0.06);
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        }
+
+        .liquid-glass-title {
+          background: linear-gradient(135deg, rgba(52, 211, 153, 0.08), rgba(16, 185, 129, 0.02));
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border: 1px solid rgba(52, 211, 153, 0.15);
+          box-shadow: 
+            inset 0 1px 1px rgba(255, 255, 255, 0.08),
+            0 4px 24px rgba(16, 185, 129, 0.08);
+          color: rgba(52, 211, 153, 0.9);
+          text-shadow: 0 0 20px rgba(52, 211, 153, 0.2);
         }
 
         @keyframes fade-in {
@@ -290,7 +290,7 @@ export default function GameHub() {
         @keyframes fade-in-up {
           from {
             opacity: 0;
-            transform: translateY(20px);
+            transform: translateY(16px);
           }
           to {
             opacity: 1;
@@ -298,17 +298,14 @@ export default function GameHub() {
           }
         }
         .animate-fade-in {
-          animation: fade-in 0.6s ease-out;
+          animation: fade-in 0.5s ease-out;
         }
         .animate-fade-in-up {
-          animation: fade-in-up 0.6s ease-out forwards;
+          animation: fade-in-up 0.5s ease-out forwards;
           opacity: 0;
         }
         .animation-delay-100 {
           animation-delay: 100ms;
-        }
-        .animation-delay-1000 {
-          animation-delay: 1000ms;
         }
         .line-clamp-2 {
           display: -webkit-box;
