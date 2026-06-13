@@ -13,36 +13,43 @@ export function DiscordProvider({ children }) {
 
   useEffect(() => {
     async function init() {
-      // Evita rodar no Server-Side Rendering (SSR) do Next.js
       if (typeof window === 'undefined') return;
 
-      try {
-        const params = new URLSearchParams(window.location.search);
-        const frameId = params.get('frame_id');
-        
-        // Forma robusta de detectar se está no cliente incorporado do Discord
-        const isFrame = !!frameId || 
-                        window.location.ancestorOrigins?.contains('https://discord.com') ||
-                        (typeof navigator !== 'undefined' && navigator.userAgent.includes('Discord'));
-        
-        setIsDiscordFrame(isFrame);
-        
-        if (!isFrame) {
-          console.log("Modo standalone - Navegador Web convencional ativo");
-          setLoading(false);
-          return; 
-        }
+      // 1. Identificação imediata do ambiente
+      const params = new URLSearchParams(window.location.search);
+      const frameId = params.get('frame_id');
+      const isFrame = !!frameId || 
+                      window.location.ancestorOrigins?.contains('https://discord.com') ||
+                      (typeof navigator !== 'undefined' && navigator.userAgent.includes('Discord'));
+      
+      setIsDiscordFrame(isFrame);
+      
+      if (!isFrame) {
+        console.log("Modo standalone - Navegador Web convencional ativo");
+        setLoading(false);
+        return; 
+      }
 
+      // 2. Inicialização protegida do SDK do Discord
+      try {
         console.log('Ambiente Discord detectado. Inicializando SDK...');
+        
+        // Garante que a importação ou chamada do método não vai quebrar o fluxo global
         const sdk = getDiscordSDK();
+        if (!sdk) {
+          throw new Error("Não foi possível instanciar o Discord SDK.");
+        }
         setDiscordSdk(sdk);
         
-        // Nota: Certifique-se de que dentro de setupDiscordSdk() você chama await sdk.ready()
+        // Executa a autenticação configurada na sua lib
         const userAuth = await setupDiscordSdk();
         setAuth(userAuth);
+        
       } catch (err) {
-        console.error("Erro crítico ao inicializar Discord:", err);
-        setError(err.message);
+        // Se houver qualquer falha de token, handshake ou configuração no portal, 
+        // o app não fica travado em branco. Ele loga o erro e libera a renderização.
+        console.error("Erro crítico contornado na inicialização do Discord:", err);
+        setError(err.message || String(err));
       } finally {
         setLoading(false);
       }
@@ -58,7 +65,7 @@ export function DiscordProvider({ children }) {
     error,
     isDiscordFrame,
     isAuthenticated: !!(auth && auth.user),
-    isContextReady: !loading // Nova flag crucial para segurar a UI enquanto decide o ambiente
+    isContextReady: !loading // Libera a renderização da página mesmo se houve um erro (fallback)
   };
 
   return (
