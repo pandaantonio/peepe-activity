@@ -22,11 +22,7 @@ export default function Hangman() {
   const [streak, setStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
   
-  // Dimensões dinâmicas do Canvas calculadas pelo ResizeObserver
-  const [canvasDimensions, setCanvasDimensions] = useState({ width: 280, height: 240 });
-  
   const canvasRef = useRef(null);
-  const canvasContainerRef = useRef(null);
   const maxMistakes = 6;
 
   const letters = useMemo(() => 'abcdefghijklmnopqrstuvwxyz'.split(''), []);
@@ -39,75 +35,70 @@ export default function Hangman() {
     router.push('/');
   };
 
-  // Desenho adaptado, responsivo e vetorizado baseado no tamanho atual do canvas
-  const drawHangman = useCallback((mistakeCount, currentWidth = canvasDimensions.width, currentHeight = canvasDimensions.height) => {
+  // Desenho adaptado com estilo neon sintonizado ao Hub
+  const drawHangman = useCallback((mistakeCount) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     
     const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, currentWidth, currentHeight);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Proporções baseadas na escala dinâmica (Design Base: 240x240)
-    const scaleX = currentWidth / 240;
-    const scaleY = currentHeight / 240;
-    const scaleMin = Math.min(scaleX, scaleY);
-    
-    ctx.lineWidth = Math.max(3, 4 * scaleMin);
+    ctx.lineWidth = 4;
     ctx.lineCap = 'round';
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)'; 
     
-    // Suporte e Poste da Forca estruturados proporcionalmente
+    // Suporte e Poste da Forca
     ctx.beginPath();
-    ctx.moveTo(40 * scaleX, 220 * scaleY); ctx.lineTo(200 * scaleX, 220 * scaleY);
-    ctx.moveTo(80 * scaleX, 220 * scaleY); ctx.lineTo(80 * scaleX, 25 * scaleY);
-    ctx.moveTo(80 * scaleX, 25 * scaleY); ctx.lineTo(160 * scaleX, 25 * scaleY);
-    ctx.moveTo(160 * scaleX, 25 * scaleY); ctx.lineTo(160 * scaleX, 55 * scaleY);
+    ctx.moveTo(40, 220); ctx.lineTo(200, 220);
+    ctx.moveTo(80, 220); ctx.lineTo(80, 25);
+    ctx.moveTo(80, 25); ctx.lineTo(160, 25);
+    ctx.moveTo(160, 25); ctx.lineTo(160, 55);
     ctx.stroke();
     
-    // Configurações Estéticas do Neon Dinâmico
+    // Altera a cor do boneco dinamicamente baseado no estado
     ctx.strokeStyle = mistakeCount >= maxMistakes ? '#ef4444' : '#34d399';
-    ctx.shadowBlur = 12 * scaleMin;
-    ctx.shadowColor = mistakeCount >= maxMistakes ? 'rgba(239, 68, 68, 0.5)' : 'rgba(52, 211, 153, 0.4)';
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = mistakeCount >= maxMistakes ? 'rgba(239, 68, 68, 0.4)' : 'rgba(52, 211, 153, 0.3)';
     
     // Cabeça
     if (mistakeCount >= 1) {
       ctx.beginPath();
-      ctx.arc(160 * scaleX, 75 * scaleY, 20 * scaleMin, 0, Math.PI * 2);
+      ctx.arc(160, 75, 20, 0, Math.PI * 2);
       ctx.stroke();
     }
     // Corpo
     if (mistakeCount >= 2) {
       ctx.beginPath();
-      ctx.moveTo(160 * scaleX, 95 * scaleY); ctx.lineTo(160 * scaleX, 155 * scaleY);
+      ctx.moveTo(160, 95); ctx.lineTo(160, 155);
       ctx.stroke();
     }
     // Braço Esquerdo
     if (mistakeCount >= 3) {
       ctx.beginPath();
-      ctx.moveTo(160 * scaleX, 105 * scaleY); ctx.lineTo(125 * scaleX, 125 * scaleY);
+      ctx.moveTo(160, 105); ctx.lineTo(125, 125);
       ctx.stroke();
     }
     // Braço Direito
     if (mistakeCount >= 4) {
       ctx.beginPath();
-      ctx.moveTo(160 * scaleX, 105 * scaleY); ctx.lineTo(195 * scaleX, 125 * scaleY);
+      ctx.moveTo(160, 105); ctx.lineTo(195, 125);
       ctx.stroke();
     }
     // Perna Esquerda
     if (mistakeCount >= 5) {
       ctx.beginPath();
-      ctx.moveTo(160 * scaleX, 155 * scaleY); ctx.lineTo(125 * scaleX, 195 * scaleY);
+      ctx.moveTo(160, 155); ctx.lineTo(125, 195);
       ctx.stroke();
     }
     // Perna Direita
     if (mistakeCount >= 6) {
       ctx.beginPath();
-      ctx.moveTo(160 * scaleX, 155 * scaleY); ctx.lineTo(195 * scaleX, 195 * scaleY);
+      ctx.moveTo(160, 155); ctx.lineTo(195, 195);
       ctx.stroke();
     }
     
     ctx.shadowBlur = 0;
-  }, [canvasDimensions]);
+  }, []);
 
   const resetGame = useCallback((word) => {
     setGuessedLetters([]);
@@ -187,28 +178,6 @@ export default function Hangman() {
     }
   }, [gameActive, guessedLetters, secretWord, mistakes, drawHangman, streak, bestStreak, letters, loading]);
 
-  // Listener para redimensionamento em tempo real do Canvas (Evita quebra de aspecto)
-  useEffect(() => {
-    if (!canvasContainerRef.current) return;
-
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (let entry of entries) {
-        const { width, height } = entry.contentRect;
-        // Normaliza para manter proporções de caixa consistentes
-        const computedWidth = width;
-        const computedHeight = height > 0 ? height : width * 0.85; 
-        
-        setCanvasDimensions({ width: computedWidth, height: computedHeight });
-        // Redesenha imediatamente com os novos bounding rects
-        drawHangman(mistakes, computedWidth, computedHeight);
-      }
-    });
-
-    resizeObserver.observe(canvasContainerRef.current);
-    return () => resizeObserver.disconnect();
-  }, [drawHangman, mistakes]);
-
-  // Gerenciamento global de Input de Teclado Físico
   useEffect(() => {
     const handleKeyDown = (event) => {
       const key = event.key.toLowerCase();
@@ -229,7 +198,6 @@ export default function Hangman() {
     fetchWord();
   }, [fetchWord]);
 
-  // Renderização otimizada dos caracteres ocultos com tipografia fluida
   const getDisplayWord = () => {
     return secretWord.split('').map((char, i) => {
       const normalizedChar = normalizeString(char);
@@ -238,8 +206,8 @@ export default function Hangman() {
       return (
         <span 
           key={i} 
-          className={`char-slot font-mono font-black transition-all duration-300 border-b-[max(3px,0.4vw)] pb-1 px-1 sm:px-2
-            ${isRevealed ? 'text-emerald-400 border-transparent scale-100 drop-shadow-[0_0_12px_rgba(52,211,153,0.5)]' : 'text-transparent border-white/20 scale-95'}
+          className={`mx-1.5 text-3xl md:text-5xl font-mono font-black transition-all duration-300 border-b-4 pb-2 px-2
+            ${isRevealed ? 'text-emerald-400 border-transparent scale-100 drop-shadow-[0_0_12px_rgba(52,211,153,0.4)]' : 'text-transparent border-white/20 scale-95'}
           `}
         >
           {isRevealed ? char.toUpperCase() : '_'}
@@ -249,101 +217,99 @@ export default function Hangman() {
   };
 
   return (
-    <div className="game-container bg-[#0a0a0c] text-[#ededed] select-none font-sans antialiased flex flex-col relative overflow-hidden w-full min-h-screen h-screen">
+    <div className="min-h-screen bg-[#0a0a0c] text-[#ededed] select-none font-sans antialiased flex flex-col relative overflow-hidden">
       
-      {/* Background ambient iluminado adaptado para cobrir superfícies Ultra-Wide */}
+      {/* Background ambient iluminado herdado da Home */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-0 left-1/4 w-[50vw] h-[50vw] max-w-[800px] bg-emerald-500/[0.03] rounded-full blur-[140px]" />
-        <div className="absolute bottom-0 right-1/4 w-[45vw] h-[45vw] max-w-[700px] bg-purple-500/[0.03] rounded-full blur-[120px]" />
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-emerald-500/[0.02] rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-purple-500/[0.02] rounded-full blur-[100px]" />
       </div>
 
-      {/* Topbar Fluid Glassmorphism */}
-      <header className="bg-white/[0.02] backdrop-blur-xl border-b border-white/5 shrink-0 z-10 relative h-[10vh] min-h-[64px] max-h-[90px] flex items-center">
-        <div className="w-full h-full max-w-[95vw] mx-auto px-4 sm:px-6 flex justify-between items-center gap-4">
+      {/* Topbar Glassmorphism de ponta a ponta */}
+      <div className="bg-white/[0.02] backdrop-blur-xl border-b border-white/5 shrink-0 z-10 relative">
+        <div className="w-full max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <button 
               onClick={handleExit} 
-              aria-label="Voltar para o menu principal"
-              className="p-2 sm:p-3 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 focus:bg-white/10 rounded-xl transition-all active:scale-95 cursor-pointer border border-white/5 outline-none focus:ring-2 focus:ring-emerald-400/50"
+              className="p-3 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-all active:scale-95 cursor-pointer border border-white/5"
             >
-              <FaArrowLeft className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+              <FaArrowLeft size={18} />
             </button>
             <button 
               onClick={handleRestart} 
-              aria-label="Reiniciar partida atual"
-              className="p-2 sm:p-3 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 focus:bg-white/10 rounded-xl transition-all active:scale-95 cursor-pointer border border-white/5 outline-none focus:ring-2 focus:ring-emerald-400/50"
+              className="p-3 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-all active:scale-95 cursor-pointer border border-white/5"
             >
-              <FaRedo className="w-[14px] h-[14px] sm:w-4 sm:h-4" />
+              <FaRedo size={16} />
             </button>
           </div>
           
-          <div className="flex gap-2 sm:gap-4 items-center bg-white/[0.02] px-3 sm:px-5 py-1.5 sm:py-2 rounded-xl border border-white/10 text-xs sm:text-sm backdrop-blur-md shadow-lg">
-            <div className="flex items-center gap-1.5 sm:gap-2 border-r border-white/10 pr-2 sm:pr-4">
-              <FaTrophy className="text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.4)] w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="text-gray-400 hidden xs:inline">Pontos:</span> 
-              <strong className="text-white font-bold">{score}</strong>
+          <div className="flex gap-4 items-center bg-white/[0.02] px-5 py-2 rounded-xl border border-white/10 text-sm backdrop-blur-md">
+            <div className="flex items-center gap-2 border-r border-white/10 pr-4">
+              <FaTrophy className="text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.4)]" size={15} />
+              <span className="text-gray-400">Pontos: <strong className="text-white font-bold">{score}</strong></span>
             </div>
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <FaFire className={streak > 0 ? "text-orange-400 animate-pulse drop-shadow-[0_0_6px_rgba(251,146,60,0.4)] w-3.5 h-3.5 sm:w-4 sm:h-4" : "text-gray-500 w-3.5 h-3.5 sm:w-4 sm:h-4"} />
-              <span className="text-gray-400 hidden xs:inline">Combo:</span> 
-              <strong className="text-white font-bold">{streak}x</strong>
+            <div className="flex items-center gap-2">
+              <FaFire className={streak > 0 ? "text-orange-400 animate-pulse drop-shadow-[0_0_6px_rgba(251,146,60,0.4)]" : "text-gray-500"} size={15} />
+              <span className="text-gray-400">Combo: <strong className="text-white font-bold">{streak}x</strong></span>
             </div>
           </div>
 
-          <div className="text-right flex flex-col justify-center">
-            <span className="text-gray-500 text-[10px] font-bold uppercase tracking-wider block leading-none mb-1">Erros</span>
-            <span className="text-rose-500 font-mono text-xl sm:text-2xl font-black drop-shadow-[0_0_8px_rgba(244,63,94,0.3)] leading-none">{mistakes}/{maxMistakes}</span>
+          <div className="text-right">
+            <span className="text-gray-500 text-xs font-bold uppercase tracking-wider block">Erros</span>
+            <span className="text-rose-500 font-mono text-2xl font-black drop-shadow-[0_0_8px_rgba(244,63,94,0.3)]">{mistakes}/{maxMistakes}</span>
           </div>
         </div>
-      </header>
+      </div>
 
-      {/* Main Gameplay Area - Preenchimento Dinâmico 90vh */}
-      <main className="flex-1 w-full max-w-[95vw] mx-auto px-2 sm:px-4 lg:px-6 py-3 sm:py-6 flex items-center justify-center z-10 relative h-[90vh] overflow-hidden">
+      {/* Main Content Area - Layout Bilateral Expandido */}
+      <div className="flex-1 w-full max-w-7xl mx-auto px-4 md:px-8 py-6 flex items-center justify-center z-10 relative">
         
         {loading ? (
-          <div className="flex flex-col items-center gap-4 py-20 animate-fade-in" role="status" aria-live="polite">
-            <div className="w-12 h-12 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
-            <div className="text-gray-400 font-semibold tracking-wide text-sm sm:text-base">Descriptografando base de dados...</div>
+          <div className="flex flex-col items-center gap-3 py-20">
+            <div className="w-10 h-10 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
+            <div className="text-gray-500 font-semibold tracking-wide">Descriptografando base de dados...</div>
           </div>
         ) : (
-          <div className="w-full h-full grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-stretch container-layout">
+          <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
             
-            {/* PAINEL ESQUERDO: Gráficos, Dica e Palavra Secreta */}
-            <section className="lg:col-span-5 flex flex-col justify-between glass-card rounded-2xl p-4 sm:p-5 lg:p-6 shadow-2xl gap-3 sm:gap-4 overflow-hidden h-full">
+            {/* COLUNA ESQUERDA: Display Visual, Canvas e Dica */}
+            <div className="lg:col-span-5 flex flex-col justify-between glass-card rounded-2xl p-6 shadow-2xl gap-6">
               
-              {/* Card de Dica Fluida */}
-              <div className="px-4 py-3 bg-emerald-500/[0.02] border-l-4 border-emerald-400/60 rounded-r-xl flex items-start gap-3 shadow-inner border border-white/5 shrink-0">
-                <FaLightbulb size={16} className="text-emerald-400 mt-0.5 flex-shrink-0 drop-shadow-[0_0_8px_rgba(52,211,153,0.4)]" />
-                <div className="text-left overflow-y-auto max-h-[8vh]">
-                  <span className="text-[10px] font-bold text-emerald-400/80 uppercase tracking-wider block">Módulo de Dica</span>
-                  <p className="text-gray-300 text-xs sm:text-sm lg:text-base font-medium mt-0.5 leading-relaxed">{hint}</p>
+              {/* Box da Dica - Estilo Liquid Glass */}
+              <div className="px-5 py-4 bg-emerald-500/[0.02] border-l-4 border-emerald-400/60 rounded-r-xl flex items-start gap-3 shadow-inner border border-white/5">
+                <FaLightbulb size={18} className="text-emerald-400 mt-0.5 flex-shrink-0 drop-shadow-[0_0_8px_rgba(52,211,153,0.4)]" />
+                <div className="text-left">
+                  <span className="text-[10px] font-bold text-emerald-400/80 uppercase tracking-wider">Módulo de Dica</span>
+                  <p className="text-gray-300 text-base font-medium mt-0.5 leading-relaxed">{hint}</p>
                 </div>
               </div>
 
-              {/* Box do Canvas com auto-escala */}
-              <div ref={canvasContainerRef} className="flex-1 flex justify-center items-center w-full min-h-[140px] max-h-[35vh] lg:max-h-full bg-[#050507]/60 p-3 rounded-xl border border-white/5 shadow-inner backdrop-blur-md relative overflow-hidden">
-                <canvas
-                  ref={canvasRef}
-                  width={canvasDimensions.width}
-                  height={canvasDimensions.height}
-                  className="block opacity-95 transition-all duration-150"
-                />
+              {/* Canvas da Forca */}
+              <div className="flex justify-center my-auto">
+                <div className="bg-[#050507]/60 p-4 rounded-xl border border-white/5 shadow-inner w-full max-w-[280px] flex justify-center backdrop-blur-md">
+                  <canvas
+                    ref={canvasRef}
+                    width={240}
+                    height={240}
+                    className="block opacity-95"
+                  />
+                </div>
               </div>
 
-              {/* Area da Palavra Oculta */}
-              <div className="flex justify-center flex-wrap gap-x-1 sm:gap-x-2 gap-y-2 min-h-[12%] max-h-[18%] items-center bg-[#050507]/40 p-3 sm:p-4 rounded-xl shadow-inner border border-white/5 shrink-0 overflow-x-auto w-full">
+              {/* Espaço da Palavra Oculta */}
+              <div className="flex justify-center flex-wrap gap-y-3 min-h-[60px] items-center bg-[#050507]/40 p-4 rounded-xl shadow-inner border border-white/5">
                 {getDisplayWord()}
               </div>
 
-            </section>
+            </div>
 
-            {/* PAINEL DIREITO: Teclado Virtual de Alta Performance */}
-            <section className="lg:col-span-7 flex flex-col justify-center glass-card rounded-2xl p-4 sm:p-6 shadow-2xl h-full overflow-hidden">
-              <div className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 px-1 hidden sm:block shrink-0">
+            {/* COLUNA DIREITA: Teclado Virtual Panorâmico */}
+            <div className="lg:col-span-7 flex flex-col justify-center glass-card rounded-2xl p-6 md:p-8 shadow-2xl">
+              <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-5 px-1 hidden lg:block">
                 Injete caracteres no sistema usando clique físico ou virtual:
               </div>
               
-              <div className="keyboard-grid h-full w-full content-center gap-2">
+              <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 sm:gap-3 h-full content-center">
                 {letters.map((letter) => {
                   const isGuessed = guessedLetters.includes(letter);
                   const normalizedSecret = normalizeString(secretWord);
@@ -355,15 +321,13 @@ export default function Hangman() {
                       key={letter}
                       onClick={() => handleGuess(letter)}
                       disabled={!gameActive || isGuessed}
-                      aria-label={`Letra ${letter.toUpperCase()}`}
-                      aria-disabled={!gameActive || isGuessed}
                       className={`
-                        w-full font-black uppercase rounded-xl transition-all duration-150
-                        touch-manipulation select-none active:scale-95 outline-none focus:ring-2 focus:ring-white/20
-                        flex items-center justify-center keyboard-btn text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl
+                        w-full font-black uppercase text-base sm:text-lg rounded-xl
+                        transition-all duration-200 touch-manipulation select-none active:scale-95
+                        flex items-center justify-center p-4 lg:p-6 min-h-[55px] sm:min-h-[65px] cursor-pointer
                         ${isGuessed ? 'cursor-not-allowed opacity-20' : 'bg-white/[0.03] text-gray-300 border border-white/5 shadow-md hover:bg-white/10 hover:text-white hover:border-white/20'}
-                        ${isCorrect ? '!bg-emerald-500/10 !text-emerald-400 !border-emerald-500/40 !shadow-[0_0_15px_rgba(52,211,153,0.2)] !opacity-100' : ''}
-                        ${isWrong ? '!bg-rose-500/10 !text-rose-400 !border-rose-500/40 !opacity-100' : ''}
+                        ${isCorrect ? '!bg-emerald-500/10 !text-emerald-400 !border-emerald-500/40 !shadow-[0_0_15px_rgba(52,211,153,0.15)]' : ''}
+                        ${isWrong ? '!bg-rose-500/10 !text-rose-400 !border-rose-500/40' : ''}
                       `}
                     >
                       {letter}
@@ -371,38 +335,38 @@ export default function Hangman() {
                   );
                 })}
               </div>
-            </section>
+            </div>
 
           </div>
         )}
-      </main>
+      </div>
 
-      {/* Overlay Modular de Fim de Jogo Reativo */}
+      {/* Overlay Modular de Fim de Jogo */}
       {showOverlay && (
-        <div className="fixed inset-0 bg-[#0a0a0c]/85 backdrop-blur-md flex items-center justify-center z-30 p-4 transition-all animate-fade-in" role="dialog" aria-modal="true">
-          <div className="glass-card rounded-2xl border border-white/10 p-6 sm:p-8 text-center max-w-md w-full shadow-2xl scale-up-animation">
-            <h2 className={`text-2xl sm:text-3xl font-black mb-3 tracking-wide ${isVictory ? 'text-emerald-400 drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]' : 'text-rose-500 drop-shadow-[0_0_10px_rgba(244,63,94,0.3)]'}`}>
+        <div className="fixed inset-0 bg-[#0a0a0c]/80 backdrop-blur-md flex items-center justify-center z-30 p-4 transition-all">
+          <div className="glass-card rounded-2xl border border-white/10 p-8 text-center max-w-md w-full shadow-2xl">
+            <h2 className={`text-3xl font-black mb-3 tracking-wide ${isVictory ? 'text-emerald-400 drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]' : 'text-rose-500 drop-shadow-[0_0_10px_rgba(244,63,94,0.3)]'}`}>
               {isVictory ? '🎉 CONCLUÍDO 🎉' : '💀 FALHA DE CONEXÃO 💀'}
             </h2>
             
-            <p className="text-gray-400 text-xs sm:text-sm md:text-base mb-5 leading-relaxed">
+            <p className="text-gray-400 text-sm md:text-base mb-6 leading-relaxed">
               {resultMessage}
             </p>
 
-            <div className="bg-[#050507]/60 rounded-xl p-3 sm:p-4 mb-5 grid grid-cols-2 gap-4 border border-white/5 backdrop-blur-md">
+            <div className="bg-[#050507]/60 rounded-xl p-4 mb-6 grid grid-cols-2 gap-4 border border-white/5 backdrop-blur-md">
               <div className="text-center border-r border-white/5">
-                <span className="text-gray-500 text-[10px] sm:text-xs block mb-1">Melhor Sequência</span>
-                <strong className="text-white text-base sm:text-lg font-black">{bestStreak}x</strong>
+                <span className="text-gray-500 text-xs block mb-1">Melhor Sequência</span>
+                <strong className="text-white text-lg font-black">{bestStreak}x</strong>
               </div>
               <div className="text-center">
-                <span className="text-gray-500 text-[10px] sm:text-xs block mb-1">Desvios Cometidos</span>
-                <strong className="text-white text-base sm:text-lg font-black">{mistakes}</strong>
+                <span className="text-gray-500 text-xs block mb-1">Desvios Cometidos</span>
+                <strong className="text-white text-lg font-black">{mistakes}</strong>
               </div>
             </div>
 
             <button
               onClick={handleRestart}
-              className="w-full py-3.5 bg-white/5 hover:bg-white/10 focus:bg-white/10 border border-white/10 hover:border-white/20 text-white font-bold text-sm sm:text-base rounded-xl transition-all transform shadow-xl cursor-pointer active:scale-98 outline-none focus:ring-2 focus:ring-emerald-400/50"
+              className="w-full py-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white font-bold text-base rounded-xl transition-all transform shadow-xl cursor-pointer active:scale-98"
             >
               Iniciar Nova Rodada
             </button>
@@ -410,98 +374,16 @@ export default function Hangman() {
         </div>
       )}
 
-      {/* Engenharia CSS Injetada para Escalonamento Absoluto (AAA) */}
-      <style jsx global>{`
-        /* Bloqueio de scroll estrutural e preenchimento de viewport */
-        html, body {
-          margin: 0;
-          padding: 0;
-          width: 100%;
-          height: 100%;
-          overflow: hidden;
-          background-color: #0a0a0c;
-        }
-
+      {/* CSS embutido herdadável do index */}
+      <style jsx>{`
         .glass-card {
-          background: rgba(255, 255, 255, 0.025);
-          backdrop-filter: blur(24px);
-          -webkit-backdrop-filter: blur(24px);
+          background: rgba(255, 255, 255, 0.03);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
           border: 1px solid rgba(255, 255, 255, 0.06);
           box-shadow: 
-            0 4px 30px rgba(0, 0, 0, 0.4),
-            inset 0 1px 1px rgba(255, 255, 255, 0.03);
-        }
-
-        /* Tipografia de caracteres fluida baseada no tamanho da tela */
-        .char-slot {
-          font-size: clamp(1.5rem, 4.5vh + 0.5vw, 4.5rem);
-          line-height: 1;
-          min-width: clamp(1.2rem, 3.5vh, 3.5rem);
-          text-align: center;
-        }
-
-        /* Grade Dinâmica Avançada para o Teclado Virtual */
-        .keyboard-grid {
-          display: grid;
-          grid-template-columns: repeat(7, 1fr);
-          height: 100%;
-          max-height: 100%;
-        }
-
-        .keyboard-btn {
-          height: 100%;
-          min-height: 44px; /* Recomendação Apple/Google UX para toque */
-          padding: 0;
-          aspect-ratio: auto;
-        }
-
-        /* Regras adaptativas extras para Mobile Vertical Extremo */
-        @media (max-width: 640px) {
-          .keyboard-grid {
-            grid-template-columns: repeat(5, 1fr); /* Reduz colunas para botões maiores no toque lateral */
-          }
-          .container-layout {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-          }
-          .keyboard-btn {
-            min-height: 48px;
-          }
-        }
-
-        /* Regras adaptativas para Monitores Ultrawide ou telas 4K */
-        @media (min-width: 1920px) {
-          .keyboard-btn {
-            font-size: clamp(1.2rem, 1.2vw, 2rem);
-          }
-          .keyboard-grid {
-            gap: 0.8vw;
-          }
-        }
-
-        /* Microanimações de Interface */
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes scaleUp {
-          from { transform: scale(0.96); opacity: 0; }
-          to { transform: scale(1); opacity: 1; }
-        }
-        .animate-fade-in {
-          animation: fadeIn 0.2s ease-out forwards;
-        }
-        .scale-up-animation {
-          animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        
-        /* Otimizações extras de breakpoints */
-        @media (max-width: 360px) {
-          .keyboard-grid { grid-template-columns: repeat(4, 1fr); }
-        }
-        @media (max-height: 700px) and (orientation: portrait) {
-          .keyboard-btn { min-height: 40px; padding: 4px 0; }
+            0 1px 2px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.04);
         }
       `}</style>
     </div>
