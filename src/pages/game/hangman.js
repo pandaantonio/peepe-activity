@@ -1,391 +1,258 @@
-// pages/game/hangman.js
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/router';
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { FaArrowLeft, FaRedo, FaLightbulb, FaTrophy, FaFire } from 'react-icons/fa';
+import styles from '@/styles/Hangman.module.css';
 
-export default function Hangman() {
+export default function GuessNumberGame() {
   const router = useRouter();
   
-  // Estados principais do Jogo
-  const [secretWord, setSecretWord] = useState('');
-  const [hint, setHint] = useState('');
-  const [guessedLetters, setGuessedLetters] = useState([]);
-  const [mistakes, setMistakes] = useState(0);
-  const [gameActive, setGameActive] = useState(true);
-  const [loading, setLoading] = useState(true);
-  const [showOverlay, setShowOverlay] = useState(false);
-  const [resultMessage, setResultMessage] = useState('');
+  // Estados do Jogo
+  const [secretNumber, setSecretNumber] = useState(null);
+  const [score, setScore] = useState(20);
+  const [highscore, setHighscore] = useState(0);
+  const [message, setMessage] = useState("Adivinhe o número secreto de 1 a 100!");
+  const [gameOver, setGameOver] = useState(false);
   const [isVictory, setIsVictory] = useState(false);
+  const [guessedNumbers, setGuadedNumbers] = useState([]); // Histórico de palpites
 
-  // Estados de Gamificação
-  const [score, setScore] = useState(0);
-  const [streak, setStreak] = useState(0);
-  const [bestStreak, setBestStreak] = useState(0);
+  // Máximo de erros permitidos para o desenho da forca (Baseado nos pontos iniciais)
+  const maxErrors = 6;
   
-  const canvasRef = useRef(null);
-  const maxMistakes = 6;
+  // Referência para o container principal (Acessibilidade e Foco)
+  const containerRef = useRef(null);
 
-  const letters = useMemo(() => 'abcdefghijklmnopqrstuvwxyz'.split(''), []);
-
-  const normalizeString = (str) => {
-    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  };
-
-  const handleExit = () => {
+  const handleExit = useCallback(() => {
     router.push('/');
-  };
+  }, [router]);
 
-  // Desenho adaptado com estilo neon sintonizado ao Hub
-  const drawHangman = useCallback((mistakeCount) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    ctx.lineWidth = 4;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)'; 
-    
-    // Suporte e Poste da Forca
-    ctx.beginPath();
-    ctx.moveTo(40, 220); ctx.lineTo(200, 220);
-    ctx.moveTo(80, 220); ctx.lineTo(80, 25);
-    ctx.moveTo(80, 25); ctx.lineTo(160, 25);
-    ctx.moveTo(160, 25); ctx.lineTo(160, 55);
-    ctx.stroke();
-    
-    // Altera a cor do boneco dinamicamente baseado no estado
-    ctx.strokeStyle = mistakeCount >= maxMistakes ? '#ef4444' : '#34d399';
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = mistakeCount >= maxMistakes ? 'rgba(239, 68, 68, 0.4)' : 'rgba(52, 211, 153, 0.3)';
-    
-    // Cabeça
-    if (mistakeCount >= 1) {
-      ctx.beginPath();
-      ctx.arc(160, 75, 20, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    // Corpo
-    if (mistakeCount >= 2) {
-      ctx.beginPath();
-      ctx.moveTo(160, 95); ctx.lineTo(160, 155);
-      ctx.stroke();
-    }
-    // Braço Esquerdo
-    if (mistakeCount >= 3) {
-      ctx.beginPath();
-      ctx.moveTo(160, 105); ctx.lineTo(125, 125);
-      ctx.stroke();
-    }
-    // Braço Direito
-    if (mistakeCount >= 4) {
-      ctx.beginPath();
-      ctx.moveTo(160, 105); ctx.lineTo(195, 125);
-      ctx.stroke();
-    }
-    // Perna Esquerda
-    if (mistakeCount >= 5) {
-      ctx.beginPath();
-      ctx.moveTo(160, 155); ctx.lineTo(125, 195);
-      ctx.stroke();
-    }
-    // Perna Direita
-    if (mistakeCount >= 6) {
-      ctx.beginPath();
-      ctx.moveTo(160, 155); ctx.lineTo(195, 195);
-      ctx.stroke();
-    }
-    
-    ctx.shadowBlur = 0;
+  // Gerar número secreto estável
+  const generateSecretNumber = useCallback(() => {
+    return Math.floor(Math.random() * 100) + 1;
   }, []);
 
-  const resetGame = useCallback((word) => {
-    setGuessedLetters([]);
-    setMistakes(0);
-    setGameActive(true);
-    setShowOverlay(false);
+  // Inicializar/Resetar Jogo
+  const startNewGame = useCallback(() => {
+    const newSecret = generateSecretNumber();
+    setSecretNumber(newSecret);
+    setScore(20);
+    setMessage("O jogo começou! Escolha um número de 1 a 100.");
+    setGameOver(false);
     setIsVictory(false);
+    setGuadedNumbers([]);
     
-    setTimeout(() => {
-      drawHangman(0);
-    }, 50);
-  }, [drawHangman]);
-
-  const fetchWord = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/hangman');
-      const data = await response.json();
-      const wordClean = data.word.toLowerCase();
-      setSecretWord(wordClean);
-      setHint(data.hint);
-      resetGame(wordClean);
-    } catch (error) {
-      console.error('Erro ao buscar palavra:', error);
-      const fallbackWord = 'codigo';
-      setSecretWord(fallbackWord);
-      setHint('Conjunto de instruções escritas por um programador');
-      resetGame(fallbackWord);
+    if (containerRef.current) {
+      containerRef.current.focus();
     }
-    setLoading(false);
-  }, [resetGame]);
+  }, [generateSecretNumber]);
 
-  const handleRestart = useCallback(() => {
-    fetchWord();
-  }, [fetchWord]);
+  // Carregar Highscore
+  useEffect(() => {
+    const savedHighscore = localStorage.getItem('guessHighscore');
+    if (savedHighscore) {
+      setHighscore(parseInt(savedHighscore, 10));
+    }
+    startNewGame();
+  }, [startNewGame]);
 
-  const handleGuess = useCallback((letter) => {
-    if (!gameActive || loading || guessedLetters.includes(letter)) return;
-    
-    const normalizedLetter = letter.toLowerCase();
-    const newGuessed = [...guessedLetters, normalizedLetter];
-    setGuessedLetters(newGuessed);
-    
-    const normalizedSecret = normalizeString(secretWord);
-    
-    if (normalizedSecret.includes(normalizedLetter)) {
-      const isWon = secretWord.split('').every(char => {
-        const normChar = normalizeString(char);
-        if (!letters.includes(normChar)) return true;
-        return newGuessed.includes(normChar);
-      });
+  // Computar erros atuais baseado no histórico
+  const currentErrors = useMemo(() => {
+    if (!secretNumber) return 0;
+    return guessedNumbers.filter(num => num !== secretNumber).length;
+  }, [guessedNumbers, secretNumber]);
 
-      if (isWon) {
-        setGameActive(false);
-        setIsVictory(true);
-        setScore(prev => prev + 100 + (streak * 20));
-        setStreak(prev => {
-          const next = prev + 1;
-          if (next > bestStreak) setBestStreak(next);
-          return next;
-        });
-        setResultMessage(`Você decifrou o sistema com sucesso! A palavra era "${secretWord.toUpperCase()}"`);
-        setShowOverlay(true);
+  // Processamento do Palpite (Ação Principal)
+  const handleGuess = useCallback((guess) => {
+    if (gameOver || guessedNumbers.includes(guess)) return;
+
+    const updatedGuesses = [...guessedNumbers, guess];
+    setGuadedNumbers(updatedGuesses);
+
+    if (guess === secretNumber) {
+      setMessage(`🎉 Perfeito! Você acertou o número ${secretNumber}!`);
+      setGameOver(true);
+      setIsVictory(true);
+      
+      // Atualizar Highscore se a pontuação atual for maior
+      if (score > highscore) {
+        setHighscore(score);
+        localStorage.setItem('guessHighscore', score.toString());
       }
     } else {
-      const newMistakes = mistakes + 1;
-      setMistakes(newMistakes);
-      drawHangman(newMistakes);
-      
-      if (newMistakes >= maxMistakes) {
-        setGameActive(false);
+      const remainingErrors = maxErrors - (currentErrors + 1);
+      const newScore = Math.max(0, score - 3); // Penalidade por erro
+      setScore(newScore);
+
+      if (remainingErrors <= 0 || newScore <= 0) {
+        setMessage(`💥 Fim de jogo! O número secreto era ${secretNumber}.`);
+        setScore(0);
+        setGameOver(true);
         setIsVictory(false);
-        setStreak(0);
-        setResultMessage(`Tentativas esgotadas! O sistema bloqueou o acesso. A palavra era "${secretWord.toUpperCase()}"`);
-        setShowOverlay(true);
+      } else {
+        const checkDirection = guess < secretNumber ? "MAIOR" : "MENOR";
+        setMessage(`❌ Errado! O número secreto é ${checkDirection} do que ${guess}.`);
       }
     }
-  }, [gameActive, guessedLetters, secretWord, mistakes, drawHangman, streak, bestStreak, letters, loading]);
+  }, [secretNumber, gameOver, guessedNumbers, score, highscore, currentErrors]);
 
+  // Atalhos de Teclado Físico (Acessibilidade e UX)
   useEffect(() => {
-    const handleKeyDown = (event) => {
-      const key = event.key.toLowerCase();
-      if (letters.includes(key) && gameActive && !showOverlay && !loading) {
-        handleGuess(key);
+    const handleKeyDown = (e) => {
+      if (gameOver && e.key === 'Enter') {
+        e.preventDefault();
+        startNewGame();
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleGuess, gameActive, showOverlay, letters, loading]);
+  }, [gameOver, startNewGame]);
 
-  useEffect(() => {
-    if (!loading) drawHangman(mistakes);
-  }, [mistakes, loading, drawHangman]);
+  // Geração dinâmica do teclado numérico (1 a 100) para evitar re-renders
+  const numericKeyboard = useMemo(() => {
+    return Array.from({ length: 100 }, (_, i) => i + 1);
+  }, []);
 
-  useEffect(() => {
-    fetchWord();
-  }, [fetchWord]);
+  // Renderização Dinâmica do Canvas da Forca Baseado no Estado de Erros
+  const renderSvgHangman = useMemo(() => {
+    return (
+      <svg viewBox="0 0 200 250" className={styles.hangmanSvg} aria-hidden="true">
+        {/* Base e Poste da Forca */}
+        <line x1="20" y1="230" x2="180" y2="230" stroke="currentColor" strokeWidth="4" />
+        <line x1="60" y1="230" x2="60" y2="20" stroke="currentColor" strokeWidth="4" />
+        <line x1="60" y1="20" x2="140" y2="20" stroke="currentColor" strokeWidth="4" />
+        <line x1="140" y1="20" x2="140" y2="50" stroke="currentColor" strokeWidth="4" />
 
-  const getDisplayWord = () => {
-    return secretWord.split('').map((char, i) => {
-      const normalizedChar = normalizeString(char);
-      const isRevealed = guessedLetters.includes(normalizedChar) || !letters.includes(normalizedChar);
-      
-      return (
-        <span 
-          key={i} 
-          className={`mx-1.5 text-3xl md:text-5xl font-mono font-black transition-all duration-300 border-b-4 pb-2 px-2
-            ${isRevealed ? 'text-emerald-400 border-transparent scale-100 drop-shadow-[0_0_12px_rgba(52,211,153,0.4)]' : 'text-transparent border-white/20 scale-95'}
-          `}
-        >
-          {isRevealed ? char.toUpperCase() : '_'}
-        </span>
-      );
-    });
-  };
+        {/* Cabeça */}
+        {currentErrors > 0 && <circle cx="140" cy="70" r="20" stroke="currentColor" strokeWidth="4" fill="none" />}
+        {/* Tronco */}
+        {currentErrors > 1 && <line x1="140" y1="90" x2="140" y2="150" stroke="currentColor" strokeWidth="4" />}
+        {/* Braço Esquerdo */}
+        {currentErrors > 2 && <line x1="140" y1="110" x2="110" y2="130" stroke="currentColor" strokeWidth="4" />}
+        {/* Braço Direito */}
+        {currentErrors > 3 && <line x1="140" y1="110" x2="170" y2="130" stroke="currentColor" strokeWidth="4" />}
+        {/* Perna Esquerda */}
+        {currentErrors > 4 && <line x1="140" y1="150" x2="110" y2="190" stroke="currentColor" strokeWidth="4" />}
+        {/* Perna Direita */}
+        {currentErrors > 5 && <line x1="140" y1="150" x2="170" y2="190" stroke="currentColor" strokeWidth="4" />}
+      </svg>
+    );
+  }, [currentErrors]);
+
+  // Gerenciador de Classes Dinâmicas de Fundo
+  const containerThemeClass = useMemo(() => {
+    if (!gameOver) return styles.bgNormal;
+    return isVictory ? styles.bgVictory : styles.bgDefeat;
+  }, [gameOver, isVictory]);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0c] text-[#ededed] select-none font-sans antialiased flex flex-col relative overflow-hidden">
-      
-      {/* Background ambient iluminado herdado da Home */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-emerald-500/[0.02] rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-purple-500/[0.02] rounded-full blur-[100px]" />
-      </div>
+    <div 
+      ref={containerRef}
+      className={`${styles.viewportContainer} ${containerThemeClass}`}
+      tabIndex="-1"
+      aria-label="Jogo da Forca com Números"
+    >
+      {/* Topbar Adaptativa */}
+      <header className={styles.topBar}>
+        <button
+          onClick={handleExit}
+          className={styles.navButton}
+          aria-label="Voltar para o menu principal"
+        >
+          ← Hub
+        </button>
+        <div className={styles.scoreContainer}>
+          <div className={styles.scoreBadge}>💯 Score: <span>{score}</span></div>
+          <div className={styles.scoreBadge}>🥇 Recorde: <span>{highscore}</span></div>
+        </div>
+        <button
+          onClick={startNewGame}
+          className={styles.resetButton}
+          aria-label="Reiniciar partida atual"
+        >
+          🔄 Reiniciar
+        </button>
+      </header>
 
-      {/* Topbar Glassmorphism de ponta a ponta */}
-      <div className="bg-white/[0.02] backdrop-blur-xl border-b border-white/5 shrink-0 z-10 relative">
-        <div className="w-full max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={handleExit} 
-              className="p-3 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-all active:scale-95 cursor-pointer border border-white/5"
-            >
-              <FaArrowLeft size={18} />
-            </button>
-            <button 
-              onClick={handleRestart} 
-              className="p-3 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-all active:scale-95 cursor-pointer border border-white/5"
-            >
-              <FaRedo size={16} />
-            </button>
+      {/* Grid de Layout Fluido e Responsivo Intermediado por Breakpoints */}
+      <main className={styles.gameDashboard}>
+        
+        {/* Coluna Esquerda: Feedback Visual e Canvas */}
+        <section className={styles.visualSection}>
+          <div className={styles.canvasWrapper} aria-label={`Forca mostrando ${currentErrors} de ${maxErrors} erros`}>
+            {renderSvgHangman}
           </div>
           
-          <div className="flex gap-4 items-center bg-white/[0.02] px-5 py-2 rounded-xl border border-white/10 text-sm backdrop-blur-md">
-            <div className="flex items-center gap-2 border-r border-white/10 pr-4">
-              <FaTrophy className="text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.4)]" size={15} />
-              <span className="text-gray-400">Pontos: <strong className="text-white font-bold">{score}</strong></span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FaFire className={streak > 0 ? "text-orange-400 animate-pulse drop-shadow-[0_0_6px_rgba(251,146,60,0.4)]" : "text-gray-500"} size={15} />
-              <span className="text-gray-400">Combo: <strong className="text-white font-bold">{streak}x</strong></span>
+          <div className={styles.secretWordDisplay}>
+            <p className={styles.displayLabel}>NÚMERO SECRETO</p>
+            <div className={`${styles.secretBox} ${gameOver ? (isVictory ? styles.boxVictory : styles.boxDefeat) : ''}`}>
+              {gameOver ? secretNumber : '?'}
             </div>
           </div>
+        </section>
 
-          <div className="text-right">
-            <span className="text-gray-500 text-xs font-bold uppercase tracking-wider block">Erros</span>
-            <span className="text-rose-500 font-mono text-2xl font-black drop-shadow-[0_0_8px_rgba(244,63,94,0.3)]">{mistakes}/{maxMistakes}</span>
+        {/* Coluna Direita: Teclado Virtual de Alta Densidade e Painel de Controle */}
+        <section className={styles.controlSection}>
+          <div className={styles.messageBanner} role="status" aria-live="polite">
+            <p>{message}</p>
           </div>
-        </div>
-      </div>
 
-      {/* Main Content Area - Layout Bilateral Expandido */}
-      <div className="flex-1 w-full max-w-7xl mx-auto px-4 md:px-8 py-6 flex items-center justify-center z-10 relative">
-        
-        {loading ? (
-          <div className="flex flex-col items-center gap-3 py-20">
-            <div className="w-10 h-10 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
-            <div className="text-gray-500 font-semibold tracking-wide">Descriptografando base de dados...</div>
-          </div>
-        ) : (
-          <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-            
-            {/* COLUNA ESQUERDA: Display Visual, Canvas e Dica */}
-            <div className="lg:col-span-5 flex flex-col justify-between glass-card rounded-2xl p-6 shadow-2xl gap-6">
-              
-              {/* Box da Dica - Estilo Liquid Glass */}
-              <div className="px-5 py-4 bg-emerald-500/[0.02] border-l-4 border-emerald-400/60 rounded-r-xl flex items-start gap-3 shadow-inner border border-white/5">
-                <FaLightbulb size={18} className="text-emerald-400 mt-0.5 flex-shrink-0 drop-shadow-[0_0_8px_rgba(52,211,153,0.4)]" />
-                <div className="text-left">
-                  <span className="text-[10px] font-bold text-emerald-400/80 uppercase tracking-wider">Módulo de Dica</span>
-                  <p className="text-gray-300 text-base font-medium mt-0.5 leading-relaxed">{hint}</p>
-                </div>
-              </div>
-
-              {/* Canvas da Forca */}
-              <div className="flex justify-center my-auto">
-                <div className="bg-[#050507]/60 p-4 rounded-xl border border-white/5 shadow-inner w-full max-w-[280px] flex justify-center backdrop-blur-md">
-                  <canvas
-                    ref={canvasRef}
-                    width={240}
-                    height={240}
-                    className="block opacity-95"
-                  />
-                </div>
-              </div>
-
-              {/* Espaço da Palavra Oculta */}
-              <div className="flex justify-center flex-wrap gap-y-3 min-h-[60px] items-center bg-[#050507]/40 p-4 rounded-xl shadow-inner border border-white/5">
-                {getDisplayWord()}
-              </div>
-
+          <div className={styles.keyboardContainer}>
+            <p className={styles.keyboardInstruction}>Selecione um palpite de 1 a 100:</p>
+            <div className={styles.interactiveGrid} role="group" aria-label="Teclado numérico de palpites">
+              {numericKeyboard.map((num) => {
+                const isGuessed = guessedNumbers.includes(num);
+                const isCorrect = isGuessed && num === secretNumber;
+                
+                return (
+                  <button
+                    key={num}
+                    onClick={() => handleGuess(num)}
+                    disabled={gameOver || isGuessed}
+                    className={`${styles.keyButton} ${isGuessed ? (isCorrect ? styles.keyCorrect : styles.keyWrong) : ''}`}
+                    aria-label={`Número ${num}`}
+                    aria-disabled={gameOver || isGuessed}
+                  >
+                    {num}
+                  </button>
+                );
+              })}
             </div>
-
-            {/* COLUNA DIREITA: Teclado Virtual Panorâmico */}
-            <div className="lg:col-span-7 flex flex-col justify-center glass-card rounded-2xl p-6 md:p-8 shadow-2xl">
-              <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-5 px-1 hidden lg:block">
-                Injete caracteres no sistema usando clique físico ou virtual:
-              </div>
-              
-              <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 sm:gap-3 h-full content-center">
-                {letters.map((letter) => {
-                  const isGuessed = guessedLetters.includes(letter);
-                  const normalizedSecret = normalizeString(secretWord);
-                  const isCorrect = isGuessed && normalizedSecret.includes(letter);
-                  const isWrong = isGuessed && !normalizedSecret.includes(letter);
-                  
-                  return (
-                    <button
-                      key={letter}
-                      onClick={() => handleGuess(letter)}
-                      disabled={!gameActive || isGuessed}
-                      className={`
-                        w-full font-black uppercase text-base sm:text-lg rounded-xl
-                        transition-all duration-200 touch-manipulation select-none active:scale-95
-                        flex items-center justify-center p-4 lg:p-6 min-h-[55px] sm:min-h-[65px] cursor-pointer
-                        ${isGuessed ? 'cursor-not-allowed opacity-20' : 'bg-white/[0.03] text-gray-300 border border-white/5 shadow-md hover:bg-white/10 hover:text-white hover:border-white/20'}
-                        ${isCorrect ? '!bg-emerald-500/10 !text-emerald-400 !border-emerald-500/40 !shadow-[0_0_15px_rgba(52,211,153,0.15)]' : ''}
-                        ${isWrong ? '!bg-rose-500/10 !text-rose-400 !border-rose-500/40' : ''}
-                      `}
-                    >
-                      {letter}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
           </div>
-        )}
-      </div>
+        </section>
+      </main>
 
-      {/* Overlay Modular de Fim de Jogo */}
-      {showOverlay && (
-        <div className="fixed inset-0 bg-[#0a0a0c]/80 backdrop-blur-md flex items-center justify-center z-30 p-4 transition-all">
-          <div className="glass-card rounded-2xl border border-white/10 p-8 text-center max-w-md w-full shadow-2xl">
-            <h2 className={`text-3xl font-black mb-3 tracking-wide ${isVictory ? 'text-emerald-400 drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]' : 'text-rose-500 drop-shadow-[0_0_10px_rgba(244,63,94,0.3)]'}`}>
-              {isVictory ? '🎉 CONCLUÍDO 🎉' : '💀 FALHA DE CONEXÃO 💀'}
+      {/* Rodapé Informativo */}
+      <footer className={styles.gameFooter}>
+        <p>Desenvolvido com interface responsiva e acessível para todos os dispositivos.</p>
+        {gameOver && <p className={styles.footerTip}>Dica: Pressione <kbd>Enter</kbd> para recomeçar rapidamente.</p>}
+      </footer>
+
+      {/* Overlay Modal de Fim de Jogo */}
+      {gameOver && (
+        <div className={styles.modalOverlay} role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+          <div className={`${styles.modalCard} ${isVictory ? styles.modalVictory : styles.modalDefeat}`}>
+            <div className={styles.modalEmoji}>{isVictory ? "🎉" : "💀"}</div>
+            <h2 id="modalTitle" className={styles.modalTitle}>
+              {isVictory ? "VITÓRIA EXCEPCIONAL!" : "FIM DE JOGO!"}
             </h2>
-            
-            <p className="text-gray-400 text-sm md:text-base mb-6 leading-relaxed">
-              {resultMessage}
+            <p className={styles.modalText}>
+              {isVictory 
+                ? `Parabéns! O número correto realmente era o ${secretNumber}.` 
+                : `Não foi dessa vez. O número misterioso oculto era o ${secretNumber}.`
+              }
             </p>
-
-            <div className="bg-[#050507]/60 rounded-xl p-4 mb-6 grid grid-cols-2 gap-4 border border-white/5 backdrop-blur-md">
-              <div className="text-center border-r border-white/5">
-                <span className="text-gray-500 text-xs block mb-1">Melhor Sequência</span>
-                <strong className="text-white text-lg font-black">{bestStreak}x</strong>
-              </div>
-              <div className="text-center">
-                <span className="text-gray-500 text-xs block mb-1">Desvios Cometidos</span>
-                <strong className="text-white text-lg font-black">{mistakes}</strong>
-              </div>
+            <div className={styles.modalStats}>
+              <p>Pontuação Final: <strong>{score}</strong> pts</p>
+              <p>Erros Cometidos: <strong>{currentErrors}</strong></p>
             </div>
-
             <button
-              onClick={handleRestart}
-              className="w-full py-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white font-bold text-base rounded-xl transition-all transform shadow-xl cursor-pointer active:scale-98"
+              onClick={startNewGame}
+              className={styles.modalActionBtn}
+              autoFocus
             >
-              Iniciar Nova Rodada
+              🔄 Jogar Novamente
             </button>
           </div>
         </div>
       )}
-
-      {/* CSS embutido herdadável do index */}
-      <style jsx>{`
-        .glass-card {
-          background: rgba(255, 255, 255, 0.03);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          box-shadow: 
-            0 1px 2px rgba(0, 0, 0, 0.1),
-            inset 0 1px 0 rgba(255, 255, 255, 0.04);
-        }
-      `}</style>
     </div>
   );
 }
