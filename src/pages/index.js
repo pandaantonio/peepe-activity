@@ -1,6 +1,6 @@
 // pages/index.js
 import Link from 'next/link';
-import { FaChess, FaUsers, FaLock, FaDiscord } from 'react-icons/fa';
+import { FaChess, FaUsers, FaLock } from 'react-icons/fa';
 import { FiZap, FiUser, FiCpu } from 'react-icons/fi';
 import { useEffect, useState } from 'react';
 import { useDiscord } from '@/contexts/DiscordContext';
@@ -79,7 +79,7 @@ const games = [
 ];
 
 export default function GameHub() {
-  const { isAuthenticated, isDiscordFrame } = useDiscord();
+  const { isContextReady } = useDiscord();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -127,19 +127,8 @@ export default function GameHub() {
 
   const displayItems = [...games];
 
-  if (isDiscordFrame && isAuthenticated) {
-    displayItems.push({
-      id: "discord-dashboard",
-      badge: "PAINEL",
-      title: "Gerenciar Servidores",
-      desc: "Configure o bot Peepe, gerencie permissões e visualize as estatísticas dos seus servidores do Discord.",
-      color: "indigo",
-      icon: <FaDiscord size={24} />,
-      path: "/dashboard"
-    });
-  }
-
-  if (!mounted) {
+  // Aguarda a montagem da árvore do DOM e a validação de ambiente do SDK do Discord
+  if (!mounted || !isContextReady) {
     return (
       <div className="min-h-screen bg-[#0a0a0c]">
         <div className="pt-24 pb-16 px-6 max-w-6xl mx-auto">
@@ -227,7 +216,7 @@ export default function GameHub() {
 
                     <div className="flex items-center justify-between pt-3 border-t border-white/5">
                       <span className="text-[11px] text-gray-600 font-medium">
-                        {item.id === "discord-dashboard" ? "Configurar" : "Jogar agora"}
+                        Jogar agora
                       </span>
                       <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center transition-all duration-300 group-hover:bg-white/10 group-hover:border-white/20 group-hover:translate-x-0.5">
                         <svg className="w-3.5 h-3.5 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">

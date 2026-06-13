@@ -13,36 +13,35 @@ export function DiscordProvider({ children }) {
 
   useEffect(() => {
     async function init() {
-      try {
-        if (typeof window === 'undefined') {
-          setLoading(false);
-          return;
-        }
+      // Evita rodar no Server-Side Rendering (SSR) do Next.js
+      if (typeof window === 'undefined') return;
 
+      try {
         const params = new URLSearchParams(window.location.search);
         const frameId = params.get('frame_id');
-        const isDiscordUserAgent = navigator.userAgent.includes('Discord');
-        const isFrame = !!frameId || isDiscordUserAgent;
+        
+        // Forma robusta de detectar se está no cliente incorporado do Discord
+        const isFrame = !!frameId || 
+                        window.location.ancestorOrigins?.contains('https://discord.com') ||
+                        (typeof navigator !== 'undefined' && navigator.userAgent.includes('Discord'));
         
         setIsDiscordFrame(isFrame);
         
-        // Se NÃO estiver no Discord, pula toda a inicialização pesada do SDK
         if (!isFrame) {
           console.log("Modo standalone - Navegador Web convencional ativo");
-          setAuth(null);
           setLoading(false);
           return; 
         }
 
-        // Se estiver no Discord, prossegue com o fluxo da Activity
         console.log('Ambiente Discord detectado. Inicializando SDK...');
         const sdk = getDiscordSDK();
         setDiscordSdk(sdk);
         
+        // Nota: Certifique-se de que dentro de setupDiscordSdk() você chama await sdk.ready()
         const userAuth = await setupDiscordSdk();
         setAuth(userAuth);
       } catch (err) {
-        console.error("Erro ao inicializar Discord:", err);
+        console.error("Erro crítico ao inicializar Discord:", err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -58,7 +57,8 @@ export function DiscordProvider({ children }) {
     loading,
     error,
     isDiscordFrame,
-    isAuthenticated: !!(auth && auth.user)
+    isAuthenticated: !!(auth && auth.user),
+    isContextReady: !loading // Nova flag crucial para segurar a UI enquanto decide o ambiente
   };
 
   return (
