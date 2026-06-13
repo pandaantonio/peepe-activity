@@ -9,8 +9,10 @@ const GridCell = memo(({ cell, rowIndex, colIndex, isWinning, isLastMove, gameOv
       onClick={() => onClick(rowIndex, colIndex)}
       disabled={gameOver || currentPlayer !== 'X' || cell !== ''}
       className={`
-        aspect-square rounded-2xl flex items-center justify-center text-5xl md:text-6xl font-black
+        aspect-square rounded-2xl flex items-center justify-center 
+        text-[clamp(2.25rem,8vw,5rem)] font-black
         transition-all duration-300 select-none touch-manipulation cursor-pointer
+        min-h-[min(20vw,120px)] min-w-[min(20vw,120px)]
         ${cell === '' 
           ? 'bg-white/[0.02] border border-white/5 hover:bg-white/[0.07] hover:border-white/10 hover:scale-[1.02] active:scale-95 shadow-inner' 
           : 'bg-white/[0.04] border border-white/10 shadow-md'
@@ -264,32 +266,37 @@ export default function TicTacToe() {
         <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-purple-500/[0.02] rounded-full blur-[100px]" />
       </div>
 
-      {/* Topbar Glassmorphism */}
+      {/* Topbar Glassmorphism - Mobile First */}
       <div className="bg-white/[0.02] backdrop-blur-xl border-b border-white/5 shrink-0 z-10 relative">
-        <div className="w-full max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row gap-3 sm:gap-0 sm:items-center sm:justify-between">
+          {/* Botões de ação */}
+          <div className="flex items-center gap-2 order-1 sm:order-1">
             <button 
               onClick={handleExit} 
-              className="p-3 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-all active:scale-95 cursor-pointer border border-white/5"
+              className="p-3 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-all active:scale-95 cursor-pointer border border-white/5 flex-shrink-0"
             >
               <FaArrowLeft size={18} />
             </button>
             <button 
               onClick={resetGame} 
-              className="p-3 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-all active:scale-95 cursor-pointer border border-white/5"
+              className="p-3 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-all active:scale-95 cursor-pointer border border-white/5 flex-shrink-0"
             >
               <FaRedo size={16} />
             </button>
           </div>
 
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.02] border border-white/10 text-xs font-bold uppercase tracking-wider">
-            <div className={`w-2 h-2 rounded-full ${currentPlayer === 'X' && !gameOver ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'}`} />
-            <span className={getStatusColor()}>{getStatusText()}</span>
+          {/* Status Central */}
+          <div className="flex-1 flex justify-center order-2 sm:order-2">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.02] border border-white/10 text-xs sm:text-sm font-bold uppercase tracking-wider text-center max-w-[320px] sm:max-w-none">
+              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${currentPlayer === 'X' && !gameOver ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'}`} />
+              <span className={`${getStatusColor()} truncate`}>{getStatusText()}</span>
+            </div>
           </div>
 
+          {/* Reset Scores */}
           <button 
             onClick={resetScores}
-            className="p-3 text-gray-500 hover:text-rose-400 bg-white/[0.01] hover:bg-rose-500/5 rounded-xl transition-all active:scale-95 cursor-pointer border border-white/5 flex items-center gap-2 text-xs font-bold uppercase tracking-wider"
+            className="p-3 text-gray-500 hover:text-rose-400 bg-white/[0.01] hover:bg-rose-500/5 rounded-xl transition-all active:scale-95 cursor-pointer border border-white/5 flex items-center gap-2 text-xs font-bold uppercase tracking-wider order-3 sm:order-3 flex-shrink-0"
             title="Zerar Placar"
           >
             <FaTrashAlt size={14} />
@@ -298,45 +305,45 @@ export default function TicTacToe() {
         </div>
       </div>
 
-      {/* Main Content Area - Grelha Unificada Panorâmica */}
-      <div className="flex-1 w-full max-w-7xl mx-auto px-4 md:px-8 py-6 flex items-center justify-center z-10 relative">
-        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+      {/* Main Content Area - Mobile First com Stack Vertical */}
+      <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 flex items-center justify-center z-10 relative overflow-hidden">
+        <div className="w-full flex flex-col lg:grid lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
           
-          {/* COLUNA ESQUERDA: Placar de Desempenho e Estatísticas */}
-          <div className="lg:col-span-5 flex flex-col justify-between glass-card rounded-2xl p-6 shadow-2xl gap-6">
+          {/* COLUNA ESQUERDA: Placar - Empilhado abaixo no mobile */}
+          <div className="lg:col-span-5 flex flex-col justify-between glass-card rounded-2xl p-5 sm:p-6 shadow-2xl gap-6 order-2 lg:order-1">
             
             <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest block">Módulo do Placar</span>
-              <h2 className="text-xl font-black text-white">Consola de Desempenho</h2>
+              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest block">MÓDULO DO PLACAR</span>
+              <h2 className="text-lg sm:text-xl font-black text-white">Consola de Desempenho</h2>
             </div>
 
-            {/* Placar Principal Premium */}
-            <div className="bg-[#050507]/50 rounded-2xl p-6 border border-white/5 shadow-inner backdrop-blur-md">
-              <div className="grid grid-cols-3 gap-2 items-center text-center">
+            {/* Placar Principal Premium - Compacto em mobile */}
+            <div className="bg-[#050507]/50 rounded-2xl p-4 sm:p-6 border border-white/5 shadow-inner backdrop-blur-md">
+              <div className="grid grid-cols-3 gap-3 sm:gap-2 items-center text-center">
                 
                 {/* Score Jogador */}
                 <div className="flex flex-col items-center gap-2">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shadow-md">
-                    <FaUser className="text-emerald-400 drop-shadow-[0_0_6px_rgba(52,211,153,0.3)]" size={18} />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shadow-md">
+                    <FaUser className="text-emerald-400 drop-shadow-[0_0_6px_rgba(52,211,153,0.3)]" size={16} />
                   </div>
                   <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Você (X)</span>
-                  <span className="text-3xl font-black text-white">{scores.player}</span>
+                  <span className="text-2xl sm:text-3xl font-black text-white">{scores.player}</span>
                 </div>
 
                 {/* Empates */}
-                <div className="flex flex-col items-center gap-1 border-x border-white/5 px-2">
+                <div className="flex flex-col items-center gap-1 border-x border-white/5 px-1 sm:px-2">
                   <span className="text-[10px] text-gray-600 font-bold uppercase tracking-wider">Empates</span>
-                  <span className="text-2xl font-black text-amber-400/90">{scores.draws}</span>
+                  <span className="text-xl sm:text-2xl font-black text-amber-400/90">{scores.draws}</span>
                   <span className="text-[10px] text-gray-600 font-medium">Partidas: {totalGames}</span>
                 </div>
 
                 {/* Score IA */}
                 <div className="flex flex-col items-center gap-2">
-                  <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shadow-md">
-                    <FaRobot className="text-rose-400 drop-shadow-[0_0_6px_rgba(244,63,94,0.3)]" size={18} />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shadow-md">
+                    <FaRobot className="text-rose-400 drop-shadow-[0_0_6px_rgba(244,63,94,0.3)]" size={16} />
                   </div>
                   <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">IA (O)</span>
-                  <span className="text-3xl font-black text-white">{scores.ai}</span>
+                  <span className="text-2xl sm:text-3xl font-black text-white">{scores.ai}</span>
                 </div>
 
               </div>
@@ -358,55 +365,58 @@ export default function TicTacToe() {
               </div>
             </div>
 
-            {/* Módulo de Histórico Recente / Dica Visual */}
+            {/* Módulo de Dica - Compacto */}
             <div className="p-4 bg-purple-500/[0.02] border-l-4 border-purple-500/40 rounded-r-xl flex items-start gap-3 border border-white/5">
               <FaTrophy size={16} className="text-purple-400 mt-0.5 flex-shrink-0 drop-shadow-[0_0_6px_rgba(192,132,252,0.4)]" />
-              <div className="text-left">
-                <span className="text-[10px] font-bold text-purple-400/80 uppercase tracking-wider">Algoritmo de Análise</span>
-                <p className="text-gray-400 text-xs mt-0.5 leading-relaxed">
-                  A inteligência artificial opera através de previsões em árvore com base no método Minimax. Bloqueie as linhas adjacentes imediatamente.
+              <div className="text-left text-xs">
+                <span className="font-bold text-purple-400/80 uppercase tracking-wider">ALGORITMO</span>
+                <p className="text-gray-400 mt-1 leading-relaxed text-[13px]">
+                  Minimax ativo. Bloqueie ameaças imediatamente.
                 </p>
               </div>
             </div>
 
           </div>
 
-          {/* COLUNA DIREITA: Tabuleiro de Alta Escala (Grid de Jogo) */}
-          <div className="lg:col-span-7 flex flex-col justify-center glass-card rounded-2xl p-6 md:p-8 shadow-2xl relative">
-            <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-[#050507]/50 border border-white/5 shadow-inner max-w-[550px] w-full mx-auto backdrop-blur-md">
-              {board.map((row, rowIndex) =>
-                row.map((cell, colIndex) => {
-                  const isWinning = isWinningCell(rowIndex, colIndex);
-                  const isLastMove = moveHistory.length > 0 && 
-                    moveHistory[moveHistory.length - 1].row === rowIndex && 
-                    moveHistory[moveHistory.length - 1].col === colIndex;
+          {/* COLUNA DIREITA: Tabuleiro - Foco principal em mobile */}
+          <div className="lg:col-span-7 flex flex-col justify-center glass-card rounded-2xl p-4 sm:p-6 md:p-8 shadow-2xl relative order-1 lg:order-2">
+            {/* Container do Tabuleiro com proporção quadrada fluida */}
+            <div className="w-full max-w-[min(92vw,550px)] mx-auto">
+              <div className="grid grid-cols-3 gap-2.5 sm:gap-3 md:gap-4 p-3 sm:p-4 rounded-2xl bg-[#050507]/50 border border-white/5 shadow-inner backdrop-blur-md aspect-square">
+                {board.map((row, rowIndex) =>
+                  row.map((cell, colIndex) => {
+                    const isWinning = isWinningCell(rowIndex, colIndex);
+                    const isLastMove = moveHistory.length > 0 && 
+                      moveHistory[moveHistory.length - 1].row === rowIndex && 
+                      moveHistory[moveHistory.length - 1].col === colIndex;
 
-                  return (
-                    <GridCell
-                      key={`${rowIndex}-${colIndex}`}
-                      cell={cell}
-                      rowIndex={rowIndex}
-                      colIndex={colIndex}
-                      isWinning={isWinning}
-                      isLastMove={isLastMove}
-                      gameOver={gameOver}
-                      currentPlayer={currentPlayer}
-                      onClick={handleCellClick}
-                    />
-                  );
-                })
-              )}
+                    return (
+                      <GridCell
+                        key={`${rowIndex}-${colIndex}`}
+                        cell={cell}
+                        rowIndex={rowIndex}
+                        colIndex={colIndex}
+                        isWinning={isWinning}
+                        isLastMove={isLastMove}
+                        gameOver={gameOver}
+                        currentPlayer={currentPlayer}
+                        onClick={handleCellClick}
+                      />
+                    );
+                  })
+                )}
+              </div>
             </div>
 
-            {/* Overlay Modular Acoplado de Fim de Jogo */}
+            {/* Overlay de Fim de Jogo - Totalmente Responsivo */}
             {(winner || isDraw) && (
-              <div className="absolute inset-0 bg-[#0a0a0c]/90 backdrop-blur-md rounded-2xl flex flex-col items-center justify-center gap-5 p-6 z-20 animate-[fadeIn_0.25s_ease-out] border border-white/10 mx-px my-px">
-                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg ${
+              <div className="absolute inset-0 bg-[#0a0a0c]/95 backdrop-blur-md rounded-2xl flex flex-col items-center justify-center gap-6 p-6 sm:p-8 z-20 animate-[fadeIn_0.25s_ease-out] border border-white/10">
+                <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-3xl flex items-center justify-center shadow-2xl ${
                   winner === 'X' ? 'bg-emerald-500/10 border border-emerald-500/30' :
                   winner === 'O' ? 'bg-rose-500/10 border border-rose-500/30' :
                   'bg-amber-500/10 border border-amber-500/30'
                 }`}>
-                  <span className={`text-3xl font-black ${
+                  <span className={`text-5xl sm:text-6xl font-black drop-shadow-md ${
                     winner === 'X' ? 'text-emerald-400' :
                     winner === 'O' ? 'text-rose-400' :
                     'text-amber-400'
@@ -415,8 +425,8 @@ export default function TicTacToe() {
                   </span>
                 </div>
 
-                <div className="text-center">
-                  <h2 className={`text-2xl font-black mb-1 tracking-wide ${
+                <div className="text-center max-w-[280px] sm:max-w-sm">
+                  <h2 className={`text-2xl sm:text-3xl font-black mb-2 tracking-wide ${
                     winner === 'X' ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]' :
                     winner === 'O' ? 'text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.3)]' :
                     'text-amber-400'
@@ -425,7 +435,7 @@ export default function TicTacToe() {
                     {winner === 'O' && 'ALVO BLOQUEADO'}
                     {isDraw && 'EMPATE DETETADO'}
                   </h2>
-                  <p className="text-gray-400 text-sm max-w-xs mx-auto leading-relaxed">
+                  <p className="text-gray-400 text-sm sm:text-base leading-relaxed">
                     {winner === 'X' && 'Conseguiu ultrapassar as barreiras lógicas do adversário.'}
                     {winner === 'O' && 'O algoritmo da IA previu as suas jogadas finais.'}
                     {isDraw && 'Nenhum dos sistemas conseguiu obter vantagem espacial.'}
@@ -434,7 +444,7 @@ export default function TicTacToe() {
 
                 <button
                   onClick={resetGame}
-                  className="px-8 py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white font-bold text-sm rounded-xl transition-all shadow-xl cursor-pointer active:scale-95 flex items-center gap-2"
+                  className="px-10 py-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white font-bold text-base rounded-2xl transition-all shadow-xl cursor-pointer active:scale-95 w-full sm:w-auto"
                 >
                   Reiniciar Vetores
                 </button>
@@ -446,7 +456,7 @@ export default function TicTacToe() {
         </div>
       </div>
 
-      {/* Estilos CSS Embutidos para manter a coerência visual */}
+      {/* Estilos CSS Embutidos */}
       <style jsx>{`
         .glass-card {
           background: rgba(255, 255, 255, 0.03);
@@ -461,6 +471,11 @@ export default function TicTacToe() {
         @keyframes scaleUp {
           from { opacity: 0; transform: scale(0.7); }
           to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
       `}</style>
     </div>

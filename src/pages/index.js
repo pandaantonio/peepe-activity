@@ -27,16 +27,6 @@ const games = [
     banner: "/imgs/tttai.png"
   },
   {
-    id: "tttmultiplayer",
-    badge: "MULTIJOGADOR",
-    title: "Jogo da Velha (Online)",
-    desc: "Crie uma sala privada ou entre usando um código para desafiar seus amigos em tempo real.",
-    color: "purple",
-    icon: <FaUsers size={24} />,
-    path: "/game/tttmultiplayer",
-    banner: "/imgs/tttmultiplayer.png"
-  },
-  {
     id: "hangman",
     badge: "LÓGICA",
     title: "Jogo da Forca",
@@ -156,7 +146,7 @@ export default function GameHub() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-white/[0.01] rounded-full blur-[150px]" />
       </div>
 
-      <div className="relative pt-24 pb-16 px-6 max-w-6xl mx-auto">
+      <div className="relative pt-16 pb-16 px-6 max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-10">
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-semibold mb-3 tracking-tight animate-fade-in-up">
