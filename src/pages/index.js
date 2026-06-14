@@ -1,6 +1,6 @@
 // pages/index.js
 import Link from 'next/link';
-import { FaChess, FaUsers, FaLock, FaSlidersH } from 'react-icons/fa';
+import { FaChess, FaUsers, FaLock, FaSlidersH, FaCoins } from 'react-icons/fa';
 import { FiZap, FiUser, FiCpu } from 'react-icons/fi';
 import { useEffect, useState } from 'react';
 import { useDiscord } from '@/contexts/DiscordContext';
@@ -69,12 +69,66 @@ const games = [
 ];
 
 export default function GameHub() {
-  const { isContextReady } = useDiscord();
+  const { isContextReady, user } = useDiscord();
   const [mounted, setMounted] = useState(false);
+  const [coins, setCoins] = useState(0);
+  const [dailyAvailable, setDailyAvailable] = useState(false);
+  const [collectingDaily, setCollectingDaily] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Buscar moedas do usuário quando o Discord estiver pronto
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchCoins = async () => {
+      try {
+        const res = await fetch(`/api/users/${user.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setCoins(data.coins || 0);
+
+          // Verificar se recompensa diária está disponível
+          const now = Date.now();
+          const oneDay = 24 * 60 * 60 * 1000;
+          const lastDaily = data.lastDaily || 0;
+          setDailyAvailable(now - lastDaily >= oneDay);
+        }
+      } catch (err) {
+        console.error('Error fetching coins:', err);
+      }
+    };
+
+    fetchCoins();
+    // Atualizar a cada 30 segundos
+    const interval = setInterval(fetchCoins, 30000);
+    return () => clearInterval(interval);
+  }, [user?.id]);
+
+  const collectDaily = async () => {
+    if (!user?.id || collectingDaily) return;
+
+    setCollectingDaily(true);
+    try {
+      const res = await fetch(`/api/users/${user.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'daily' })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setCoins(data.coins);
+        setDailyAvailable(false);
+      }
+    } catch (err) {
+      console.error('Error collecting daily:', err);
+    } finally {
+      setCollectingDaily(false);
+    }
+  };
 
   const colorClasses = {
     emerald: {
@@ -149,6 +203,32 @@ export default function GameHub() {
       <div className="relative pt-16 pb-16 px-6 max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
+          {/* Coins Display */}
+          <div className="flex items-center justify-center gap-3 mb-6 animate-fade-in-up">
+            <div className="glass-coins rounded-2xl px-5 py-2.5 flex items-center gap-3 border border-yellow-500/20">
+              <div className="w-8 h-8 rounded-full bg-yellow-500/10 flex items-center justify-center">
+                <FaCoins className="text-yellow-400 text-sm" />
+              </div>
+              <div className="text-left">
+                <div className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Suas Moedas</div>
+                <div className="text-lg font-bold text-yellow-400 tabular-nums">{coins.toLocaleString()}</div>
+              </div>
+            </div>
+
+            {dailyAvailable && (
+              <button
+                onClick={collectDaily}
+                disabled={collectingDaily}
+                className="glass-daily rounded-2xl px-4 py-2.5 flex items-center gap-2 border border-emerald-500/30 hover:border-emerald-500/50 transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-xs font-semibold text-emerald-400">
+                  {collectingDaily ? 'Coletando...' : '+100 Diário'}
+                </span>
+              </button>
+            )}
+          </div>
+
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-semibold mb-3 tracking-tight animate-fade-in-up">
             <span className="text-white/90">Biblioteca de </span>
             <span className="liquid-glass-title px-5 py-1.5 rounded-2xl inline-block">
@@ -250,6 +330,31 @@ export default function GameHub() {
           box-shadow: 
             0 20px 40px rgba(0, 0, 0, 0.3),
             0 0 0 1px rgba(255, 255, 255, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        }
+
+        .glass-coins {
+          background: rgba(255, 255, 255, 0.03);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          box-shadow: 
+            0 4px 24px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        }
+
+        .glass-daily {
+          background: rgba(16, 185, 129, 0.05);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          box-shadow: 
+            0 4px 24px rgba(16, 185, 129, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        }
+
+        .glass-daily:hover {
+          background: rgba(16, 185, 129, 0.08);
+          box-shadow: 
+            0 8px 32px rgba(16, 185, 129, 0.12),
             inset 0 1px 0 rgba(255, 255, 255, 0.06);
         }
 
