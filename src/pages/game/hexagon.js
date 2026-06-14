@@ -71,13 +71,36 @@ export default function HexagonGame() {
   const [highScore, setHighScore] = useState(0)
   const [shake, setShake] = useState(false)
 
-  // Joystick state
-  const joystickRef = useRef({ active: false, originX: 0, originY: 0, currentX: 0, currentY: 0, dx: 0, dy: 0 })
-  const [joystickVisible, setJoystickVisible] = useState(false)
-  const [joystickPos, setJoystickPos] = useState({ x: 0, y: 0 })
+  // Joystick state (joystick fixo no canto inferior esquerdo)
+  const joystickRef = useRef({ active: false, originX: 0, originY: 0, dx: 0, dy: 0 })
+  const joystickBaseRef = useRef(null)
   const [joystickKnob, setJoystickKnob] = useState({ x: 0, y: 0 })
 
+  // Detecção de dispositivo touch e orientação, para otimizar o layout mobile/landscape
+  const [isTouchDevice, setIsTouchDevice] = useState(false)
+  const [compactLandscape, setCompactLandscape] = useState(false)
+  const [isPortraitTouch, setIsPortraitTouch] = useState(false)
+
   useEffect(() => { stateRef.current = gameState }, [gameState])
+
+  useEffect(() => {
+    const touch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0
+    setIsTouchDevice(touch)
+
+    const checkLayout = () => {
+      const portrait = window.innerHeight > window.innerWidth
+      setIsPortraitTouch(touch && portrait)
+      // Layout compacto: telas curtas em paisagem (celulares na horizontal)
+      setCompactLandscape(!portrait && window.innerHeight < 520)
+    }
+    checkLayout()
+    window.addEventListener('resize', checkLayout, { passive: true })
+    window.addEventListener('orientationchange', checkLayout, { passive: true })
+    return () => {
+      window.removeEventListener('resize', checkLayout)
+      window.removeEventListener('orientationchange', checkLayout)
+    }
+  }, [])
 
   const initGame = useCallback(() => {
     const mount = mountRef.current
@@ -319,50 +342,91 @@ export default function HexagonGame() {
       mouse.y = -(e.clientY / window.innerHeight) * 2 + 1
     }
 
-    // Joystick touch handlers protegidos contra scroll acidental nativo do mobile
-    const handleJoystickStart = (e) => {
-      if (e.cancelable) e.preventDefault()
-      const touch = e.touches[0]
-      const js = joystickRef.current
-      js.active = true
-      js.originX = touch.clientX
-      js.originY = touch.clientY
-      js.currentX = touch.clientX
-      js.currentY = touch.clientY
-      js.dx = 0
-      js.dy = 0
-      setJoystickVisible(true)
-      setJoystickPos({ x: touch.clientX, y: touch.clientY })
-      setJoystickKnob({ x: 0, y: 0 })
-    }
+    // Joystick fixo (canto inferior esquerdo) + olhar com o dedo no resto da tela
+    let joystickTouchId = null
+    let cameraTouchId = null
+    let lastTouchX = 0
+    let lastTouchY = 0
+    const JOY_MAX_DIST = 32
+    const JOY_GRAB_RADIUS = 70 // raio generoso para facilitar pegar o joystick com o polegar
 
-    const handleJoystickMove = (e) => {
+    const handleTouchStart = (e) => {
       if (e.cancelable) e.preventDefault()
-      const js = joystickRef.current
-      if (!js.active) return
-      const touch = e.touches[0]
-      const maxDist = 50
-      let dx = touch.clientX - js.originX
-      let dy = touch.clientY - js.originY
-      const dist = Math.sqrt(dx * dx + dy * dy)
-      if (dist > maxDist) {
-        dx = (dx / dist) * maxDist
-        dy = (dy / dist) * maxDist
+      for (const touch of e.changedTouches) {
+        const base = joystickBaseRef.current
+        const rect = base ? base.getBoundingClientRect() : null
+        if (rect) {
+          const cx = rect.left + rect.width / 2
+          const cy = rect.top + rect.height / 2
+          const dx = touch.clientX - cx
+          const dy = touch.clientY - cy
+          if (joystickTouchId === null && Math.sqrt(dx * dx + dy * dy) < JOY_GRAB_RADIUS) {
+            joystickTouchId = touch.identifier
+            const js = joystickRef.current
+            js.active = true
+            js.originX = cx
+            js.originY = cy
+            const dist = Math.sqrt(dx * dx + dy * dy)
+            let kx = dx, ky = dy
+            if (dist > JOY_MAX_DIST) {
+              kx = (dx / dist) * JOY_MAX_DIST
+              ky = (dy / dist) * JOY_MAX_DIST
+            }
+            js.dx = kx / JOY_MAX_DIST
+            js.dy = ky / JOY_MAX_DIST
+            setJoystickKnob({ x: kx, y: ky })
+            continue
+          }
+        }
+        if (cameraTouchId === null && stateRef.current === 'playing') {
+          cameraTouchId = touch.identifier
+          lastTouchX = touch.clientX
+          lastTouchY = touch.clientY
+        }
       }
-      js.currentX = js.originX + dx
-      js.currentY = js.originY + dy
-      js.dx = dx / maxDist
-      js.dy = dy / maxDist
-      setJoystickKnob({ x: dx, y: dy })
     }
 
-    const handleJoystickEnd = (e) => {
-      const js = joystickRef.current
-      js.active = false
-      js.dx = 0
-      js.dy = 0
-      setJoystickVisible(false)
-      setJoystickKnob({ x: 0, y: 0 })
+    const handleTouchMove = (e) => {
+      if (e.cancelable) e.preventDefault()
+      for (const touch of e.changedTouches) {
+        if (touch.identifier === joystickTouchId) {
+          const js = joystickRef.current
+          let dx = touch.clientX - js.originX
+          let dy = touch.clientY - js.originY
+          const dist = Math.sqrt(dx * dx + dy * dy)
+          if (dist > JOY_MAX_DIST) {
+            dx = (dx / dist) * JOY_MAX_DIST
+            dy = (dy / dist) * JOY_MAX_DIST
+          }
+          js.dx = dx / JOY_MAX_DIST
+          js.dy = dy / JOY_MAX_DIST
+          setJoystickKnob({ x: dx, y: dy })
+        } else if (touch.identifier === cameraTouchId) {
+          if (stateRef.current === 'playing') {
+            const dx = touch.clientX - lastTouchX
+            const dy = touch.clientY - lastTouchY
+            cameraAngle -= dx * 0.006
+            cameraPitch = Math.max(0.1, Math.min(0.8, cameraPitch - dy * 0.006))
+          }
+          lastTouchX = touch.clientX
+          lastTouchY = touch.clientY
+        }
+      }
+    }
+
+    const handleTouchEnd = (e) => {
+      for (const touch of e.changedTouches) {
+        if (touch.identifier === joystickTouchId) {
+          joystickTouchId = null
+          const js = joystickRef.current
+          js.active = false
+          js.dx = 0
+          js.dy = 0
+          setJoystickKnob({ x: 0, y: 0 })
+        } else if (touch.identifier === cameraTouchId) {
+          cameraTouchId = null
+        }
+      }
     }
 
     window.addEventListener('keydown', handleKeyDown, { passive: true })
@@ -370,9 +434,10 @@ export default function HexagonGame() {
     window.addEventListener('mousedown', handleMouseDown, { passive: true })
     window.addEventListener('mouseup', handleMouseUp, { passive: true })
     window.addEventListener('mousemove', handleMouseMove, { passive: true })
-    mount.addEventListener('touchstart', handleJoystickStart, { passive: false })
-    window.addEventListener('touchmove', handleJoystickMove, { passive: false })
-    window.addEventListener('touchend', handleJoystickEnd, { passive: true })
+    mount.addEventListener('touchstart', handleTouchStart, { passive: false })
+    mount.addEventListener('touchmove', handleTouchMove, { passive: false })
+    mount.addEventListener('touchend', handleTouchEnd, { passive: true })
+    mount.addEventListener('touchcancel', handleTouchEnd, { passive: true })
 
     function checkColorMatch() {
       const hex = getHexAtPosition(playerPos.x, playerPos.z, hexagons)
@@ -588,9 +653,14 @@ export default function HexagonGame() {
     }
 
     function updateCamera() {
-      const camX = playerPos.x + Math.sin(cameraAngle) * CAMERA_DISTANCE
-      const camY = CAMERA_HEIGHT * Math.sin(cameraPitch) + 2
-      const camZ = playerPos.z + Math.cos(cameraAngle) * CAMERA_DISTANCE
+      // Em telas curtas (celular na horizontal), afasta um pouco a câmera para enxergar mais do cenário
+      const shortScreen = window.innerHeight < 520 && window.innerWidth > window.innerHeight
+      const distance = shortScreen ? CAMERA_DISTANCE * 1.25 : CAMERA_DISTANCE
+      const height = shortScreen ? CAMERA_HEIGHT * 1.15 : CAMERA_HEIGHT
+
+      const camX = playerPos.x + Math.sin(cameraAngle) * distance
+      const camY = height * Math.sin(cameraPitch) + 2
+      const camZ = playerPos.z + Math.cos(cameraAngle) * distance
 
       camera.position.set(camX, camY, camZ)
       camera.lookAt(playerPos.x, 1.2, playerPos.z)
@@ -684,9 +754,10 @@ export default function HexagonGame() {
       window.removeEventListener('mousedown', handleMouseDown)
       window.removeEventListener('mouseup', handleMouseUp)
       window.removeEventListener('mousemove', handleMouseMove)
-      mount.removeEventListener('touchstart', handleJoystickStart)
-      window.removeEventListener('touchmove', handleJoystickMove)
-      window.removeEventListener('touchend', handleJoystickEnd)
+      mount.removeEventListener('touchstart', handleTouchStart)
+      mount.removeEventListener('touchmove', handleTouchMove)
+      mount.removeEventListener('touchend', handleTouchEnd)
+      mount.removeEventListener('touchcancel', handleTouchEnd)
       window.removeEventListener('resize', handleResize)
       
       // Desaloca explicitamente geometrias e materiais da VRAM
@@ -703,7 +774,18 @@ export default function HexagonGame() {
     return cleanup
   }, [initGame])
 
-  const handleStart = () => { if (gameRef.current) gameRef.current.startGame() }
+  const handleStart = () => {
+    if (isTouchDevice) {
+      const elem = document.documentElement
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen().catch(() => {})
+      }
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(() => {})
+      }
+    }
+    if (gameRef.current) gameRef.current.startGame()
+  }
 
   const colorHex = targetColor ? '#' + targetColor.toString(16).padStart(6, '0') : '#ffffff'
 
@@ -720,7 +802,7 @@ export default function HexagonGame() {
 
         {/* Botão Voltar pro Hub */}
         <Link href="/">
-          <button className="absolute top-4 left-4 z-50 bg-black/70 backdrop-blur-sm border border-white/10 rounded-xl px-4 py-2 text-white/80 text-sm font-medium hover:bg-white/10 hover:text-white transition-all flex items-center gap-2">
+          <button className={`absolute z-50 bg-black/70 backdrop-blur-sm border border-white/10 rounded-xl text-white/80 font-medium hover:bg-white/10 hover:text-white transition-all flex items-center gap-2 ${compactLandscape ? 'top-2 left-2 px-3 py-1.5 text-xs' : 'top-4 left-4 px-4 py-2 text-sm'}`}>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
@@ -730,62 +812,96 @@ export default function HexagonGame() {
 
         {gameState === 'playing' && (
           <>
-            <div className={`absolute top-4 left-1/2 -translate-x-1/2 right-auto p-0 flex justify-center items-start pointer-events-none ${shake ? 'shake' : ''}`}>
-              <div className="flex flex-col items-center">
-                <div className="bg-black/70 backdrop-blur-sm rounded-xl px-6 py-3 border border-white/10 mb-2">
-                  <div className="text-white/60 text-xs uppercase tracking-wider text-center">Pise na cor</div>
+            {compactLandscape ? (
+              <div className={`absolute top-2 left-1/2 -translate-x-1/2 flex items-center gap-2 pointer-events-none ${shake ? 'shake' : ''}`}>
+                <div className="bg-black/70 backdrop-blur-sm rounded-lg pl-2 pr-3 py-1.5 border border-white/10 flex items-center gap-2">
                   <div
-                    className="w-12 h-12 md:w-16 md:h-16 rounded-lg mt-2 mx-auto border-2 border-white/30 shadow-lg transition-all duration-300"
-                    style={{ backgroundColor: colorHex, boxShadow: `0 0 30px ${colorHex}80` }}
+                    className="w-7 h-7 rounded-md border-2 border-white/30 shadow-lg shrink-0"
+                    style={{ backgroundColor: colorHex, boxShadow: `0 0 12px ${colorHex}80` }}
                   />
+                  <span className="text-white/60 text-[10px] uppercase tracking-wider leading-tight">Pise<br />na cor</span>
                 </div>
-                <div className={`bg-black/70 backdrop-blur-sm rounded-xl px-5 py-2 border ${timeLeft <= 1.5 ? 'border-red-500/50' : 'border-white/10'}`}>
-                  <div className={`text-2xl md:text-3xl font-bold font-mono ${timeLeft <= 1.5 ? 'text-red-400 animate-pulse' : 'text-white'}`}>
+                <div className={`bg-black/70 backdrop-blur-sm rounded-lg px-3 py-1.5 border ${timeLeft <= 1.5 ? 'border-red-500/50' : 'border-white/10'}`}>
+                  <div className={`text-lg font-bold font-mono ${timeLeft <= 1.5 ? 'text-red-400 animate-pulse' : 'text-white'}`}>
                     {timeLeft.toFixed(1)}s
                   </div>
                 </div>
               </div>
-            </div>
-
-            <div className="absolute top-4 right-4 flex flex-col gap-2 pointer-events-none">
-              <div className="bg-black/70 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/10">
-                <div className="text-white/60 text-xs uppercase tracking-wider">Pontuação</div>
-                <div className="text-white text-xl font-bold">{score}</div>
+            ) : (
+              <div className={`absolute top-4 left-1/2 -translate-x-1/2 right-auto p-0 flex justify-center items-start pointer-events-none ${shake ? 'shake' : ''}`}>
+                <div className="flex flex-col items-center">
+                  <div className="bg-black/70 backdrop-blur-sm rounded-xl px-6 py-3 border border-white/10 mb-2">
+                    <div className="text-white/60 text-xs uppercase tracking-wider text-center">Pise na cor</div>
+                    <div
+                      className="w-12 h-12 md:w-16 md:h-16 rounded-lg mt-2 mx-auto border-2 border-white/30 shadow-lg transition-all duration-300"
+                      style={{ backgroundColor: colorHex, boxShadow: `0 0 30px ${colorHex}80` }}
+                    />
+                  </div>
+                  <div className={`bg-black/70 backdrop-blur-sm rounded-xl px-5 py-2 border ${timeLeft <= 1.5 ? 'border-red-500/50' : 'border-white/10'}`}>
+                    <div className={`text-2xl md:text-3xl font-bold font-mono ${timeLeft <= 1.5 ? 'text-red-400 animate-pulse' : 'text-white'}`}>
+                      {timeLeft.toFixed(1)}s
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="bg-black/70 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/10">
-                <div className="text-white/60 text-xs uppercase tracking-wider">Rodada</div>
-                <div className="text-white text-xl font-bold">#{round}</div>
-              </div>
-            </div>
+            )}
 
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 backdrop-blur-sm rounded-lg px-4 py-2 text-white/40 text-xs pointer-events-none hidden md:block">
-              WASD para andar · Segure clique e arraste para rotacionar câmera
-            </div>
+            {compactLandscape ? (
+              <div className="absolute top-2 right-2 flex flex-row gap-1.5 pointer-events-none">
+                <div className="bg-black/70 backdrop-blur-sm rounded-xl border border-white/10 text-center px-2.5 py-1">
+                  <div className="text-white/60 uppercase tracking-wider text-[9px]">Pontuação</div>
+                  <div className="text-white font-bold text-sm">{score}</div>
+                </div>
+                <div className="bg-black/70 backdrop-blur-sm rounded-xl border border-white/10 text-center px-2.5 py-1">
+                  <div className="text-white/60 uppercase tracking-wider text-[9px]">Rodada</div>
+                  <div className="text-white font-bold text-sm">#{round}</div>
+                </div>
+              </div>
+            ) : (
+              <div className="absolute top-4 right-4 flex flex-col gap-2 pointer-events-none">
+                <div className="bg-black/70 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/10">
+                  <div className="text-white/60 text-xs uppercase tracking-wider">Pontuação</div>
+                  <div className="text-white text-xl font-bold">{score}</div>
+                </div>
+                <div className="bg-black/70 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/10">
+                  <div className="text-white/60 text-xs uppercase tracking-wider">Rodada</div>
+                  <div className="text-white text-xl font-bold">#{round}</div>
+                </div>
+              </div>
+            )}
+
+            {!compactLandscape && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 backdrop-blur-sm rounded-lg px-4 py-2 text-white/40 text-xs pointer-events-none hidden md:block">
+                WASD para andar · Segure clique e arraste para rotacionar câmera
+              </div>
+            )}
           </>
         )}
 
         {gameState === 'menu' && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-40">
-            <div className="text-center px-4">
-              <h1 className="text-5xl md:text-6xl font-black text-white mb-2 tracking-tight">
+          <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-40 overflow-y-auto">
+            <div className={`text-center px-4 ${compactLandscape ? 'py-4' : ''}`}>
+              <h1 className={`font-black text-white mb-2 tracking-tight ${compactLandscape ? 'text-3xl' : 'text-5xl md:text-6xl'}`}>
                 HEXAGON
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400">
                   COLOR RUSH
                 </span>
               </h1>
-              <p className="text-white/50 text-base md:text-lg mb-6 max-w-md mx-auto">
+              <p className={`text-white/50 max-w-md mx-auto ${compactLandscape ? 'text-sm mb-3' : 'text-base md:text-lg mb-6'}`}>
                 Hexágonos coloridos no chão. 5 segundos para pisar na cor certa. Não pisou? Caiu!
               </p>
-              <div className="bg-white/5 rounded-xl p-4 mb-6 max-w-sm mx-auto">
+              <div className={`bg-white/5 rounded-xl max-w-sm mx-auto ${compactLandscape ? 'p-2 mb-3' : 'p-4 mb-6'}`}>
                 <div className="text-white/30 text-xs uppercase tracking-wider mb-2">Controles</div>
                 <div className="grid grid-cols-2 gap-2 text-sm text-white/50">
                   <div className="flex items-center gap-2"><span className="bg-white/10 px-2 py-0.5 rounded text-xs">WASD</span> Andar</div>
-                  <div className="flex items-center gap-2"><span className="bg-white/10 px-2 py-0.5 rounded text-xs">Touch</span> Joystick</div>
+                  <div className="flex items-center gap-2"><span className="bg-white/10 px-2 py-0.5 rounded text-xs">Joystick</span> Andar</div>
+                  <div className="flex items-center gap-2"><span className="bg-white/10 px-2 py-0.5 rounded text-xs">Mouse</span> Câmera</div>
+                  <div className="flex items-center gap-2"><span className="bg-white/10 px-2 py-0.5 rounded text-xs">Arraste</span> Câmera</div>
                 </div>
               </div>
               <button
                 onClick={handleStart}
-                className="px-10 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xl font-bold rounded-xl hover:from-purple-500 hover:to-pink-500 transition-all transform hover:scale-105 shadow-lg shadow-purple-500/30"
+                className={`bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl hover:from-purple-500 hover:to-pink-500 transition-all transform hover:scale-105 shadow-lg shadow-purple-500/30 ${compactLandscape ? 'px-8 py-3 text-lg' : 'px-10 py-4 text-xl'}`}
               >
                 JOGAR
               </button>
@@ -795,23 +911,23 @@ export default function HexagonGame() {
         )}
 
         {gameState === 'gameover' && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-40">
-            <div className="text-center px-4">
-              <h2 className="text-4xl md:text-5xl font-black text-red-400 mb-2">GAME OVER</h2>
-              <p className="text-white/50 text-lg mb-2">Você caiu!</p>
-              <div className="flex justify-center gap-2 mb-8">
-                <div className="bg-white/5 rounded-xl px-6 py-4">
+          <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-40 overflow-y-auto">
+            <div className={`text-center px-4 ${compactLandscape ? 'py-4' : ''}`}>
+              <h2 className={`font-black text-red-400 mb-2 ${compactLandscape ? 'text-3xl' : 'text-4xl md:text-5xl'}`}>GAME OVER</h2>
+              <p className={`text-white/50 mb-2 ${compactLandscape ? 'text-base' : 'text-lg'}`}>Você caiu!</p>
+              <div className={`flex justify-center gap-2 ${compactLandscape ? 'mb-4' : 'mb-8'}`}>
+                <div className={`bg-white/5 rounded-xl ${compactLandscape ? 'px-5 py-2' : 'px-6 py-4'}`}>
                   <div className="text-white/40 text-sm uppercase tracking-wider">Pontuação</div>
-                  <div className="text-white text-3xl md:text-4xl font-bold">{score}</div>
+                  <div className={`text-white font-bold ${compactLandscape ? 'text-2xl' : 'text-3xl md:text-4xl'}`}>{score}</div>
                 </div>
-                <div className="bg-white/5 rounded-xl px-6 py-4">
+                <div className={`bg-white/5 rounded-xl ${compactLandscape ? 'px-5 py-2' : 'px-6 py-4'}`}>
                   <div className="text-white/40 text-sm uppercase tracking-wider">Rodadas</div>
-                  <div className="text-white text-3xl md:text-4xl font-bold">{round}</div>
+                  <div className={`text-white font-bold ${compactLandscape ? 'text-2xl' : 'text-3xl md:text-4xl'}`}>{round}</div>
                 </div>
               </div>
               <button
                 onClick={handleStart}
-                className="px-10 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xl font-bold rounded-xl hover:from-purple-500 hover:to-pink-500 transition-all transform hover:scale-105 shadow-lg shadow-purple-500/30"
+                className={`bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl hover:from-purple-500 hover:to-pink-500 transition-all transform hover:scale-105 shadow-lg shadow-purple-500/30 ${compactLandscape ? 'px-8 py-3 text-lg' : 'px-10 py-4 text-xl'}`}
               >
                 JOGAR NOVAMENTE
               </button>
@@ -820,23 +936,40 @@ export default function HexagonGame() {
           </div>
         )}
 
-        {/* Joystick Visual */}
-        {joystickVisible && (
+        {/* Joystick fixo no canto inferior esquerdo, sempre visível em dispositivos touch durante o jogo */}
+        {isTouchDevice && gameState === 'playing' && (
           <div
-            className="fixed z-50 pointer-events-none md:hidden"
-            style={{
-              left: joystickPos.x - 50,
-              top: joystickPos.y - 50,
-            }}
+            ref={joystickBaseRef}
+            className="fixed z-50 pointer-events-none"
+            style={{ left: 'calc(env(safe-area-inset-left) + 20px)', bottom: 'calc(env(safe-area-inset-bottom) + 20px)' }}
           >
-            <div className="w-[100px] h-[100px] rounded-full bg-white/10 border-2 border-white/20 backdrop-blur-sm flex items-center justify-center">
+            <div className="w-[110px] h-[110px] rounded-full bg-white/10 border-2 border-white/20 backdrop-blur-sm flex items-center justify-center">
               <div
-                className="w-10 h-10 rounded-full bg-white/40 border border-white/50 shadow-lg"
-                style={{
-                  transform: `translate(${joystickKnob.x}px, ${joystickKnob.y}px)`,
-                }}
+                className="w-12 h-12 rounded-full bg-white/40 border border-white/50 shadow-lg"
+                style={{ transform: `translate(${joystickKnob.x}px, ${joystickKnob.y}px)` }}
               />
             </div>
+          </div>
+        )}
+
+        {/* Aviso para girar o aparelho em dispositivos touch no modo retrato */}
+        {isPortraitTouch && (
+          <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center px-6 text-center">
+            <div className="text-6xl mb-4 animate-bounce">📱</div>
+            <h2 className="text-white text-xl font-bold mb-2">Gire seu dispositivo</h2>
+            <p className="text-white/50 text-sm max-w-xs mb-6">
+              Este jogo foi feito para a tela na horizontal. Vire o celular de lado para uma experiência melhor.
+            </p>
+            <button
+              onClick={() => {
+                const elem = document.documentElement
+                if (elem.requestFullscreen) elem.requestFullscreen().catch(() => {})
+                if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {})
+              }}
+              className="px-6 py-2.5 bg-white/10 border border-white/20 rounded-lg text-white/70 text-sm hover:bg-white/20 transition-all"
+            >
+              Tentar girar automaticamente
+            </button>
           </div>
         )}
       </div>
