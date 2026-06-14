@@ -7,7 +7,6 @@ export default function App({ Component, pageProps }) {
   return (
     <DiscordProvider>
       <Component {...pageProps} />
-      <DebugPanel />
     </DiscordProvider>
   );
 }
