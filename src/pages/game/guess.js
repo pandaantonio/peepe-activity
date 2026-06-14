@@ -107,41 +107,43 @@ export default function GuessNumber() {
   };
 
   return (
-    <div className={`fixed inset-0 ${getContainerClass()} flex flex-col items-center justify-center z-50 transition-colors duration-300`}>
+    <div className={`fixed inset-0 ${getContainerClass()} flex flex-col landscape:flex-row items-center justify-center landscape:justify-center gap-6 landscape:gap-10 px-4 py-6 landscape:px-6 landscape:py-3 overflow-y-auto z-50 transition-colors duration-300`}>
       {/* Botão Voltar */}
       <button
         onClick={handleExit}
-        className="fixed top-6 left-6 z-50 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 px-6 py-3 rounded-2xl font-medium active:scale-95 transition-all"
+        className="fixed top-4 left-4 landscape:top-2 landscape:left-2 z-50 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 px-5 py-2.5 landscape:px-3 landscape:py-1.5 rounded-2xl landscape:rounded-xl text-sm landscape:text-xs font-medium active:scale-95 transition-all"
       >
-        ← Voltar ao Hub
+        <span className="landscape:hidden">← Voltar ao Hub</span>
+        <span className="hidden landscape:inline">← Voltar</span>
       </button>
 
-      <div className="w-full max-w-[340px] p-4">
+      {/* Bloco do título + número secreto (lado esquerdo no landscape) */}
+      <div className="text-center landscape:flex-shrink-0">
+        <h1 className="text-2xl landscape:text-lg font-black text-white mb-4 landscape:mb-2">
+          Adivinha o Número!
+        </h1>
+        <div className={`${getSecretBoxClass()} w-24 h-24 landscape:w-16 landscape:h-16 mx-auto flex items-center justify-center rounded-2xl landscape:rounded-xl border-2 text-4xl landscape:text-2xl font-black transition-all duration-300`}>
+          {gameOver ? secretNumber : '?'}
+        </div>
+      </div>
+
+      {/* Bloco interativo (lado direito no landscape) */}
+      <div className="w-full max-w-[340px] landscape:max-w-[300px] landscape:flex-shrink-0">
         {/* Header com botão reiniciar e range */}
-        <div className="flex justify-between items-center mb-4 px-2">
+        <div className="flex justify-between items-center mb-4 landscape:mb-2 px-2">
           <button
             onClick={resetGame}
-            className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-4 py-2 rounded-xl text-sm font-medium transition-all active:scale-95"
+            className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-4 py-2 landscape:px-3 landscape:py-1.5 rounded-xl text-sm landscape:text-xs font-medium transition-all active:scale-95"
           >
             🔄 Reiniciar
           </button>
-          <span className="text-zinc-500 text-sm">(Escolha 1 de 3)</span>
-        </div>
-
-        {/* Área central com título e número secreto */}
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-black text-white mb-4">
-            Adivinha o Número!
-          </h1>
-          <div className={`${getSecretBoxClass()} w-24 h-24 mx-auto flex items-center justify-center rounded-2xl border-2 text-4xl font-black transition-all duration-300`}>
-            {gameOver ? secretNumber : '?'}
-          </div>
+          <span className="text-zinc-500 text-sm landscape:text-xs">(Escolha 1 de 3)</span>
         </div>
 
         {/* Área interativa */}
-        <div className="space-y-4">
+        <div className="space-y-4 landscape:space-y-2">
           {/* Botões de opções */}
-          <div className="flex gap-3">
+          <div className="flex gap-3 landscape:gap-2">
             {options.map((num, index) => (
               <button
                 key={index}
@@ -149,7 +151,7 @@ export default function GuessNumber() {
                 disabled={gameOver}
                 className={`
                   flex-1 bg-zinc-900 border-2 border-zinc-700 rounded-xl
-                  text-white text-xl font-bold py-4
+                  text-white text-xl landscape:text-lg font-bold py-4 landscape:py-3
                   transition-all duration-200
                   hover:bg-zinc-800 hover:border-emerald-400
                   active:scale-95
@@ -163,55 +165,55 @@ export default function GuessNumber() {
 
           {/* Mensagem e pontuação */}
           <div className="text-center">
-            <p className={`text-base font-semibold mb-3 ${
+            <p className={`text-base landscape:text-sm font-semibold mb-3 landscape:mb-2 ${
               gameOver ? (isVictory ? 'text-emerald-400' : 'text-red-400') : 'text-zinc-300'
             }`}>
               {message}
             </p>
-            <div className="flex justify-center gap-8 text-sm text-zinc-400">
+            <div className="flex justify-center gap-8 landscape:gap-6 text-sm landscape:text-xs text-zinc-400">
               <p>💯 Pontos: <span className="text-white font-bold">{score}</span></p>
               <p>🥇 Recorde: <span className="text-emerald-400 font-bold">{highscore}</span></p>
             </div>
           </div>
         </div>
 
-        {/* Instruções */}
-        <div className="mt-8 text-center text-xs text-zinc-600">
-          <p>Clique no número que você acha que é o correto!</p>
+        {/* Instruções - ocultas no landscape para economizar espaço */}
+        <div className="mt-8 landscape:mt-3 text-center text-xs text-zinc-600">
+          <p className="landscape:hidden">Clique no número que você acha que é o correto!</p>
           <p className="mt-1">Pressione <kbd className="px-1 py-0.5 bg-zinc-800 rounded text-xs">Enter</kbd> para reiniciar após o fim do jogo</p>
         </div>
       </div>
 
       {/* Overlay de fim de jogo (estilizado) */}
       {gameOver && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-40">
-          <div className="bg-zinc-900 rounded-2xl p-8 max-w-[320px] mx-4 text-center animate-fade-in">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-40 p-4">
+          <div className="bg-zinc-900 rounded-2xl p-8 landscape:p-5 max-w-[320px] landscape:max-w-[280px] max-h-[90vh] overflow-y-auto mx-4 text-center animate-fade-in">
             {isVictory ? (
               <>
-                <div className="text-6xl mb-4">🎉</div>
-                <h2 className="text-2xl font-bold text-emerald-400 mb-2">VITÓRIA!</h2>
-                <p className="text-zinc-300 mb-4">
+                <div className="text-6xl landscape:text-4xl mb-4 landscape:mb-2">🎉</div>
+                <h2 className="text-2xl landscape:text-xl font-bold text-emerald-400 mb-2 landscape:mb-1">VITÓRIA!</h2>
+                <p className="text-zinc-300 mb-4 landscape:mb-2 text-base landscape:text-sm">
                   Você acertou o número {secretNumber}!
                 </p>
-                <p className="text-lg mb-6">
+                <p className="text-lg landscape:text-base mb-6 landscape:mb-3">
                   Pontuação: <span className="text-emerald-400 font-bold">{score}</span>
                 </p>
               </>
             ) : (
               <>
-                <div className="text-6xl mb-4">💀</div>
-                <h2 className="text-2xl font-bold text-red-400 mb-2">GAME OVER!</h2>
-                <p className="text-zinc-300 mb-4">
+                <div className="text-6xl landscape:text-4xl mb-4 landscape:mb-2">💀</div>
+                <h2 className="text-2xl landscape:text-xl font-bold text-red-400 mb-2 landscape:mb-1">GAME OVER!</h2>
+                <p className="text-zinc-300 mb-4 landscape:mb-2 text-base landscape:text-sm">
                   O número era {secretNumber}
                 </p>
-                <p className="text-lg mb-6">
+                <p className="text-lg landscape:text-base mb-6 landscape:mb-3">
                   Pontuação: <span className="text-red-400 font-bold">0</span>
                 </p>
               </>
             )}
             <button
               onClick={resetGame}
-              className="w-full bg-purple-600 hover:bg-purple-700 py-3 rounded-xl font-bold transition-all active:scale-95"
+              className="w-full bg-purple-600 hover:bg-purple-700 py-3 landscape:py-2 rounded-xl font-bold transition-all active:scale-95"
             >
               🔄 Jogar Novamente
             </button>
