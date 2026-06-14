@@ -1,8 +1,8 @@
 // pages/index.js
 import Link from 'next/link';
-import { FaChess, FaUsers, FaLock, FaSlidersH, FaCoins } from 'react-icons/fa';
+import { FaChess, FaUsers, FaLock, FaSlidersH, FaCoins, FaGem, FaBolt, FaPlus } from 'react-icons/fa';
 import { FiZap, FiUser, FiCpu } from 'react-icons/fi';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useDiscord } from '@/contexts/DiscordContext';
 
 const games = [
@@ -72,14 +72,43 @@ export default function GameHub() {
   const { isContextReady, user } = useDiscord();
   const [mounted, setMounted] = useState(false);
   const [coins, setCoins] = useState(0);
+  const [displayCoins, setDisplayCoins] = useState(0);
+  const [gems, setGems] = useState(0);
   const [dailyAvailable, setDailyAvailable] = useState(false);
   const [collectingDaily, setCollectingDaily] = useState(false);
+  const [coinAnim, setCoinAnim] = useState(false);
+  const prevCoinsRef = useRef(0);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Buscar moedas do usuário quando o Discord estiver pronto
+  // Animate coin count
+  useEffect(() => {
+    if (coins !== displayCoins) {
+      const diff = coins - displayCoins;
+      const step = Math.sign(diff) * Math.max(1, Math.abs(Math.floor(diff / 10)));
+      const timer = setTimeout(() => {
+        setDisplayCoins(prev => {
+          const next = prev + step;
+          if (Math.abs(next - coins) < Math.abs(step)) return coins;
+          return next;
+        });
+      }, 30);
+      return () => clearTimeout(timer);
+    }
+  }, [coins, displayCoins]);
+
+  // Trigger animation when coins increase
+  useEffect(() => {
+    if (coins > prevCoinsRef.current && prevCoinsRef.current > 0) {
+      setCoinAnim(true);
+      setTimeout(() => setCoinAnim(false), 800);
+    }
+    prevCoinsRef.current = coins;
+  }, [coins]);
+
+  // Fetch coins
   useEffect(() => {
     if (!user?.id) return;
 
@@ -89,8 +118,8 @@ export default function GameHub() {
         if (res.ok) {
           const data = await res.json();
           setCoins(data.coins || 0);
+          setGems(data.gems || 0);
 
-          // Verificar se recompensa diária está disponível
           const now = Date.now();
           const oneDay = 24 * 60 * 60 * 1000;
           const lastDaily = data.lastDaily || 0;
@@ -102,7 +131,6 @@ export default function GameHub() {
     };
 
     fetchCoins();
-    // Atualizar a cada 30 segundos
     const interval = setInterval(fetchCoins, 30000);
     return () => clearInterval(interval);
   }, [user?.id]);
@@ -171,7 +199,6 @@ export default function GameHub() {
 
   const displayItems = [...games];
 
-  // Aguarda a montagem da árvore do DOM e a validação de ambiente do SDK do Discord
   if (!mounted || !isContextReady) {
     return (
       <div className="min-h-screen bg-[#0a0a0c]">
@@ -200,35 +227,97 @@ export default function GameHub() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-white/[0.01] rounded-full blur-[150px]" />
       </div>
 
-      <div className="relative pt-16 pb-16 px-6 max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          {/* Coins Display */}
-          <div className="flex items-center justify-center gap-3 mb-6 animate-fade-in-up">
-            <div className="glass-coins rounded-2xl px-5 py-2.5 flex items-center gap-3 border border-yellow-500/20">
-              <div className="w-8 h-8 rounded-full bg-yellow-500/10 flex items-center justify-center">
-                <FaCoins className="text-yellow-400 text-sm" />
+      {/* === GAME HUD TOP BAR === */}
+      <div className="fixed top-0 left-0 right-0 z-50 px-3 py-2">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+
+          {/* LEFT: Avatar/Level Badge */}
+          <div className="flex items-center gap-2">
+            <div className="level-badge">
+              <div className="level-outer">
+                <div className="level-inner">
+                  <span className="level-text">16</span>
+                </div>
               </div>
-              <div className="text-left">
-                <div className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">Suas Moedas</div>
-                <div className="text-lg font-bold text-yellow-400 tabular-nums">{coins.toLocaleString()}</div>
-              </div>
+              <div className="level-crown">👑</div>
             </div>
 
-            {dailyAvailable && (
-              <button
-                onClick={collectDaily}
-                disabled={collectingDaily}
-                className="glass-daily rounded-2xl px-4 py-2.5 flex items-center gap-2 border border-emerald-500/30 hover:border-emerald-500/50 transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-xs font-semibold text-emerald-400">
-                  {collectingDaily ? 'Coletando...' : '+100 Diário'}
-                </span>
-              </button>
-            )}
+            {/* XP Bar */}
+            <div className="xp-bar-container">
+              <div className="xp-bar-bg">
+                <div className="xp-bar-fill" style={{ width: '65%' }} />
+              </div>
+              <div className="xp-bar-text">XP</div>
+            </div>
           </div>
 
+          {/* RIGHT: Currency Bars */}
+          <div className="flex items-center gap-2">
+
+            {/* Coins Bar */}
+            <div className={`currency-bar coin-bar ${coinAnim ? 'currency-bump' : ''}`}>
+              <div className="currency-icon coin-icon">
+                <FaCoins className="text-yellow-900 text-xs" />
+              </div>
+              <span className="currency-value coin-value">
+                {displayCoins.toLocaleString()}
+              </span>
+              <button className="currency-plus coin-plus">
+                <FaPlus className="text-xs" />
+              </button>
+            </div>
+
+            {/* Gems Bar */}
+            <div className="currency-bar gem-bar">
+              <div className="currency-icon gem-icon">
+                <FaGem className="text-purple-900 text-xs" />
+              </div>
+              <span className="currency-value gem-value">
+                {gems.toLocaleString()}
+              </span>
+              <button className="currency-plus gem-plus">
+                <FaPlus className="text-xs" />
+              </button>
+            </div>
+
+            {/* Energy Bar */}
+            <div className="currency-bar energy-bar">
+              <div className="currency-icon energy-icon">
+                <FaBolt className="text-orange-900 text-xs" />
+              </div>
+              <span className="currency-value energy-value">
+                310/50
+              </span>
+              <button className="currency-plus energy-plus">
+                <FaPlus className="text-xs" />
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      {/* Daily Reward Floating Button */}
+      {dailyAvailable && (
+        <div className="fixed top-14 right-3 z-50">
+          <button
+            onClick={collectDaily}
+            disabled={collectingDaily}
+            className="daily-float-btn"
+          >
+            <div className="daily-float-glow" />
+            <div className="daily-float-inner">
+              <FaCoins className="text-yellow-400 text-lg" />
+              <span className="text-xs font-bold text-white">+100</span>
+            </div>
+            <div className="daily-float-ping" />
+          </button>
+        </div>
+      )}
+
+      <div className="relative pt-20 pb-16 px-6 max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-12">
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-semibold mb-3 tracking-tight animate-fade-in-up">
             <span className="text-white/90">Biblioteca de </span>
             <span className="liquid-glass-title px-5 py-1.5 rounded-2xl inline-block">
@@ -240,7 +329,6 @@ export default function GameHub() {
             Escolha seu jogo favorito e desafie suas habilidades
           </p>
 
-          {/* Botão de Acesso ao Painel de Controle */}
           <div className="animate-fade-in-up animation-delay-100">
             <Link 
               href="/dashboard" 
@@ -333,39 +421,6 @@ export default function GameHub() {
             inset 0 1px 0 rgba(255, 255, 255, 0.06);
         }
 
-        .glass-coins {
-          background: rgba(255, 255, 255, 0.03);
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          box-shadow: 
-            0 4px 24px rgba(0, 0, 0, 0.1),
-            inset 0 1px 0 rgba(255, 255, 255, 0.04);
-        }
-
-        .glass-daily {
-          background: rgba(16, 185, 129, 0.05);
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          box-shadow: 
-            0 4px 24px rgba(16, 185, 129, 0.08),
-            inset 0 1px 0 rgba(255, 255, 255, 0.04);
-        }
-
-        .glass-daily:hover {
-          background: rgba(16, 185, 129, 0.08);
-          box-shadow: 
-            0 8px 32px rgba(16, 185, 129, 0.12),
-            inset 0 1px 0 rgba(255, 255, 255, 0.06);
-        }
-
-        .glass-pill {
-          background: rgba(255, 255, 255, 0.03);
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-        }
-
         .glass-button {
           background: rgba(255, 255, 255, 0.02);
           backdrop-filter: blur(12px);
@@ -388,6 +443,288 @@ export default function GameHub() {
             0 4px 24px rgba(16, 185, 129, 0.08);
           color: rgba(52, 211, 153, 0.9);
           text-shadow: 0 0 20px rgba(52, 211, 153, 0.2);
+        }
+
+        /* === LEVEL BADGE === */
+        .level-badge {
+          position: relative;
+          width: 42px;
+          height: 42px;
+        }
+
+        .level-outer {
+          width: 42px;
+          height: 42px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 
+            0 2px 8px rgba(139, 92, 246, 0.4),
+            inset 0 1px 0 rgba(255,255,255,0.2);
+          border: 2px solid #a78bfa;
+        }
+
+        .level-inner {
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #7c3aed, #5b21b6);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .level-text {
+          color: white;
+          font-size: 14px;
+          font-weight: 900;
+          text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .level-crown {
+          position: absolute;
+          top: -8px;
+          left: 50%;
+          transform: translateX(-50%);
+          font-size: 12px;
+          filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+        }
+
+        /* === XP BAR === */
+        .xp-bar-container {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 2px;
+        }
+
+        .xp-bar-bg {
+          width: 60px;
+          height: 8px;
+          background: rgba(0,0,0,0.5);
+          border-radius: 4px;
+          overflow: hidden;
+          border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .xp-bar-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #10b981, #34d399);
+          border-radius: 4px;
+          transition: width 0.5s ease;
+        }
+
+        .xp-bar-text {
+          font-size: 8px;
+          color: rgba(255,255,255,0.5);
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        /* === CURRENCY BARS === */
+        .currency-bar {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          padding: 3px 3px 3px 2px;
+          border-radius: 20px;
+          position: relative;
+          min-width: 90px;
+          transition: transform 0.15s ease;
+        }
+
+        .currency-bar:active {
+          transform: scale(0.95);
+        }
+
+        .coin-bar {
+          background: linear-gradient(180deg, rgba(234, 179, 8, 0.15), rgba(234, 179, 8, 0.05));
+          border: 1.5px solid rgba(234, 179, 8, 0.3);
+          box-shadow: 
+            0 2px 8px rgba(234, 179, 8, 0.15),
+            inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+
+        .gem-bar {
+          background: linear-gradient(180deg, rgba(168, 85, 247, 0.15), rgba(168, 85, 247, 0.05));
+          border: 1.5px solid rgba(168, 85, 247, 0.3);
+          box-shadow: 
+            0 2px 8px rgba(168, 85, 247, 0.15),
+            inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+
+        .energy-bar {
+          background: linear-gradient(180deg, rgba(249, 115, 22, 0.15), rgba(249, 115, 22, 0.05));
+          border: 1.5px solid rgba(249, 115, 22, 0.3);
+          box-shadow: 
+            0 2px 8px rgba(249, 115, 22, 0.15),
+            inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+
+        .currency-icon {
+          width: 26px;
+          height: 26px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          box-shadow: 
+            0 1px 3px rgba(0,0,0,0.2),
+            inset 0 1px 0 rgba(255,255,255,0.3);
+        }
+
+        .coin-icon {
+          background: linear-gradient(135deg, #fbbf24, #f59e0b);
+        }
+
+        .gem-icon {
+          background: linear-gradient(135deg, #c084fc, #a855f7);
+        }
+
+        .energy-icon {
+          background: linear-gradient(135deg, #fb923c, #f97316);
+        }
+
+        .currency-value {
+          font-size: 13px;
+          font-weight: 800;
+          flex: 1;
+          text-align: center;
+          letter-spacing: -0.3px;
+          text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .coin-value {
+          color: #fbbf24;
+        }
+
+        .gem-value {
+          color: #c084fc;
+        }
+
+        .energy-value {
+          color: #fb923c;
+        }
+
+        .currency-plus {
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .coin-plus {
+          background: linear-gradient(135deg, #16a34a, #15803d);
+          color: white;
+          border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .coin-plus:hover {
+          background: linear-gradient(135deg, #22c55e, #16a34a);
+          transform: scale(1.1);
+        }
+
+        .gem-plus {
+          background: linear-gradient(135deg, #16a34a, #15803d);
+          color: white;
+          border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .gem-plus:hover {
+          background: linear-gradient(135deg, #22c55e, #16a34a);
+          transform: scale(1.1);
+        }
+
+        .energy-plus {
+          background: linear-gradient(135deg, #16a34a, #15803d);
+          color: white;
+          border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .energy-plus:hover {
+          background: linear-gradient(135deg, #22c55e, #16a34a);
+          transform: scale(1.1);
+        }
+
+        .currency-bump {
+          animation: currency-bump 0.6s ease-out;
+        }
+
+        /* === DAILY FLOAT BUTTON === */
+        .daily-float-btn {
+          position: relative;
+          width: 56px;
+          height: 56px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, rgba(234, 179, 8, 0.2), rgba(234, 179, 8, 0.05));
+          border: 2px solid rgba(234, 179, 8, 0.4);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          backdrop-filter: blur(10px);
+        }
+
+        .daily-float-btn:hover {
+          transform: scale(1.1);
+          border-color: rgba(234, 179, 8, 0.6);
+        }
+
+        .daily-float-btn:active {
+          transform: scale(0.95);
+        }
+
+        .daily-float-inner {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 1px;
+        }
+
+        .daily-float-glow {
+          position: absolute;
+          inset: -4px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(234, 179, 8, 0.3) 0%, transparent 70%);
+          animation: daily-glow 2s ease-in-out infinite;
+        }
+
+        .daily-float-ping {
+          position: absolute;
+          inset: -2px;
+          border-radius: 50%;
+          border: 2px solid rgba(234, 179, 8, 0.5);
+          animation: daily-ping 2s ease-out infinite;
+        }
+
+        /* === ANIMATIONS === */
+        @keyframes currency-bump {
+          0% { transform: scale(1); }
+          25% { transform: scale(1.08); }
+          50% { transform: scale(0.96); }
+          75% { transform: scale(1.03); }
+          100% { transform: scale(1); }
+        }
+
+        @keyframes daily-glow {
+          0%, 100% { opacity: 0.6; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.1); }
+        }
+
+        @keyframes daily-ping {
+          0% { transform: scale(1); opacity: 0.6; }
+          100% { transform: scale(1.5); opacity: 0; }
         }
 
         @keyframes fade-in {
