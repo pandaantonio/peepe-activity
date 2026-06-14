@@ -1,6 +1,6 @@
 // pages/index.js
 import Link from 'next/link';
-import { FaChess, FaUsers, FaLock } from 'react-icons/fa';
+import { FaChess, FaUsers, FaLock, FaSlidersH } from 'react-icons/fa';
 import { FiZap, FiUser, FiCpu } from 'react-icons/fi';
 import { useEffect, useState } from 'react';
 import { useDiscord } from '@/contexts/DiscordContext';
@@ -148,7 +148,7 @@ export default function GameHub() {
 
       <div className="relative pt-16 pb-16 px-6 max-w-6xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-10">
+        <div className="text-center mb-12">
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-semibold mb-3 tracking-tight animate-fade-in-up">
             <span className="text-white/90">Biblioteca de </span>
             <span className="liquid-glass-title px-5 py-1.5 rounded-2xl inline-block">
@@ -156,9 +156,20 @@ export default function GameHub() {
             </span>
           </h1>
 
-          <p className="text-gray-500 text-base max-w-lg mx-auto animate-fade-in-up animation-delay-100">
+          <p className="text-gray-500 text-base max-w-lg mx-auto mb-6 animate-fade-in-up animation-delay-100">
             Escolha seu jogo favorito e desafie suas habilidades
           </p>
+
+          {/* Botão de Acesso ao Painel de Controle */}
+          <div className="animate-fade-in-up animation-delay-100">
+            <Link 
+              href="/dashboard" 
+              className="inline-flex items-center gap-2.5 px-6 py-2.5 rounded-xl glass-button text-sm font-medium text-white/80 border border-white/10 hover:text-white transition-all duration-300 hover:scale-[1.02] shadow-lg shadow-black/10"
+            >
+              <FaSlidersH className="text-emerald-400 text-base" />
+              <span>Acessar Painel de Controle</span>
+            </Link>
+          </div>
         </div>
 
         {/* Grid de Jogos */}
@@ -248,6 +259,18 @@ export default function GameHub() {
           -webkit-backdrop-filter: blur(16px);
           border: 1px solid rgba(255, 255, 255, 0.06);
           box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        }
+
+        .glass-button {
+          background: rgba(255, 255, 255, 0.02);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+        }
+
+        .glass-button:hover {
+          background: rgba(255, 255, 255, 0.06);
+          border-color: rgba(52, 211, 153, 0.3);
+          box-shadow: 0 8px 32px rgba(16, 185, 129, 0.08);
         }
 
         .liquid-glass-title {
