@@ -1,6 +1,7 @@
 // contexts/DiscordContext.js
 import { createContext, useContext, useEffect, useState } from 'react';
 import { getDiscordSDK, setupDiscordSdk } from '@/lib/discord';
+import { logInfo, logWarn, logError, logSuccess } from '@/lib/debugLogger';
 
 export const DiscordContext = createContext(null);
 
@@ -13,48 +14,73 @@ export function DiscordProvider({ children }) {
 
   useEffect(() => {
     async function init() {
-      if (typeof window === 'undefined') return;
+      if (typeof window === 'undefined') {
+        logInfo("[CONTEXT] window undefined (SSR), pulando init");
+        return;
+      }
 
-      // 1. Identificação imediata do ambiente
+      logInfo("[CONTEXT] === INICIANDO DiscordProvider ===");
+
+      // 1. Identificação do ambiente
       const params = new URLSearchParams(window.location.search);
       const frameId = params.get('frame_id');
       const isFrame = !!frameId || 
                       window.location.ancestorOrigins?.contains('https://discord.com') ||
                       (typeof navigator !== 'undefined' && navigator.userAgent.includes('Discord'));
-      
+
+      logInfo("[CONTEXT] Detecção de ambiente", {
+        frameId,
+        isFrame,
+        ancestorOrigins: window.location.ancestorOrigins?.[0],
+        userAgent: navigator.userAgent?.substring(0, 50),
+        href: window.location.href
+      });
+
       setIsDiscordFrame(isFrame);
-      
+
       if (!isFrame) {
-        console.log("Modo standalone - Navegador Web convencional ativo");
+        logWarn("[CONTEXT] Modo standalone detectado - Navegador Web convencional");
         setLoading(false);
-        return; 
+        return;
       }
 
-      // 2. Inicialização protegida do SDK do Discord
+      // 2. Inicialização do SDK
       try {
-        console.log('Ambiente Discord detectado. Inicializando SDK...');
-        
-        // Garante que a importação ou chamada do método não vai quebrar o fluxo global
+        logInfo("[CONTEXT] Ambiente Discord detectado. Inicializando SDK...");
+
         const sdk = getDiscordSDK();
         if (!sdk) {
           throw new Error("Não foi possível instanciar o Discord SDK.");
         }
         setDiscordSdk(sdk);
-        
-        // Executa a autenticação configurada na sua lib
+
+        logInfo("[CONTEXT] Chamando setupDiscordSdk()...");
         const userAuth = await setupDiscordSdk();
-        setAuth(userAuth);
-        
+
+        if (userAuth) {
+          logSuccess("[CONTEXT] Autenticação obtida com sucesso", {
+            hasUser: !!userAuth.user,
+            username: userAuth.user?.username,
+            hasAccessToken: !!userAuth.access_token
+          });
+          setAuth(userAuth);
+        } else {
+          logError("[CONTEXT] setupDiscordSdk() retornou null - autenticação falhou");
+          setError("Falha na autenticação com Discord.");
+        }
+
       } catch (err) {
-        // Se houver qualquer falha de token, handshake ou configuração no portal, 
-        // o app não fica travado em branco. Ele loga o erro e libera a renderização.
-        console.error("Erro crítico contornado na inicialização do Discord:", err);
+        logError("[CONTEXT] Erro crítico na inicialização", {
+          message: err.message,
+          name: err.name
+        });
         setError(err.message || String(err));
       } finally {
+        logInfo("[CONTEXT] Init finalizado, setLoading(false)");
         setLoading(false);
       }
     }
-    
+
     init();
   }, []);
 
@@ -65,8 +91,16 @@ export function DiscordProvider({ children }) {
     error,
     isDiscordFrame,
     isAuthenticated: !!(auth && auth.user),
-    isContextReady: !loading // Libera a renderização da página mesmo se houve um erro (fallback)
+    isContextReady: !loading
   };
+
+  logInfo("[CONTEXT] Renderizando provider", {
+    loading,
+    isDiscordFrame,
+    isAuthenticated: value.isAuthenticated,
+    hasAuth: !!auth,
+    hasError: !!error
+  });
 
   return (
     <DiscordContext.Provider value={value}>
