@@ -71,43 +71,11 @@ export default function HexagonGame() {
   const [highScore, setHighScore] = useState(0)
   const [shake, setShake] = useState(false)
 
-  // Joystick state - área fixa na esquerda
-  const joystickRef = useRef({ 
-    active: false, 
-    originX: 0, 
-    originY: 0, 
-    currentX: 0, 
-    currentY: 0, 
-    dx: 0, 
-    dy: 0,
-    touchId: null 
-  })
+  // Joystick state
+  const joystickRef = useRef({ active: false, originX: 0, originY: 0, currentX: 0, currentY: 0, dx: 0, dy: 0 })
+  const [joystickVisible, setJoystickVisible] = useState(false)
+  const [joystickPos, setJoystickPos] = useState({ x: 0, y: 0 })
   const [joystickKnob, setJoystickKnob] = useState({ x: 0, y: 0 })
-  const joystickAreaRef = useRef(null)
-
-  // Camera rotation state - área fixa na direita
-  const cameraTouchRef = useRef({
-    active: false,
-    lastX: 0,
-    lastY: 0,
-    touchId: null
-  })
-
-  // Detectar orientação
-  const [isLandscape, setIsLandscape] = useState(false)
-
-  useEffect(() => {
-    const checkOrientation = () => {
-      setIsLandscape(window.innerWidth > window.innerHeight)
-    }
-    checkOrientation()
-    window.addEventListener('resize', checkOrientation)
-    window.addEventListener('orientationchange', checkOrientation)
-    return () => {
-      window.removeEventListener('resize', checkOrientation)
-      window.removeEventListener('orientationchange', checkOrientation)
-    }
-  }, [])
 
   useEffect(() => { stateRef.current = gameState }, [gameState])
 
@@ -115,6 +83,7 @@ export default function HexagonGame() {
     const mount = mountRef.current
     if (!mount) return () => {}
 
+    // Coletores de lixo locais para limpeza cirúrgica da VRAM
     const geometriesToDispose = []
     const materialsToDispose = []
 
@@ -128,7 +97,7 @@ export default function HexagonGame() {
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" })
     renderer.setSize(window.innerWidth, window.innerHeight)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)) // Evita borrão em telas mobile de alta densidade
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = THREE.PCFSoftShadowMap
     mount.appendChild(renderer.domElement)
@@ -230,10 +199,10 @@ export default function HexagonGame() {
     antennaBall.position.set(0, 1.95, 0)
     robotGroup.add(antennaBall)
 
-    // Braços
+    // Braços (com pivô para animação)
     const armGeo = new THREE.BoxGeometry(0.12, 0.5, 0.12)
     geometriesToDispose.push(armGeo)
-
+    
     const leftArmGroup = new THREE.Group()
     leftArmGroup.position.set(-0.35, 1.05, 0)
     const leftArm = new THREE.Mesh(armGeo, robotMat)
@@ -250,10 +219,10 @@ export default function HexagonGame() {
     rightArmGroup.add(rightArm)
     robotGroup.add(rightArmGroup)
 
-    // Pernas
+    // Pernas (com pivô para animação)
     const legGeo = new THREE.BoxGeometry(0.15, 0.5, 0.15)
     geometriesToDispose.push(legGeo)
-
+    
     const leftLegGroup = new THREE.Group()
     leftLegGroup.position.set(-0.15, 0.5, 0)
     const leftLeg = new THREE.Mesh(legGeo, robotDarkMat)
@@ -330,7 +299,7 @@ export default function HexagonGame() {
     const keys = {}
     const handleKeyDown = (e) => { keys[e.key.toLowerCase()] = true }
     const handleKeyUp = (e) => { keys[e.key.toLowerCase()] = false }
-
+    
     const handleMouseDown = (e) => {
       isMouseDown = true
       lastMouseX = e.clientX
@@ -350,37 +319,28 @@ export default function HexagonGame() {
       mouse.y = -(e.clientY / window.innerHeight) * 2 + 1
     }
 
-    // ========== JOYSTICK FIXO NA ESQUERDA ==========
+    // Joystick touch handlers protegidos contra scroll acidental nativo do mobile
     const handleJoystickStart = (e) => {
       if (e.cancelable) e.preventDefault()
-      const touch = e.changedTouches[0]
+      const touch = e.touches[0]
       const js = joystickRef.current
       js.active = true
-      js.touchId = touch.identifier
       js.originX = touch.clientX
       js.originY = touch.clientY
       js.currentX = touch.clientX
       js.currentY = touch.clientY
       js.dx = 0
       js.dy = 0
+      setJoystickVisible(true)
+      setJoystickPos({ x: touch.clientX, y: touch.clientY })
       setJoystickKnob({ x: 0, y: 0 })
     }
 
     const handleJoystickMove = (e) => {
+      if (e.cancelable) e.preventDefault()
       const js = joystickRef.current
       if (!js.active) return
-
-      let touch = null
-      for (let i = 0; i < e.changedTouches.length; i++) {
-        if (e.changedTouches[i].identifier === js.touchId) {
-          touch = e.changedTouches[i]
-          break
-        }
-      }
-      if (!touch) return
-
-      if (e.cancelable) e.preventDefault()
-
+      const touch = e.touches[0]
       const maxDist = 50
       let dx = touch.clientX - js.originX
       let dy = touch.clientY - js.originY
@@ -398,78 +358,11 @@ export default function HexagonGame() {
 
     const handleJoystickEnd = (e) => {
       const js = joystickRef.current
-      let touchEnded = false
-      for (let i = 0; i < e.changedTouches.length; i++) {
-        if (e.changedTouches[i].identifier === js.touchId) {
-          touchEnded = true
-          break
-        }
-      }
-      if (!touchEnded) return
-
       js.active = false
-      js.touchId = null
       js.dx = 0
       js.dy = 0
+      setJoystickVisible(false)
       setJoystickKnob({ x: 0, y: 0 })
-    }
-
-    // ========== ÁREA DE ROTAÇÃO DA CÂMERA NA DIREITA ==========
-    const handleCameraTouchStart = (e) => {
-      if (e.cancelable) e.preventDefault()
-      const touch = e.changedTouches[0]
-      const ct = cameraTouchRef.current
-      ct.active = true
-      ct.touchId = touch.identifier
-      ct.lastX = touch.clientX
-      ct.lastY = touch.clientY
-    }
-
-    const handleCameraTouchMove = (e) => {
-      const ct = cameraTouchRef.current
-      if (!ct.active) return
-
-      let touch = null
-      for (let i = 0; i < e.changedTouches.length; i++) {
-        if (e.changedTouches[i].identifier === ct.touchId) {
-          touch = e.changedTouches[i]
-          break
-        }
-      }
-      if (!touch) return
-
-      if (e.cancelable) e.preventDefault()
-
-      const dx = touch.clientX - ct.lastX
-      const dy = touch.clientY - ct.lastY
-      cameraAngle -= dx * 0.008
-      cameraPitch = Math.max(0.1, Math.min(0.8, cameraPitch - dy * 0.008))
-      ct.lastX = touch.clientX
-      ct.lastY = touch.clientY
-    }
-
-    const handleCameraTouchEnd = (e) => {
-      const ct = cameraTouchRef.current
-      let touchEnded = false
-      for (let i = 0; i < e.changedTouches.length; i++) {
-        if (e.changedTouches[i].identifier === ct.touchId) {
-          touchEnded = true
-          break
-        }
-      }
-      if (!touchEnded) return
-      ct.active = false
-      ct.touchId = null
-    }
-
-    // Adiciona listeners globais para touchmove/touchend
-    const handleGlobalTouchMove = (e) => {
-      handleJoystickMove(e)
-      handleCameraTouchMove(e)
-    }
-    const handleGlobalTouchEnd = (e) => {
-      handleJoystickEnd(e)
-      handleCameraTouchEnd(e)
     }
 
     window.addEventListener('keydown', handleKeyDown, { passive: true })
@@ -477,8 +370,9 @@ export default function HexagonGame() {
     window.addEventListener('mousedown', handleMouseDown, { passive: true })
     window.addEventListener('mouseup', handleMouseUp, { passive: true })
     window.addEventListener('mousemove', handleMouseMove, { passive: true })
-    window.addEventListener('touchmove', handleGlobalTouchMove, { passive: false })
-    window.addEventListener('touchend', handleGlobalTouchEnd, { passive: true })
+    mount.addEventListener('touchstart', handleJoystickStart, { passive: false })
+    window.addEventListener('touchmove', handleJoystickMove, { passive: false })
+    window.addEventListener('touchend', handleJoystickEnd, { passive: true })
 
     function checkColorMatch() {
       const hex = getHexAtPosition(playerPos.x, playerPos.z, hexagons)
@@ -620,7 +514,7 @@ export default function HexagonGame() {
         rightLegGroup.rotation.x = walkCycle2 * 0.5
 
         robotGroup.position.y = Math.abs(Math.sin(walkTime * 2)) * 0.05
-
+        
         antenna.rotation.z = Math.sin(walkTime * 3) * 0.15
         antennaBall.position.x = Math.sin(walkTime * 3) * 0.05
       } else {
@@ -640,27 +534,34 @@ export default function HexagonGame() {
       leftEye.scale.y = blink ? 0.1 : 1
       rightEye.scale.y = blink ? 0.1 : 1
 
+      // Tentativa de movimento
       let newX = playerPos.x + moveX
       let newZ = playerPos.z + moveZ
 
+      // Verifica se a nova posição está sobre algum hexágono ativo
       const closestHex = getHexAtPosition(newX, newZ, hexagons)
-
+      
       if (closestHex) {
+        // Está sobre um hexágono → pode mover
         playerPos.x = newX
         playerPos.z = newZ
       } else {
+        // Fora da área → tenta mover apenas no eixo X
         const hexX = getHexAtPosition(newX, playerPos.z, hexagons)
         if (hexX) {
           playerPos.x = newX
         }
-
+        
+        // Tenta mover apenas no eixo Z
         const hexZ = getHexAtPosition(playerPos.x, newZ, hexagons)
         if (hexZ) {
           playerPos.z = newZ
         }
-
+        
+        // Se ainda estiver fora (caso extremo), reposiciona no hexágono mais próximo
         const finalHex = getHexAtPosition(playerPos.x, playerPos.z, hexagons)
         if (!finalHex) {
+          // Encontra o hexágono ativo mais próximo
           let nearest = null
           let minDist = Infinity
           for (const hex of hexagons) {
@@ -767,28 +668,32 @@ export default function HexagonGame() {
       camera.aspect = window.innerWidth / window.innerHeight
       camera.updateProjectionMatrix()
       renderer.setSize(window.innerWidth, window.innerHeight)
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)) // Garante nitidez consistente no resize/ajuste de orientação
     }
     window.addEventListener('resize', handleResize, { passive: true })
 
     animate()
 
     return () => {
+      // Cancela loops pendentes para evitar concorrência e loops duplicados
       if (animFrameId) cancelAnimationFrame(animFrameId)
-
+      
+      // Limpeza estrita de todos os manipuladores com suas exatas assinaturas
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
       window.removeEventListener('mousedown', handleMouseDown)
       window.removeEventListener('mouseup', handleMouseUp)
       window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('touchmove', handleGlobalTouchMove)
-      window.removeEventListener('touchend', handleGlobalTouchEnd)
+      mount.removeEventListener('touchstart', handleJoystickStart)
+      window.removeEventListener('touchmove', handleJoystickMove)
+      window.removeEventListener('touchend', handleJoystickEnd)
       window.removeEventListener('resize', handleResize)
-
+      
+      // Desaloca explicitamente geometrias e materiais da VRAM
       geometriesToDispose.forEach(g => g.dispose())
       materialsToDispose.forEach(m => m.dispose())
       renderer.dispose()
-
+      
       if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement)
     }
   }, [])
@@ -806,9 +711,8 @@ export default function HexagonGame() {
     <>
       <Head>
         <title>Hexagon Color Rush</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, max-scale=1, user-scalable=no, viewport-fit=cover" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </Head>
 
       <div className="relative w-full h-screen overflow-hidden bg-black select-none touch-none pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
@@ -826,37 +730,34 @@ export default function HexagonGame() {
 
         {gameState === 'playing' && (
           <>
-            {/* HUD Superior - Centralizado e compacto para mobile */}
-            <div className={`absolute top-4 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none z-30 ${shake ? 'shake' : ''}`}>
-              <div className="bg-black/70 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/10 mb-1 flex items-center gap-3">
-                <div className="flex flex-col items-center">
-                  <div className="text-white/60 text-[10px] uppercase tracking-wider text-center">Cor</div>
+            <div className={`absolute top-4 left-1/2 -translate-x-1/2 right-auto p-0 flex justify-center items-start pointer-events-none ${shake ? 'shake' : ''}`}>
+              <div className="flex flex-col items-center">
+                <div className="bg-black/70 backdrop-blur-sm rounded-xl px-6 py-3 border border-white/10 mb-2">
+                  <div className="text-white/60 text-xs uppercase tracking-wider text-center">Pise na cor</div>
                   <div
-                    className="w-8 h-8 rounded-md border-2 border-white/30 shadow-lg transition-all duration-300"
-                    style={{ backgroundColor: colorHex, boxShadow: `0 0 20px ${colorHex}80` }}
+                    className="w-12 h-12 md:w-16 md:h-16 rounded-lg mt-2 mx-auto border-2 border-white/30 shadow-lg transition-all duration-300"
+                    style={{ backgroundColor: colorHex, boxShadow: `0 0 30px ${colorHex}80` }}
                   />
                 </div>
-                <div className="w-px h-8 bg-white/10" />
-                <div className="flex flex-col items-center">
-                  <div className="text-white/60 text-[10px] uppercase tracking-wider">Tempo</div>
-                  <div className={`text-xl font-bold font-mono ${timeLeft <= 1.5 ? 'text-red-400 animate-pulse' : 'text-white'}`}>
+                <div className={`bg-black/70 backdrop-blur-sm rounded-xl px-5 py-2 border ${timeLeft <= 1.5 ? 'border-red-500/50' : 'border-white/10'}`}>
+                  <div className={`text-2xl md:text-3xl font-bold font-mono ${timeLeft <= 1.5 ? 'text-red-400 animate-pulse' : 'text-white'}`}>
                     {timeLeft.toFixed(1)}s
                   </div>
-                </div>
-                <div className="w-px h-8 bg-white/10" />
-                <div className="flex flex-col items-center">
-                  <div className="text-white/60 text-[10px] uppercase tracking-wider">Pts</div>
-                  <div className="text-white text-lg font-bold">{score}</div>
-                </div>
-                <div className="w-px h-8 bg-white/10" />
-                <div className="flex flex-col items-center">
-                  <div className="text-white/60 text-[10px] uppercase tracking-wider">Rnd</div>
-                  <div className="text-white text-lg font-bold">#{round}</div>
                 </div>
               </div>
             </div>
 
-            {/* Dica de controles - apenas desktop */}
+            <div className="absolute top-4 right-4 flex flex-col gap-2 pointer-events-none">
+              <div className="bg-black/70 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/10">
+                <div className="text-white/60 text-xs uppercase tracking-wider">Pontuação</div>
+                <div className="text-white text-xl font-bold">{score}</div>
+              </div>
+              <div className="bg-black/70 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/10">
+                <div className="text-white/60 text-xs uppercase tracking-wider">Rodada</div>
+                <div className="text-white text-xl font-bold">#{round}</div>
+              </div>
+            </div>
+
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 backdrop-blur-sm rounded-lg px-4 py-2 text-white/40 text-xs pointer-events-none hidden md:block">
               WASD para andar · Segure clique e arraste para rotacionar câmera
             </div>
@@ -875,18 +776,13 @@ export default function HexagonGame() {
               <p className="text-white/50 text-base md:text-lg mb-6 max-w-md mx-auto">
                 Hexágonos coloridos no chão. 5 segundos para pisar na cor certa. Não pisou? Caiu!
               </p>
-
-              {/* Controles - layout adaptativo */}
               <div className="bg-white/5 rounded-xl p-4 mb-6 max-w-sm mx-auto">
                 <div className="text-white/30 text-xs uppercase tracking-wider mb-2">Controles</div>
                 <div className="grid grid-cols-2 gap-2 text-sm text-white/50">
                   <div className="flex items-center gap-2"><span className="bg-white/10 px-2 py-0.5 rounded text-xs">WASD</span> Andar</div>
-                  <div className="flex items-center gap-2"><span className="bg-white/10 px-2 py-0.5 rounded text-xs">Mouse</span> Câmera</div>
-                  <div className="flex items-center gap-2 md:hidden"><span className="bg-white/10 px-2 py-0.5 rounded text-xs">Joystick</span> Andar</div>
-                  <div className="flex items-center gap-2 md:hidden"><span className="bg-white/10 px-2 py-0.5 rounded text-xs">Arrastar</span> Câmera</div>
+                  <div className="flex items-center gap-2"><span className="bg-white/10 px-2 py-0.5 rounded text-xs">Touch</span> Joystick</div>
                 </div>
               </div>
-
               <button
                 onClick={handleStart}
                 className="px-10 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xl font-bold rounded-xl hover:from-purple-500 hover:to-pink-500 transition-all transform hover:scale-105 shadow-lg shadow-purple-500/30"
@@ -924,69 +820,26 @@ export default function HexagonGame() {
           </div>
         )}
 
-        {/* ========== CONTROLES MOBILE ========== */}
-        {gameState === 'playing' && (
-          <>
-            {/* Joystick Fixo - Área Esquerda */}
-            <div 
-              ref={joystickAreaRef}
-              className="fixed bottom-6 left-6 z-40 md:hidden"
-              style={{ touchAction: 'none' }}
-              onTouchStart={handleJoystickStart}
-            >
-              <div className="w-[120px] h-[120px] rounded-full bg-white/5 border-2 border-white/15 backdrop-blur-sm flex items-center justify-center relative">
-                {/* Marcas direcionais sutis */}
-                <div className="absolute top-2 text-white/20 text-[10px]">▲</div>
-                <div className="absolute bottom-2 text-white/20 text-[10px]">▼</div>
-                <div className="absolute left-2 text-white/20 text-[10px]">◀</div>
-                <div className="absolute right-2 text-white/20 text-[10px]">▶</div>
-
-                {/* Knob do joystick */}
-                <div
-                  className="w-12 h-12 rounded-full bg-white/25 border border-white/40 shadow-lg transition-transform duration-75"
-                  style={{
-                    transform: `translate(${joystickKnob.x}px, ${joystickKnob.y}px)`,
-                  }}
-                />
-              </div>
-              <div className="text-white/20 text-[10px] text-center mt-1">ANDAR</div>
+        {/* Joystick Visual */}
+        {joystickVisible && (
+          <div
+            className="fixed z-50 pointer-events-none md:hidden"
+            style={{
+              left: joystickPos.x - 50,
+              top: joystickPos.y - 50,
+            }}
+          >
+            <div className="w-[100px] h-[100px] rounded-full bg-white/10 border-2 border-white/20 backdrop-blur-sm flex items-center justify-center">
+              <div
+                className="w-10 h-10 rounded-full bg-white/40 border border-white/50 shadow-lg"
+                style={{
+                  transform: `translate(${joystickKnob.x}px, ${joystickKnob.y}px)`,
+                }}
+              />
             </div>
-
-            {/* Área de Rotação da Câmera - Direita */}
-            <div 
-              className="fixed bottom-6 right-6 z-40 md:hidden"
-              style={{ touchAction: 'none' }}
-              onTouchStart={handleCameraTouchStart}
-            >
-              <div className="w-[100px] h-[100px] rounded-full bg-white/5 border-2 border-white/15 backdrop-blur-sm flex items-center justify-center">
-                <div className="text-white/30">
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                </div>
-              </div>
-              <div className="text-white/20 text-[10px] text-center mt-1">CÂMERA</div>
-            </div>
-
-            {/* Dica de controles mobile */}
-            <div className="fixed bottom-2 left-1/2 -translate-x-1/2 text-white/15 text-[10px] md:hidden z-30 pointer-events-none">
-              Joystick esquerdo: andar · Direita: girar câmera
-            </div>
-          </>
+          </div>
         )}
       </div>
-
-      <style jsx global>{`
-        .shake {
-          animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
-        }
-        @keyframes shake {
-          10%, 90% { transform: translate3d(-1px, 0, 0); }
-          20%, 80% { transform: translate3d(2px, 0, 0); }
-          30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-          40%, 60% { transform: translate3d(4px, 0, 0); }
-        }
-      `}</style>
     </>
   )
 }
