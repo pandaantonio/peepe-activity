@@ -206,7 +206,7 @@ export default function Hangman() {
       return (
         <span 
           key={i} 
-          className={`mx-1.5 text-3xl md:text-5xl font-mono font-black transition-all duration-300 border-b-4 pb-2 px-2
+          className={`mx-1.5 [@media(max-height:500px)]:mx-0.5 text-3xl md:text-5xl [@media(max-height:500px)]:text-xl font-mono font-black transition-all duration-300 border-b-4 [@media(max-height:500px)]:border-b-2 pb-2 [@media(max-height:500px)]:pb-1 px-2 [@media(max-height:500px)]:px-0.5
             ${isRevealed ? 'text-emerald-400 border-transparent scale-100 drop-shadow-[0_0_12px_rgba(52,211,153,0.4)]' : 'text-transparent border-white/20 scale-95'}
           `}
         >
@@ -227,42 +227,42 @@ export default function Hangman() {
 
       {/* Topbar Glassmorphism de ponta a ponta */}
       <div className="bg-white/[0.02] backdrop-blur-xl border-b border-white/5 shrink-0 z-10 relative">
-        <div className="w-full max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
+        <div className="w-full max-w-7xl mx-auto px-6 py-4 [@media(max-height:500px)]:px-3 [@media(max-height:500px)]:py-2 flex justify-between items-center">
+          <div className="flex items-center gap-2 [@media(max-height:500px)]:gap-1.5">
             <button 
               onClick={handleExit} 
-              className="p-3 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-all active:scale-95 cursor-pointer border border-white/5"
+              className="p-3 [@media(max-height:500px)]:p-2 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-all active:scale-95 cursor-pointer border border-white/5"
             >
-              <FaArrowLeft size={18} />
+              <FaArrowLeft size={18} className="[@media(max-height:500px)]:text-sm" />
             </button>
             <button 
               onClick={handleRestart} 
-              className="p-3 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-all active:scale-95 cursor-pointer border border-white/5"
+              className="p-3 [@media(max-height:500px)]:p-2 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-all active:scale-95 cursor-pointer border border-white/5"
             >
-              <FaRedo size={16} />
+              <FaRedo size={16} className="[@media(max-height:500px)]:text-sm" />
             </button>
           </div>
           
-          <div className="flex gap-4 items-center bg-white/[0.02] px-5 py-2 rounded-xl border border-white/10 text-sm backdrop-blur-md">
-            <div className="flex items-center gap-2 border-r border-white/10 pr-4">
+          <div className="flex gap-4 [@media(max-height:500px)]:gap-2.5 items-center bg-white/[0.02] px-5 py-2 [@media(max-height:500px)]:px-3 [@media(max-height:500px)]:py-1 rounded-xl border border-white/10 text-sm [@media(max-height:500px)]:text-xs backdrop-blur-md">
+            <div className="flex items-center gap-2 border-r border-white/10 pr-4 [@media(max-height:500px)]:pr-2.5">
               <FaTrophy className="text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.4)]" size={15} />
-              <span className="text-gray-400">Pontos: <strong className="text-white font-bold">{score}</strong></span>
+              <span className="text-gray-400"><span className="[@media(max-height:500px)]:hidden">Pontos: </span><strong className="text-white font-bold">{score}</strong></span>
             </div>
             <div className="flex items-center gap-2">
               <FaFire className={streak > 0 ? "text-orange-400 animate-pulse drop-shadow-[0_0_6px_rgba(251,146,60,0.4)]" : "text-gray-500"} size={15} />
-              <span className="text-gray-400">Combo: <strong className="text-white font-bold">{streak}x</strong></span>
+              <span className="text-gray-400"><span className="[@media(max-height:500px)]:hidden">Combo: </span><strong className="text-white font-bold">{streak}x</strong></span>
             </div>
           </div>
 
           <div className="text-right">
-            <span className="text-gray-500 text-xs font-bold uppercase tracking-wider block">Erros</span>
-            <span className="text-rose-500 font-mono text-2xl font-black drop-shadow-[0_0_8px_rgba(244,63,94,0.3)]">{mistakes}/{maxMistakes}</span>
+            <span className="text-gray-500 text-xs font-bold uppercase tracking-wider block [@media(max-height:500px)]:hidden">Erros</span>
+            <span className="text-rose-500 font-mono text-2xl [@media(max-height:500px)]:text-lg font-black drop-shadow-[0_0_8px_rgba(244,63,94,0.3)]">{mistakes}/{maxMistakes}</span>
           </div>
         </div>
       </div>
 
       {/* Main Content Area - Layout Bilateral Expandido */}
-      <div className="flex-1 w-full max-w-7xl mx-auto px-4 md:px-8 py-6 flex items-center justify-center z-10 relative">
+      <div className="flex-1 w-full max-w-7xl mx-auto px-4 md:px-8 py-6 [@media(max-height:500px)]:px-2 [@media(max-height:500px)]:py-2 flex items-center justify-center z-10 relative [@media(max-height:500px)]:overflow-y-auto">
         
         {loading ? (
           <div className="flex flex-col items-center gap-3 py-20">
@@ -270,46 +270,46 @@ export default function Hangman() {
             <div className="text-gray-500 font-semibold tracking-wide">Descriptografando base de dados...</div>
           </div>
         ) : (
-          <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+          <div className="w-full grid grid-cols-1 lg:grid-cols-12 [@media(max-height:500px)]:grid-cols-12 gap-8 [@media(max-height:500px)]:gap-3 items-stretch">
             
             {/* COLUNA ESQUERDA: Display Visual, Canvas e Dica */}
-            <div className="lg:col-span-5 flex flex-col justify-between glass-card rounded-2xl p-6 shadow-2xl gap-6">
+            <div className="lg:col-span-5 [@media(max-height:500px)]:col-span-5 flex flex-col justify-between glass-card rounded-2xl p-6 [@media(max-height:500px)]:p-3 shadow-2xl gap-6 [@media(max-height:500px)]:gap-2">
               
               {/* Box da Dica - Estilo Liquid Glass */}
-              <div className="px-5 py-4 bg-emerald-500/[0.02] border-l-4 border-emerald-400/60 rounded-r-xl flex items-start gap-3 shadow-inner border border-white/5">
-                <FaLightbulb size={18} className="text-emerald-400 mt-0.5 flex-shrink-0 drop-shadow-[0_0_8px_rgba(52,211,153,0.4)]" />
+              <div className="px-5 py-4 [@media(max-height:500px)]:px-3 [@media(max-height:500px)]:py-2 bg-emerald-500/[0.02] border-l-4 border-emerald-400/60 rounded-r-xl flex items-start gap-3 [@media(max-height:500px)]:gap-2 shadow-inner border border-white/5">
+                <FaLightbulb size={18} className="text-emerald-400 mt-0.5 flex-shrink-0 drop-shadow-[0_0_8px_rgba(52,211,153,0.4)] [@media(max-height:500px)]:text-sm" />
                 <div className="text-left">
-                  <span className="text-[10px] font-bold text-emerald-400/80 uppercase tracking-wider">Módulo de Dica</span>
-                  <p className="text-gray-300 text-base font-medium mt-0.5 leading-relaxed">{hint}</p>
+                  <span className="text-[10px] font-bold text-emerald-400/80 uppercase tracking-wider [@media(max-height:500px)]:hidden">Módulo de Dica</span>
+                  <p className="text-gray-300 text-base [@media(max-height:500px)]:text-xs font-medium mt-0.5 [@media(max-height:500px)]:mt-0 leading-relaxed [@media(max-height:500px)]:leading-snug">{hint}</p>
                 </div>
               </div>
 
               {/* Canvas da Forca */}
-              <div className="flex justify-center my-auto">
-                <div className="bg-[#050507]/60 p-4 rounded-xl border border-white/5 shadow-inner w-full max-w-[280px] flex justify-center backdrop-blur-md">
+              <div className="flex justify-center my-auto [@media(max-height:500px)]:my-0">
+                <div className="bg-[#050507]/60 p-4 [@media(max-height:500px)]:p-2 rounded-xl border border-white/5 shadow-inner w-full max-w-[280px] [@media(max-height:500px)]:max-w-[130px] flex justify-center backdrop-blur-md">
                   <canvas
                     ref={canvasRef}
                     width={240}
                     height={240}
-                    className="block opacity-95"
+                    className="block opacity-95 [@media(max-height:500px)]:w-[110px] [@media(max-height:500px)]:h-[110px]"
                   />
                 </div>
               </div>
 
               {/* Espaço da Palavra Oculta */}
-              <div className="flex justify-center flex-wrap gap-y-3 min-h-[60px] items-center bg-[#050507]/40 p-4 rounded-xl shadow-inner border border-white/5">
+              <div className="flex justify-center flex-wrap gap-y-3 [@media(max-height:500px)]:gap-y-1 min-h-[60px] [@media(max-height:500px)]:min-h-[36px] items-center bg-[#050507]/40 p-4 [@media(max-height:500px)]:p-2 rounded-xl shadow-inner border border-white/5">
                 {getDisplayWord()}
               </div>
 
             </div>
 
             {/* COLUNA DIREITA: Teclado Virtual Panorâmico */}
-            <div className="lg:col-span-7 flex flex-col justify-center glass-card rounded-2xl p-6 md:p-8 shadow-2xl">
+            <div className="lg:col-span-7 [@media(max-height:500px)]:col-span-7 flex flex-col justify-center glass-card rounded-2xl p-6 [@media(max-height:500px)]:p-2 md:p-8 shadow-2xl">
               <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-5 px-1 hidden lg:block">
                 Injete caracteres no sistema usando clique físico ou virtual:
               </div>
               
-              <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 sm:gap-3 h-full content-center">
+              <div className="grid grid-cols-4 sm:grid-cols-7 [@media(max-height:500px)]:grid-cols-7 gap-2 sm:gap-3 [@media(max-height:500px)]:gap-1 h-full content-center">
                 {letters.map((letter) => {
                   const isGuessed = guessedLetters.includes(letter);
                   const normalizedSecret = normalizeString(secretWord);
@@ -322,9 +322,9 @@ export default function Hangman() {
                       onClick={() => handleGuess(letter)}
                       disabled={!gameActive || isGuessed}
                       className={`
-                        w-full font-black uppercase text-base sm:text-lg rounded-xl
+                        w-full font-black uppercase text-base sm:text-lg [@media(max-height:500px)]:text-sm rounded-xl [@media(max-height:500px)]:rounded-lg
                         transition-all duration-200 touch-manipulation select-none active:scale-95
-                        flex items-center justify-center p-4 lg:p-6 min-h-[55px] sm:min-h-[65px] cursor-pointer
+                        flex items-center justify-center p-4 lg:p-6 [@media(max-height:500px)]:p-1 min-h-[55px] sm:min-h-[65px] [@media(max-height:500px)]:min-h-[32px] cursor-pointer
                         ${isGuessed ? 'cursor-not-allowed opacity-20' : 'bg-white/[0.03] text-gray-300 border border-white/5 shadow-md hover:bg-white/10 hover:text-white hover:border-white/20'}
                         ${isCorrect ? '!bg-emerald-500/10 !text-emerald-400 !border-emerald-500/40 !shadow-[0_0_15px_rgba(52,211,153,0.15)]' : ''}
                         ${isWrong ? '!bg-rose-500/10 !text-rose-400 !border-rose-500/40' : ''}
@@ -343,30 +343,30 @@ export default function Hangman() {
 
       {/* Overlay Modular de Fim de Jogo */}
       {showOverlay && (
-        <div className="fixed inset-0 bg-[#0a0a0c]/80 backdrop-blur-md flex items-center justify-center z-30 p-4 transition-all">
-          <div className="glass-card rounded-2xl border border-white/10 p-8 text-center max-w-md w-full shadow-2xl">
-            <h2 className={`text-3xl font-black mb-3 tracking-wide ${isVictory ? 'text-emerald-400 drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]' : 'text-rose-500 drop-shadow-[0_0_10px_rgba(244,63,94,0.3)]'}`}>
+        <div className="fixed inset-0 bg-[#0a0a0c]/80 backdrop-blur-md flex items-center justify-center z-30 p-4 [@media(max-height:500px)]:p-2 transition-all">
+          <div className="glass-card rounded-2xl border border-white/10 p-8 [@media(max-height:500px)]:p-4 text-center max-w-md w-full shadow-2xl max-h-full overflow-y-auto">
+            <h2 className={`text-3xl [@media(max-height:500px)]:text-xl font-black mb-3 [@media(max-height:500px)]:mb-1 tracking-wide ${isVictory ? 'text-emerald-400 drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]' : 'text-rose-500 drop-shadow-[0_0_10px_rgba(244,63,94,0.3)]'}`}>
               {isVictory ? '🎉 CONCLUÍDO 🎉' : '💀 FALHA DE CONEXÃO 💀'}
             </h2>
             
-            <p className="text-gray-400 text-sm md:text-base mb-6 leading-relaxed">
+            <p className="text-gray-400 text-sm md:text-base [@media(max-height:500px)]:text-xs mb-6 [@media(max-height:500px)]:mb-2 leading-relaxed [@media(max-height:500px)]:leading-snug">
               {resultMessage}
             </p>
 
-            <div className="bg-[#050507]/60 rounded-xl p-4 mb-6 grid grid-cols-2 gap-4 border border-white/5 backdrop-blur-md">
+            <div className="bg-[#050507]/60 rounded-xl p-4 [@media(max-height:500px)]:p-2 mb-6 [@media(max-height:500px)]:mb-2 grid grid-cols-2 gap-4 [@media(max-height:500px)]:gap-2 border border-white/5 backdrop-blur-md">
               <div className="text-center border-r border-white/5">
-                <span className="text-gray-500 text-xs block mb-1">Melhor Sequência</span>
-                <strong className="text-white text-lg font-black">{bestStreak}x</strong>
+                <span className="text-gray-500 text-xs block mb-1 [@media(max-height:500px)]:mb-0">Melhor Sequência</span>
+                <strong className="text-white text-lg [@media(max-height:500px)]:text-base font-black">{bestStreak}x</strong>
               </div>
               <div className="text-center">
-                <span className="text-gray-500 text-xs block mb-1">Desvios Cometidos</span>
-                <strong className="text-white text-lg font-black">{mistakes}</strong>
+                <span className="text-gray-500 text-xs block mb-1 [@media(max-height:500px)]:mb-0">Desvios Cometidos</span>
+                <strong className="text-white text-lg [@media(max-height:500px)]:text-base font-black">{mistakes}</strong>
               </div>
             </div>
 
             <button
               onClick={handleRestart}
-              className="w-full py-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white font-bold text-base rounded-xl transition-all transform shadow-xl cursor-pointer active:scale-98"
+              className="w-full py-4 [@media(max-height:500px)]:py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white font-bold text-base [@media(max-height:500px)]:text-sm rounded-xl transition-all transform shadow-xl cursor-pointer active:scale-98"
             >
               Iniciar Nova Rodada
             </button>
