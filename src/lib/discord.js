@@ -1,24 +1,17 @@
-// lib/discord.js
-import { DiscordSDK } from "@discord/embedded-app-sdk";
-
-let discordSdk;
-
-export function getDiscordSDK() {
-  if (!discordSdk && typeof window !== "undefined") {
-    discordSdk = new DiscordSDK(process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID);
-  }
-  return discordSdk;
-}
-
+// lib/discord.js - Versão com logs de debug
 export async function setupDiscordSdk() {
   const sdk = getDiscordSDK();
-  if (!sdk) return null;
+  if (!sdk) {
+    console.error("[DISCORD] SDK não pôde ser instanciado");
+    return null;
+  }
 
-  // PASSO OBRIGATÓRIO: Inicializa o handshake com o Discord
-  await sdk.ready();
-  
   try {
-    // 1. Solicita o código de autorização RPC dentro do Discord
+    console.log("[DISCORD] Chamando sdk.ready()...");
+    await sdk.ready();
+    console.log("[DISCORD] sdk.ready() OK");
+
+    console.log("[DISCORD] Chamando authorize com client_id:", process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID);
     const { code } = await sdk.commands.authorize({
       client_id: process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID,
       response_type: 'code',
@@ -26,37 +19,39 @@ export async function setupDiscordSdk() {
       prompt: 'none',
       scope: ['identify', 'guilds'],
     });
-    
-    // 2. Troca o código pelo access_token real usando a sua API Back-end
-    // Substitua o caminho '/api/token' pela rota real que você criou no Next.js
+    console.log("[DISCORD] Autorização OK, código recebido:", code ? "SIM" : "NÃO");
+
+    console.log("[DISCORD] Trocando código por token em /api/token...");
     const response = await fetch('/api/token', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code }),
     });
 
     if (!response.ok) {
-      throw new Error('Falha ao trocar o código de autenticação pelo token.');
+      const errorData = await response.json();
+      console.error("[DISCORD] /api/token falhou:", errorData);
+      throw new Error(`Falha ao trocar código: ${errorData.error || response.status}`);
     }
 
     const tokenData = await response.json();
-    
-    // 3. Autentica o SDK com o token recebido
+    console.log("[DISCORD] Token recebido:", tokenData.access_token ? "SIM" : "NÃO");
+
+    console.log("[DISCORD] Chamando authenticate...");
     const newAuth = await sdk.commands.authenticate({
       access_token: tokenData.access_token,
     });
 
     if (!newAuth) {
+      console.error("[DISCORD] authenticate retornou null");
       throw new Error("Falha na autenticação do SDK.");
     }
 
-    // Retorna o objeto completo contendo o 'access_token' e os dados do 'user'
-    return newAuth; 
+    console.log("[DISCORD] Autenticação completa! User:", newAuth.user?.username);
+    return newAuth;
 
   } catch (authError) {
-    console.error("Falha na autorização automática RPC:", authError);
-    return null; 
+    console.error("[DISCORD] Erro no setup:", authError.message || authError);
+    return null;
   }
 }
