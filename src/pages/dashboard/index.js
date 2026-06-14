@@ -14,9 +14,8 @@ export default function Dashboard() {
   const hasFetched = useRef(false);
 
   useEffect(() => {
-    // Evita múltiplas chamadas
+    // Evita múltiplas chamadas concorrentes
     if (hasFetched.current) return;
-    
     if (discordLoading) return;
 
     if (!isDiscordFrame) {
@@ -56,12 +55,9 @@ export default function Dashboard() {
         const data = await response.json();
         console.log(`Encontrados ${data.length} servidores`);
 
-        // A API já retorna os servidores filtrados (admin/manage_guild)
-        // Não precisa filtrar novamente
-        console.log(`${data.length} servidores com permissão de admin/gerenciamento`);
         setGuilds(data);
         setError(null);
-        hasFetched.current = true;
+        hasFetched.current = true; // Só marca como feito se popular o estado com sucesso
       } catch (err) {
         console.error('Erro ao buscar guilds:', err);
         setError(err.message);
@@ -74,16 +70,6 @@ export default function Dashboard() {
   }, [auth, isDiscordFrame, discordLoading]);
 
   const handleBackToHub = () => router.push('/');
-  
-  const getInitials = (name) => {
-    if (!name) return '???';
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .slice(0, 3)
-      .toUpperCase();
-  };
 
   const handleRetry = () => {
     setLoading(true);
@@ -91,11 +77,17 @@ export default function Dashboard() {
     hasFetched.current = false;
     setTimeout(() => {
       window.location.reload();
-    }, 2000);
+    }, 500);
   };
 
   const handleConfigureGuild = (guildId) => {
     router.push(`/dashboard/${guildId}`);
+  };
+
+  // Transforma a URL do ícone para respeitar o Proxy de Midia das Activities do Discord
+  const getDiscordIconUrl = (guild) => {
+    if (!guild.icon) return null;
+    return `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png?size=128`;
   };
 
   if (discordLoading || loading) {
@@ -176,14 +168,14 @@ export default function Dashboard() {
 
         {guilds.length === 0 ? (
           <div className="text-center py-12">
-            <div className="inline-flex items-center gap-3 px-6 py-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
-              <svg className="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="inline-flex items-center gap-3 px-6 py-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl mx-auto max-w-xl text-left">
+              <svg className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
               <div>
                 <p className="text-yellow-400 font-medium">Nenhum servidor encontrado</p>
-                <p className="text-yellow-400/70 text-sm">
-                  Você precisa ser administrador ou ter permissão de gerenciamento em pelo menos um servidor.
+                <p className="text-yellow-400/70 text-sm mt-1">
+                  Verifique se você possui a permissão de **Administrador** ou **Gerenciar Servidor** em suas comunidades.
                 </p>
               </div>
             </div>
@@ -192,10 +184,7 @@ export default function Dashboard() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {guilds.map((guild) => {
-                const iconUrl = guild.icon 
-                  ? `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png?size=128`
-                  : null;
-                const initials = getInitials(guild.name);
+                const iconUrl = getDiscordIconUrl(guild);
 
                 return (
                   <div
@@ -211,6 +200,11 @@ export default function Dashboard() {
                               src={iconUrl}
                               alt={guild.name}
                               className="w-14 h-14 rounded-2xl object-cover ring-2 ring-white/10"
+                              onError={(e) => {
+                                // Fallback caso o proxy do Discord bloqueie a imagem direta externa
+                                e.target.onerror = null; 
+                                e.target.parentElement.innerHTML = `<div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-800 flex items-center justify-center text-white font-bold">${guild.name.substring(0,2).toUpperCase()}</div>`;
+                              }}
                             />
                           ) : (
                             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center">
@@ -235,12 +229,14 @@ export default function Dashboard() {
                         {guild.features?.includes('VERIFIED') && (
                           <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400">Verificado</span>
                         )}
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-gray-400">
-                          {guild.approximate_member_count || '?'} membros
-                        </span>
+                        {guild.approximate_member_count && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-gray-400">
+                            {guild.approximate_member_count} membros
+                          </span>
+                        )}
                       </div>
 
-                      {/* Botão de configuração único */}
+                      {/* Botão de configuração */}
                       <button
                         onClick={() => handleConfigureGuild(guild.id)}
                         className="w-full py-3 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold text-sm transition-all duration-300 flex items-center justify-center gap-2 group/btn"
@@ -254,7 +250,7 @@ export default function Dashboard() {
               })}
             </div>
             
-            {/* Footer com info */}
+            {/* Footer */}
             <div className="mt-8 text-center">
               <p className="text-gray-500 text-xs">
                 {guilds.length} servidor(es) disponível(eis) para gerenciamento
