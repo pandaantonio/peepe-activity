@@ -1,6 +1,6 @@
 // pages/index.js
 import Link from 'next/link';
-import { FaChess, FaUsers, FaLock, FaSlidersH, FaCoins, FaGem, FaBolt, FaPlus } from 'react-icons/fa';
+import { FaChess, FaUsers, FaLock, FaSlidersH, FaCoins, FaGem, FaPlus } from 'react-icons/fa';
 import { FiZap, FiUser, FiCpu } from 'react-icons/fi';
 import { useEffect, useState, useRef } from 'react';
 import { useDiscord } from '@/contexts/DiscordContext';
@@ -83,7 +83,6 @@ export default function GameHub() {
     setMounted(true);
   }, []);
 
-  // Animate coin count
   useEffect(() => {
     if (coins !== displayCoins) {
       const diff = coins - displayCoins;
@@ -99,7 +98,6 @@ export default function GameHub() {
     }
   }, [coins, displayCoins]);
 
-  // Trigger animation when coins increase
   useEffect(() => {
     if (coins > prevCoinsRef.current && prevCoinsRef.current > 0) {
       setCoinAnim(true);
@@ -108,7 +106,6 @@ export default function GameHub() {
     prevCoinsRef.current = coins;
   }, [coins]);
 
-  // Fetch coins
   useEffect(() => {
     if (!user?.id) return;
 
@@ -220,7 +217,6 @@ export default function GameHub() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0c] relative overflow-hidden">
-      {/* Background ambient */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/3 w-[600px] h-[600px] bg-emerald-500/[0.03] rounded-full blur-[120px]" />
         <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-purple-500/[0.03] rounded-full blur-[100px]" />
@@ -231,24 +227,14 @@ export default function GameHub() {
       <div className="fixed top-0 left-0 right-0 z-50 px-3 py-2">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
 
-          {/* LEFT: Avatar/Level Badge */}
-          <div className="flex items-center gap-2">
-            <div className="level-badge">
-              <div className="level-outer">
-                <div className="level-inner">
-                  <span className="level-text">16</span>
-                </div>
+          {/* LEFT: Level Badge */}
+          <div className="level-badge">
+            <div className="level-outer">
+              <div className="level-inner">
+                <span className="level-text">16</span>
               </div>
-              <div className="level-crown">👑</div>
             </div>
-
-            {/* XP Bar */}
-            <div className="xp-bar-container">
-              <div className="xp-bar-bg">
-                <div className="xp-bar-fill" style={{ width: '65%' }} />
-              </div>
-              <div className="xp-bar-text">XP</div>
-            </div>
+            <div className="level-crown">👑</div>
           </div>
 
           {/* RIGHT: Currency Bars */}
@@ -280,19 +266,6 @@ export default function GameHub() {
               </button>
             </div>
 
-            {/* Energy Bar */}
-            <div className="currency-bar energy-bar">
-              <div className="currency-icon energy-icon">
-                <FaBolt className="text-orange-900 text-xs" />
-              </div>
-              <span className="currency-value energy-value">
-                310/50
-              </span>
-              <button className="currency-plus energy-plus">
-                <FaPlus className="text-xs" />
-              </button>
-            </div>
-
           </div>
         </div>
       </div>
@@ -316,7 +289,6 @@ export default function GameHub() {
       )}
 
       <div className="relative pt-20 pb-16 px-6 max-w-6xl mx-auto">
-        {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-semibold mb-3 tracking-tight animate-fade-in-up">
             <span className="text-white/90">Biblioteca de </span>
@@ -340,7 +312,6 @@ export default function GameHub() {
           </div>
         </div>
 
-        {/* Grid de Jogos */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {displayItems.map((item, index) => {
             const colors = colorClasses[item.color];
@@ -492,38 +463,6 @@ export default function GameHub() {
           filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
         }
 
-        /* === XP BAR === */
-        .xp-bar-container {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 2px;
-        }
-
-        .xp-bar-bg {
-          width: 60px;
-          height: 8px;
-          background: rgba(0,0,0,0.5);
-          border-radius: 4px;
-          overflow: hidden;
-          border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .xp-bar-fill {
-          height: 100%;
-          background: linear-gradient(90deg, #10b981, #34d399);
-          border-radius: 4px;
-          transition: width 0.5s ease;
-        }
-
-        .xp-bar-text {
-          font-size: 8px;
-          color: rgba(255,255,255,0.5);
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
         /* === CURRENCY BARS === */
         .currency-bar {
           display: flex;
@@ -556,14 +495,6 @@ export default function GameHub() {
             inset 0 1px 0 rgba(255,255,255,0.1);
         }
 
-        .energy-bar {
-          background: linear-gradient(180deg, rgba(249, 115, 22, 0.15), rgba(249, 115, 22, 0.05));
-          border: 1.5px solid rgba(249, 115, 22, 0.3);
-          box-shadow: 
-            0 2px 8px rgba(249, 115, 22, 0.15),
-            inset 0 1px 0 rgba(255,255,255,0.1);
-        }
-
         .currency-icon {
           width: 26px;
           height: 26px;
@@ -585,10 +516,6 @@ export default function GameHub() {
           background: linear-gradient(135deg, #c084fc, #a855f7);
         }
 
-        .energy-icon {
-          background: linear-gradient(135deg, #fb923c, #f97316);
-        }
-
         .currency-value {
           font-size: 13px;
           font-weight: 800;
@@ -604,10 +531,6 @@ export default function GameHub() {
 
         .gem-value {
           color: #c084fc;
-        }
-
-        .energy-value {
-          color: #fb923c;
         }
 
         .currency-plus {
@@ -641,17 +564,6 @@ export default function GameHub() {
         }
 
         .gem-plus:hover {
-          background: linear-gradient(135deg, #22c55e, #16a34a);
-          transform: scale(1.1);
-        }
-
-        .energy-plus {
-          background: linear-gradient(135deg, #16a34a, #15803d);
-          color: white;
-          border: 1px solid rgba(255,255,255,0.2);
-        }
-
-        .energy-plus:hover {
           background: linear-gradient(135deg, #22c55e, #16a34a);
           transform: scale(1.1);
         }
