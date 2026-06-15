@@ -1,8 +1,8 @@
 // pages/index.js
 import Link from 'next/link';
-import { FaChess, FaUsers, FaLock, FaSlidersH, FaCoins, FaGem, FaPlus } from 'react-icons/fa';
+import { FaChess, FaUsers, FaLock, FaSlidersH } from 'react-icons/fa';
 import { FiZap, FiUser, FiCpu } from 'react-icons/fi';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useDiscord } from '@/contexts/DiscordContext';
 
 const games = [
@@ -71,89 +71,9 @@ const games = [
 export default function GameHub() {
   const { isContextReady, user } = useDiscord();
   const [mounted, setMounted] = useState(false);
-  const [coins, setCoins] = useState(0);
-  const [displayCoins, setDisplayCoins] = useState(0);
-  const [gems, setGems] = useState(0);
-  const [dailyAvailable, setDailyAvailable] = useState(false);
-  const [collectingDaily, setCollectingDaily] = useState(false);
-  const [coinAnim, setCoinAnim] = useState(false);
-  const prevCoinsRef = useRef(0);
-
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  useEffect(() => {
-    if (coins !== displayCoins) {
-      const diff = coins - displayCoins;
-      const step = Math.sign(diff) * Math.max(1, Math.abs(Math.floor(diff / 10)));
-      const timer = setTimeout(() => {
-        setDisplayCoins(prev => {
-          const next = prev + step;
-          if (Math.abs(next - coins) < Math.abs(step)) return coins;
-          return next;
-        });
-      }, 30);
-      return () => clearTimeout(timer);
-    }
-  }, [coins, displayCoins]);
-
-  useEffect(() => {
-    if (coins > prevCoinsRef.current && prevCoinsRef.current > 0) {
-      setCoinAnim(true);
-      setTimeout(() => setCoinAnim(false), 800);
-    }
-    prevCoinsRef.current = coins;
-  }, [coins]);
-
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const fetchCoins = async () => {
-      try {
-        const res = await fetch(`/api/users/${user.id}`);
-        if (res.ok) {
-          const data = await res.json();
-          setCoins(data.coins || 0);
-          setGems(data.gems || 0);
-
-          const now = Date.now();
-          const oneDay = 24 * 60 * 60 * 1000;
-          const lastDaily = data.lastDaily || 0;
-          setDailyAvailable(now - lastDaily >= oneDay);
-        }
-      } catch (err) {
-        console.error('Error fetching coins:', err);
-      }
-    };
-
-    fetchCoins();
-    const interval = setInterval(fetchCoins, 30000);
-    return () => clearInterval(interval);
-  }, [user?.id]);
-
-  const collectDaily = async () => {
-    if (!user?.id || collectingDaily) return;
-
-    setCollectingDaily(true);
-    try {
-      const res = await fetch(`/api/users/${user.id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'daily' })
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setCoins(data.coins);
-        setDailyAvailable(false);
-      }
-    } catch (err) {
-      console.error('Error collecting daily:', err);
-    } finally {
-      setCollectingDaily(false);
-    }
-  };
 
   const colorClasses = {
     emerald: {
@@ -223,62 +143,9 @@ export default function GameHub() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-white/[0.01] rounded-full blur-[150px]" />
       </div>
 
-      {/* === GAME HUD TOP BAR === */}
-      <div className="fixed top-0 left-0 right-0 z-50 px-3 py-2">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
 
-          {/* RIGHT: Currency Bars */}
-          <div className="flex items-center gap-2">
 
-            {/* Coins Bar */}
-            <div className={`currency-bar coin-bar ${coinAnim ? 'currency-bump' : ''}`}>
-              <div className="currency-icon coin-icon">
-                <FaCoins className="text-yellow-900 text-xs" />
-              </div>
-              <span className="currency-value coin-value">
-                {displayCoins.toLocaleString()}
-              </span>
-              <button className="currency-plus coin-plus">
-                <FaPlus className="text-xs" />
-              </button>
-            </div>
-
-            {/* Gems Bar */}
-            <div className="currency-bar gem-bar">
-              <div className="currency-icon gem-icon">
-                <FaGem className="text-purple-900 text-xs" />
-              </div>
-              <span className="currency-value gem-value">
-                {gems.toLocaleString()}
-              </span>
-              <button className="currency-plus gem-plus">
-                <FaPlus className="text-xs" />
-              </button>
-            </div>
-
-          </div>
-        </div>
-      </div>
-
-      {/* Daily Reward Floating Button */}
-      {dailyAvailable && (
-        <div className="fixed top-14 right-3 z-50">
-          <button
-            onClick={collectDaily}
-            disabled={collectingDaily}
-            className="daily-float-btn"
-          >
-            <div className="daily-float-glow" />
-            <div className="daily-float-inner">
-              <FaCoins className="text-yellow-400 text-lg" />
-              <span className="text-xs font-bold text-white">+100</span>
-            </div>
-            <div className="daily-float-ping" />
-          </button>
-        </div>
-      )}
-
-      <div className="relative pt-20 pb-16 px-6 max-w-6xl mx-auto">
+      <div className="relative pt-16 pb-16 px-6 max-w-6xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-semibold mb-3 tracking-tight animate-fade-in-up">
             <span className="text-white/90">Biblioteca de </span>
@@ -404,182 +271,6 @@ export default function GameHub() {
             0 4px 24px rgba(16, 185, 129, 0.08);
           color: rgba(52, 211, 153, 0.9);
           text-shadow: 0 0 20px rgba(52, 211, 153, 0.2);
-        }
-
-        /* === CURRENCY BARS === */
-        .currency-bar {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          padding: 3px 3px 3px 2px;
-          border-radius: 20px;
-          position: relative;
-          min-width: 90px;
-          transition: transform 0.15s ease;
-        }
-
-        .currency-bar:active {
-          transform: scale(0.95);
-        }
-
-        .coin-bar {
-          background: linear-gradient(180deg, rgba(234, 179, 8, 0.15), rgba(234, 179, 8, 0.05));
-          border: 1.5px solid rgba(234, 179, 8, 0.3);
-          box-shadow: 
-            0 2px 8px rgba(234, 179, 8, 0.15),
-            inset 0 1px 0 rgba(255,255,255,0.1);
-        }
-
-        .gem-bar {
-          background: linear-gradient(180deg, rgba(168, 85, 247, 0.15), rgba(168, 85, 247, 0.05));
-          border: 1.5px solid rgba(168, 85, 247, 0.3);
-          box-shadow: 
-            0 2px 8px rgba(168, 85, 247, 0.15),
-            inset 0 1px 0 rgba(255,255,255,0.1);
-        }
-
-        .currency-icon {
-          width: 26px;
-          height: 26px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-          box-shadow: 
-            0 1px 3px rgba(0,0,0,0.2),
-            inset 0 1px 0 rgba(255,255,255,0.3);
-        }
-
-        .coin-icon {
-          background: linear-gradient(135deg, #fbbf24, #f59e0b);
-        }
-
-        .gem-icon {
-          background: linear-gradient(135deg, #c084fc, #a855f7);
-        }
-
-        .currency-value {
-          font-size: 13px;
-          font-weight: 800;
-          flex: 1;
-          text-align: center;
-          letter-spacing: -0.3px;
-          text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-        }
-
-        .coin-value {
-          color: #fbbf24;
-        }
-
-        .gem-value {
-          color: #c084fc;
-        }
-
-        .currency-plus {
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-        }
-
-        .coin-plus {
-          background: linear-gradient(135deg, #16a34a, #15803d);
-          color: white;
-          border: 1px solid rgba(255,255,255,0.2);
-        }
-
-        .coin-plus:hover {
-          background: linear-gradient(135deg, #22c55e, #16a34a);
-          transform: scale(1.1);
-        }
-
-        .gem-plus {
-          background: linear-gradient(135deg, #16a34a, #15803d);
-          color: white;
-          border: 1px solid rgba(255,255,255,0.2);
-        }
-
-        .gem-plus:hover {
-          background: linear-gradient(135deg, #22c55e, #16a34a);
-          transform: scale(1.1);
-        }
-
-        .currency-bump {
-          animation: currency-bump 0.6s ease-out;
-        }
-
-        /* === DAILY FLOAT BUTTON === */
-        .daily-float-btn {
-          position: relative;
-          width: 56px;
-          height: 56px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, rgba(234, 179, 8, 0.2), rgba(234, 179, 8, 0.05));
-          border: 2px solid rgba(234, 179, 8, 0.4);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          backdrop-filter: blur(10px);
-        }
-
-        .daily-float-btn:hover {
-          transform: scale(1.1);
-          border-color: rgba(234, 179, 8, 0.6);
-        }
-
-        .daily-float-btn:active {
-          transform: scale(0.95);
-        }
-
-        .daily-float-inner {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 1px;
-        }
-
-        .daily-float-glow {
-          position: absolute;
-          inset: -4px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(234, 179, 8, 0.3) 0%, transparent 70%);
-          animation: daily-glow 2s ease-in-out infinite;
-        }
-
-        .daily-float-ping {
-          position: absolute;
-          inset: -2px;
-          border-radius: 50%;
-          border: 2px solid rgba(234, 179, 8, 0.5);
-          animation: daily-ping 2s ease-out infinite;
-        }
-
-        /* === ANIMATIONS === */
-        @keyframes currency-bump {
-          0% { transform: scale(1); }
-          25% { transform: scale(1.08); }
-          50% { transform: scale(0.96); }
-          75% { transform: scale(1.03); }
-          100% { transform: scale(1); }
-        }
-
-        @keyframes daily-glow {
-          0%, 100% { opacity: 0.6; transform: scale(1); }
-          50% { opacity: 1; transform: scale(1.1); }
-        }
-
-        @keyframes daily-ping {
-          0% { transform: scale(1); opacity: 0.6; }
-          100% { transform: scale(1.5); opacity: 0; }
         }
 
         @keyframes fade-in {
