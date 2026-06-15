@@ -227,16 +227,6 @@ export default function GameHub() {
       <div className="fixed top-0 left-0 right-0 z-50 px-3 py-2">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
 
-          {/* LEFT: Level Badge */}
-          <div className="level-badge">
-            <div className="level-outer">
-              <div className="level-inner">
-                <span className="level-text">16</span>
-              </div>
-            </div>
-            <div className="level-crown">👑</div>
-          </div>
-
           {/* RIGHT: Currency Bars */}
           <div className="flex items-center gap-2">
 
@@ -414,53 +404,6 @@ export default function GameHub() {
             0 4px 24px rgba(16, 185, 129, 0.08);
           color: rgba(52, 211, 153, 0.9);
           text-shadow: 0 0 20px rgba(52, 211, 153, 0.2);
-        }
-
-        /* === LEVEL BADGE === */
-        .level-badge {
-          position: relative;
-          width: 42px;
-          height: 42px;
-        }
-
-        .level-outer {
-          width: 42px;
-          height: 42px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 
-            0 2px 8px rgba(139, 92, 246, 0.4),
-            inset 0 1px 0 rgba(255,255,255,0.2);
-          border: 2px solid #a78bfa;
-        }
-
-        .level-inner {
-          width: 34px;
-          height: 34px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #7c3aed, #5b21b6);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .level-text {
-          color: white;
-          font-size: 14px;
-          font-weight: 900;
-          text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-        }
-
-        .level-crown {
-          position: absolute;
-          top: -8px;
-          left: 50%;
-          transform: translateX(-50%);
-          font-size: 12px;
-          filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
         }
 
         /* === CURRENCY BARS === */
