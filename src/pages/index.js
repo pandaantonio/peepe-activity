@@ -157,16 +157,6 @@ export default function GameHub() {
           <p className="text-gray-500 text-base max-w-lg mx-auto mb-6 animate-fade-in-up animation-delay-100">
             Escolha seu jogo favorito e desafie suas habilidades
           </p>
-
-          <div className="animate-fade-in-up animation-delay-100">
-            <Link 
-              href="/dashboard" 
-              className="inline-flex items-center gap-2.5 px-6 py-2.5 rounded-xl glass-button text-sm font-medium text-white/80 border border-white/10 hover:text-white transition-all duration-300 hover:scale-[1.02] shadow-lg shadow-black/10"
-            >
-              <FaSlidersH className="text-emerald-400 text-base" />
-              <span>Acessar Painel de Controle</span>
-            </Link>
-          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

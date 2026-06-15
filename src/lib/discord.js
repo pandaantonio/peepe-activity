@@ -50,7 +50,7 @@ export async function setupDiscordSdk() {
       response_type: 'code',
       state: '',
       prompt: 'none',
-      scope: ['identify', 'guilds'],
+      scope: ['identify'],
     };
     logInfo("[DISCORD] Parâmetros de authorize", authParams);
 
