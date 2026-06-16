@@ -32,14 +32,16 @@ export default function TicTacToeSelection() {
 
   return (
     <div className={styles.container}>
+      {/* Background ambient luminoso padrão do seu app */}
       <div className={styles.bgGradient}>
         <div className={styles.bgBlur1} />
         <div className={styles.bgBlur2} />
       </div>
 
+      {/* Topbar Base */}
       <div className={styles.topbar}>
         <div className={styles.topbarContent}>
-          <button onClick={() => router.push('/')} className={styles.iconButton}>
+          <button onClick={() => router.push('/')} className={styles.iconButton} title="Voltar para a Home">
             <FaArrowLeft size={18} />
           </button>
           <div className={styles.statusContainer}>
@@ -47,10 +49,11 @@ export default function TicTacToeSelection() {
               <span className={styles.statusText}>SELECIONE A DIFICULDADE DA IA</span>
             </div>
           </div>
-          <div style={{ width: 80 }} /> {/* Espaçador para balancear a topbar */}
+          <div style={{ width: 40 }} /> {/* Espaçador estrutural para simetria */}
         </div>
       </div>
 
+      {/* Menu com Grid de Cards */}
       <div className={styles.mainContent} style={{ justifyContent: 'center', alignItems: 'center' }}>
         <div style={{
           display: 'grid',
