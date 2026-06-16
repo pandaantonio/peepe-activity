@@ -1,305 +1,299 @@
-import React, { useState, useCallback, useEffect, memo, useMemo, useRef } from 'react';
-import { useRouter } from 'next/router';
-import { FaArrowLeft, FaRedo, FaUser, FaUsers, FaTrashAlt } from 'react-icons/fa';
+// pages/index.js
+import Link from 'next/link';
+import { FaChess, FaUsers, FaLock, FaSlidersH } from 'react-icons/fa';
+import { FiZap, FiUser, FiCpu } from 'react-icons/fi';
+import { useEffect, useState } from 'react';
 import { useDiscord } from '@/contexts/DiscordContext';
-import styles from '@/styles/TicTacToe.module.css';
 
-// Sub-componente otimizado para as células do tabuleiro
-const GridCell = memo(({ cell, rowIndex, colIndex, isWinning, isLastMove, gameOver, isMyTurn, onClick }) => {
-  return (
-    <button
-      onClick={() => onClick(rowIndex, colIndex)}
-      disabled={gameOver || !isMyTurn || cell !== ''}
-      className={`
-        ${styles.gridCell}
-        ${cell === '' ? styles.gridCellEmpty : styles.gridCellFilled}
-        ${isWinning ? styles.gridCellWinning : ''}
-        ${isLastMove && !isWinning ? styles.gridCellLastMove : ''}
-        ${(gameOver || !isMyTurn || cell !== '') ? styles.gridCellDisabled : ''}
-      `}
-    >
-      {cell === 'X' && <span className={`${styles.cellX} ${styles.animateScaleUp}`}>X</span>}
-      {cell === 'O' && <span className={`${styles.cellO} ${styles.animateScaleUp}`}>O</span>}
-    </button>
-  );
-});
-GridCell.displayName = 'GridCell';
+const games = [
+  {
+    id: "hexagon",
+    badge: "NOVIDADE",
+    title: "Hexagon Color Rush",
+    desc: "Controle um robô em um grid de hexágonos coloridos. 5 segundos para pisar na cor certa ou caia no abismo!",
+    color: "purple",
+    icon: <FiZap size={24} />,
+    path: "/game/hexagon",
+    banner: "/imgs/hexagon.png"
+  },
+  {
+    id: "tttai",
+    badge: "ESTRATÉGIA",
+    title: "Jogo da Velha (IA)",
+    desc: "Desafie uma IA baseada no algoritmo Minimax em um duelo tático de inteligência.",
+    color: "emerald",
+    icon: <FaChess size={24} />,
+    path: "/game/tttai",
+    banner: "/imgs/tttai.png"
+  },
+  {
+    id: "hangman",
+    badge: "LÓGICA",
+    title: "Jogo da Forca",
+    desc: "Decifre a palavra secreta gerada por IA antes que suas tentativas se esgotem.",
+    color: "orange",
+    icon: <FaLock size={24} />,
+    path: "/game/hangman",
+    banner: "/imgs/hangman.png"
+  },
+  {
+    id: "snake",
+    badge: "ARCADE",
+    title: "Snake",
+    desc: "Controle a serpente faminta, colete pontos e evite colidir com o próprio corpo.",
+    color: "cyan",
+    icon: <FiZap size={24} />,
+    path: "/game/snake",
+    banner: "/imgs/snake.png"
+  },
+  {
+    id: "guess",
+    badge: "MATEMÁTICA",
+    title: "Adivinhe o Número",
+    desc: "Use a lógica para descobrir o número secreto com base nos feedbacks de temperatura.",
+    color: "orange",
+    icon: <FiUser size={24} />,
+    path: "/game/guess",
+    banner: "/imgs/guess.png"
+  },
+  {
+    id: "2048",
+    badge: "PUZZLE",
+    title: "2048",
+    desc: "Combine os números estrategicamente para alcançar o mítico bloco 2048.",
+    color: "blue",
+    icon: <FiCpu size={24} />,
+    path: "/game/2048",
+    banner: "/imgs/2048.jpg"
+  },
+];
 
-export default function TicTacToe() {
-  const router = useRouter();
-  
-  // Puxando as ferramentas nativas e participantes do seu Contexto global do Discord
-  const { participants, currentUserRaw, discordSdk } = useDiscord();
-
-  const [board, setBoard] = useState([['', '', ''], ['', '', ''], ['', '', '']]);
-  const [currentPlayer, setCurrentPlayer] = useState('X');
-  const [winner, setWinner] = useState(null);
-  const [isDraw, setIsDraw] = useState(false);
-  const [gameOver, setGameOver] = useState(false);
-  const [scores, setScores] = useState({ playerX: 0, playerO: 0, draws: 0 });
-  const [winningLine, setWinningLine] = useState(null);
-  const [moveHistory, setMoveHistory] = useState([]);
-  
-  const scoreLockRef = useRef(false);
-
-  // === ATRIBUIÇÃO DINÂMICA DE PAPÉIS (MULTIPLAYER) ===
-  const playerXUser = useMemo(() => participants[0] || null, [participants]);
-  const playerOUser = useMemo(() => participants[1] || null, [participants]);
-
-  // Identifica quem é você na partida
-  const mySymbol = useMemo(() => {
-    if (!currentUserRaw) return null;
-    if (playerXUser && currentUserRaw.id === playerXUser.id) return 'X';
-    if (playerOUser && currentUserRaw.id === playerOUser.id) return 'O';
-    return 'SPECTATOR';
-  }, [currentUserRaw, playerXUser, playerOUser]);
-
-  // Valida se é o seu turno de jogar
-  const isMyTurn = useMemo(() => mySymbol === currentPlayer, [mySymbol, currentPlayer]);
-
-  const checkVictory = useCallback((player, currentBoard) => {
-    const lines = [
-      [[0,0],[0,1],[0,2]], [[1,0],[1,1],[1,2]], [[2,0],[2,1],[2,2]], 
-      [[0,0],[1,0],[2,0]], [[0,1],[1,1],[2,1]], [[0,2],[1,2],[2,2]], 
-      [[0,0],[1,1],[2,2]], [[0,2],[1,1],[2,0]]                       
-    ];
-    for (const line of lines) {
-      if (line.every(([r, c]) => currentBoard[r][c] === player)) return line;
-    }
-    return null;
+export default function GameHub() {
+  const { isContextReady, user } = useDiscord();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
   }, []);
 
-  // Processa a jogada no tabuleiro local
-  const executeMoveOnBoard = useCallback((row, col, player) => {
-    setBoard(prevBoard => {
-      if (prevBoard[row][col] !== '') return prevBoard;
-      
-      const newBoard = prevBoard.map(r => [...r]);
-      newBoard[row][col] = player;
-
-      const winLine = checkVictory(player, newBoard);
-      if (winLine) {
-        setWinner(player);
-        setWinningLine(winLine);
-        setGameOver(true);
-        if (!scoreLockRef.current) {
-          scoreLockRef.current = true;
-          setScores(prev => ({
-            ...prev,
-            playerX: player === 'X' ? prev.playerX + 1 : prev.playerX,
-            playerO: player === 'O' ? prev.playerO + 1 : prev.playerO
-          }));
-        }
-        return newBoard;
-      }
-
-      const hasEmpty = newBoard.some(r => r.some(c => c === ''));
-      if (!hasEmpty) {
-        setIsDraw(true);
-        setGameOver(true);
-        if (!scoreLockRef.current) {
-          scoreLockRef.current = true;
-          setScores(prev => ({ ...prev, draws: prev.draws + 1 }));
-        }
-        return newBoard;
-      }
-
-      return newBoard;
-    });
-
-    setMoveHistory(prev => [...prev, { player, row, col }]);
-    setCurrentPlayer(player === 'X' ? 'O' : 'X');
-  }, [checkVictory]);
-
-  const localReset = () => {
-    setBoard([['', '', ''], ['', '', ''], ['', '', '']]);
-    setCurrentPlayer('X');
-    setWinner(null);
-    setIsDraw(false);
-    setGameOver(false);
-    setWinningLine(null);
-    setMoveHistory([]);
-    scoreLockRef.current = false;
-  };
-
-  // === ESCUTAR EVENTOS REAIS VINDO DO DISCORD (RECEPTOR) ===
-  useEffect(() => {
-    if (!discordSdk) return;
-
-    // Função de callback para processar eventos de rede recebidos
-    const handleNetworkMessage = (event) => {
-      // Filtra mensagens que não pertençam ao jogo da velha
-      if (!event.data || event.data.game !== 'tictactoe') return;
-
-      const { type, payload } = event.data;
-
-      if (type === 'MOVE') {
-        executeMoveOnBoard(payload.row, payload.col, payload.player);
-      } else if (type === 'RESET') {
-        localReset();
-      }
-    };
-
-    // Inscreve a aplicação Next.js para ouvir o evento nativo do Iframe do Discord
-    window.addEventListener('message', handleNetworkMessage);
-
-    return () => {
-      window.removeEventListener('message', handleNetworkMessage);
-    };
-  }, [discordSdk, executeMoveOnBoard]);
-
-  // === ENVIAR CRÉDITO DO CLIQUE PARA O ADVERSÁRIO (EMISSOR) ===
-  const handleCellClick = useCallback((row, col) => {
-    if (gameOver || !isMyTurn || board[row][col] !== '') return;
-
-    // 1. Atualiza sua própria tela instantaneamente
-    executeMoveOnBoard(row, col, mySymbol);
-
-    // 2. Transmite nativamente para o Iframe pai do Discord repassar ao outro jogador
-    if (typeof window !== 'undefined' && window.parent) {
-      window.parent.postMessage(
-        {
-          game: 'tictactoe',
-          type: 'MOVE',
-          payload: { row, col, player: mySymbol }
-        },
-        '*'
-      );
-    }
-  }, [gameOver, isMyTurn, board, executeMoveOnBoard, mySymbol]);
-
-  const handleResetClick = () => {
-    localReset();
-
-    // Avisa os outros aparelhos na call para limparem o tabuleiro também
-    if (typeof window !== 'undefined' && window.parent) {
-      window.parent.postMessage(
-        {
-          game: 'tictactoe',
-          type: 'RESET',
-          payload: {}
-        },
-        '*'
-      );
+  const colorClasses = {
+    emerald: {
+      accent: "text-emerald-400",
+      glow: "shadow-emerald-500/20",
+      border: "border-emerald-500/15",
+      badge: "bg-emerald-500/8 text-emerald-400 border-emerald-500/20"
+    },
+    cyan: {
+      accent: "text-cyan-400",
+      glow: "shadow-cyan-500/20",
+      border: "border-cyan-500/15",
+      badge: "bg-cyan-500/8 text-cyan-400 border-cyan-500/20"
+    },
+    purple: {
+      accent: "text-purple-400",
+      glow: "shadow-purple-500/20",
+      border: "border-purple-500/15",
+      badge: "bg-purple-500/8 text-purple-400 border-purple-500/20"
+    },
+    orange: {
+      accent: "text-orange-400",
+      glow: "shadow-orange-500/20",
+      border: "border-orange-500/15",
+      badge: "bg-orange-500/8 text-orange-400 border-orange-500/20"
+    },
+    blue: {
+      accent: "text-blue-400",
+      glow: "shadow-blue-500/20",
+      border: "border-blue-500/15",
+      badge: "bg-blue-500/8 text-blue-400 border-blue-500/20"
+    },
+    indigo: {
+      accent: "text-indigo-400",
+      glow: "shadow-indigo-500/20",
+      border: "border-indigo-500/15",
+      badge: "bg-indigo-500/8 text-indigo-400 border-indigo-500/20"
     }
   };
 
-  const resetScores = () => {
-    setScores({ playerX: 0, playerO: 0, draws: 0 });
-    scoreLockRef.current = false;
-  };
+  const displayItems = [...games];
 
-  const getStatusText = () => {
-    if (winner === 'X') return `VITÓRIA DE ${playerXUser?.global_name || 'X'}`;
-    if (winner === 'O') return `VITÓRIA DE ${playerOUser?.global_name || 'O'}`;
-    if (isDraw) return "EMPATE DETECTADO";
-    if (mySymbol === 'SPECTATOR') {
-      return `ASSISTINDO: VEZ DE ${currentPlayer === 'X' ? (playerXUser?.global_name || 'X') : (playerOUser?.global_name || 'O')}`;
-    }
-    return isMyTurn ? "SUA VEZ DE AGIR" : "AGUARDANDO ADVERSÁRIO...";
-  };
-
-  const getStatusColorClass = () => {
-    if (winner === 'X') return styles.statusTextWinX;
-    if (winner === 'O') return styles.statusTextWinO;
-    if (isDraw) return styles.statusTextDraw;
-    return isMyTurn ? styles.statusTextTurn : styles.statusTextAITurn;
-  };
+  if (!mounted || !isContextReady) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0c]">
+        <div className="pt-24 pb-16 px-6 max-w-6xl mx-auto">
+          <div className="text-center mb-10">
+            <div className="w-28 h-7 bg-white/5 rounded-full mx-auto mb-8 animate-pulse" />
+            <div className="w-80 h-14 bg-white/5 rounded-2xl mx-auto mb-4 animate-pulse" />
+            <div className="w-56 h-5 bg-white/5 rounded-lg mx-auto animate-pulse" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="h-72 bg-white/5 rounded-2xl animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className={styles.container}>
-      <div className={styles.bgGradient}><div className={styles.bgBlur1} /><div className={styles.bgBlur2} /></div>
-      
-      <div className={styles.topbar}>
-        <div className={styles.topbarContent}>
-          <div className={styles.buttonGroup}>
-            <button onClick={() => router.push('/')} className={styles.iconButton}><FaArrowLeft size={18} /></button>
-            {mySymbol !== 'SPECTATOR' && (
-              <button onClick={handleResetClick} className={styles.iconButton} title="Reiniciar Tabuleiro"><FaRedo size={16} /></button>
-            )}
-          </div>
-          <div className={styles.statusContainer}>
-            <div className={styles.statusBox}>
-              <div className={`${styles.statusDot} ${isMyTurn && !gameOver ? styles.statusDotActive : styles.statusDotInactive}`} />
-              <span className={`${styles.statusText} ${getStatusColorClass()}`}>{getStatusText()}</span>
-            </div>
-          </div>
-          <button onClick={resetScores} className={styles.resetButton}><FaTrashAlt size={14} /><span>Limpar</span></button>
-        </div>
+    <div className="min-h-screen bg-[#0a0a0c] relative overflow-hidden">
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/3 w-[600px] h-[600px] bg-emerald-500/[0.03] rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-purple-500/[0.03] rounded-full blur-[100px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-white/[0.01] rounded-full blur-[150px]" />
       </div>
 
-      <div className={styles.mainContent}>
-        <div className={styles.gameLayout}>
-          
-          {/* Placar */}
-          <div className={`${styles.scoreCard} ${styles.glassCard}`}>
-            <div className={styles.scoreHeader}>
-              <span className={styles.scoreLabel}>MÓDULO MULTIPLAYER</span>
-              <h2 className={styles.scoreTitle}>Jogadores na Sala</h2>
-            </div>
-            <div className={styles.scorePanel}>
-              <div className={styles.scoreGrid}>
-                <div className={`${styles.scoreItem} ${mySymbol === 'X' ? styles.scoreItemActive : ''}`}>
-                  <span className={styles.scoreLabelText}>{playerXUser ? (playerXUser.global_name || playerXUser.username) : 'Aguardando...'} (X)</span>
-                  <span className={styles.scoreValue}>{scores.playerX}</span>
-                </div>
-                <div className={styles.drawItem}>
-                  <span className={styles.scoreLabelText}>Empates</span>
-                  <span className={styles.drawValue}>{scores.draws}</span>
-                </div>
-                <div className={`${styles.scoreItem} ${mySymbol === 'O' ? styles.scoreItemActive : ''}`}>
-                  <span className={styles.scoreLabelText}>{playerOUser ? (playerOUser.global_name || playerOUser.username) : 'Aguardando...'} (O)</span>
-                  <span className={styles.scoreValue}>{scores.playerO}</span>
-                </div>
-              </div>
-            </div>
-            <div className={styles.tipCard}>
-              <FaUsers size={16} className={styles.tipIcon} />
-              <div className={styles.tipContent}>
-                <span className={styles.tipTitle}>SUA FUNÇÃO</span>
-                <p className={styles.tipText}>
-                  {mySymbol === 'SPECTATOR' ? "Você está assistindo à partida como espectador." : `Você está controlando as peças '${mySymbol}' nesta rodada.`}
-                </p>
-              </div>
-            </div>
-          </div>
 
-          {/* Tabuleiro */}
-          <div className={`${styles.boardCard} ${styles.glassCard}`}>
-            <div className={styles.boardWrapper}>
-              <div className={styles.board}>
-                {board.map((row, rowIndex) => row.map((cell, colIndex) => (
-                  <GridCell
-                    key={`${rowIndex}-${colIndex}`}
-                    cell={cell}
-                    rowIndex={rowIndex}
-                    colIndex={colIndex}
-                    isWinning={winningLine?.some(([r, c]) => r === rowIndex && c === colIndex)}
-                    isLastMove={moveHistory.length > 0 && moveHistory[moveHistory.length - 1].row === rowIndex && moveHistory[moveHistory.length - 1].col === colIndex}
-                    gameOver={gameOver}
-                    isMyTurn={isMyTurn}
-                    onClick={handleCellClick}
-                  />
-                )))}
-              </div>
-            </div>
 
-            {/* Fim de Jogo */}
-            {(winner || isDraw) && (
-              <div className={styles.overlay}>
-                <h2 className={styles.overlayTitle}>{winner ? 'PARTIDA TERMINADA' : 'SISTEMA EM EMPATE'}</h2>
-                <p className={styles.overlayText}>
-                  {winner === mySymbol && 'Parabéns! Você venceu o duelo tático.'}
-                  {winner && winner !== mySymbol && mySymbol !== 'SPECTATOR' && 'O adversário venceu esta rodada.'}
-                  {isDraw && 'O jogo terminou empatado.'}
-                </p>
-                {mySymbol !== 'SPECTATOR' && <button onClick={handleResetClick} className={styles.overlayButton}>Próxima Rodada</button>}
-              </div>
-            )}
-          </div>
+      <div className="relative pt-16 pb-16 px-6 max-w-6xl mx-auto">
+        <div className="text-center mb-12">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-semibold mb-3 tracking-tight animate-fade-in-up">
+            <span className="text-white/90">Biblioteca de </span>
+            <span className="liquid-glass-title px-5 py-1.5 rounded-2xl inline-block">
+              Jogos
+            </span>
+          </h1>
 
+          <p className="text-gray-500 text-base max-w-lg mx-auto mb-6 animate-fade-in-up animation-delay-100">
+            Escolha seu jogo favorito e desafie suas habilidades
+          </p>
         </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {displayItems.map((item, index) => {
+            const colors = colorClasses[item.color];
+
+            return (
+              <Link
+                key={item.id}
+                href={item.path}
+                className="group animate-fade-in-up"
+                style={{ animationDelay: `${100 + index * 60}ms` }}
+              >
+                <div className="glass-card rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-white/5 group-hover:border-white/15">
+
+                  {item.banner && (
+                    <div className="w-full relative overflow-hidden">
+                      <img
+                        src={item.banner}
+                        alt={item.title}
+                        className="w-full h-44 object-cover block transition-all duration-700 group-hover:scale-105 group-hover:brightness-110"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0c] via-[#0a0a0c]/40 to-transparent" />
+                    </div>
+                  )}
+
+                  <div className="relative p-5 -mt-8">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className={`px-2.5 py-1 rounded-md border text-[10px] font-semibold tracking-wider uppercase ${colors.badge}`}>
+                        {item.badge}
+                      </div>
+                      <div className={`${colors.accent} opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110`}>
+                        {item.icon}
+                      </div>
+                    </div>
+
+                    <h2 className="text-lg font-semibold text-white/90 mb-2 group-hover:text-white transition-colors duration-300">
+                      {item.title}
+                    </h2>
+
+                    <p className="text-gray-500 text-sm leading-relaxed mb-4 line-clamp-2">
+                      {item.desc}
+                    </p>
+
+                    <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                      <span className="text-[11px] text-gray-600 font-medium">
+                        Jogar agora
+                      </span>
+                      <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center transition-all duration-300 group-hover:bg-white/10 group-hover:border-white/20 group-hover:translate-x-0.5">
+                        <svg className="w-3.5 h-3.5 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+
       </div>
+
+      <style jsx>{`
+        .glass-card {
+          background: rgba(255, 255, 255, 0.03);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.06);
+          box-shadow: 
+            0 1px 2px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        }
+
+        .glass-card:hover {
+          background: rgba(255, 255, 255, 0.05);
+          box-shadow: 
+            0 20px 40px rgba(0, 0, 0, 0.3),
+            0 0 0 1px rgba(255, 255, 255, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        }
+
+        .glass-button {
+          background: rgba(255, 255, 255, 0.02);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+        }
+
+        .glass-button:hover {
+          background: rgba(255, 255, 255, 0.06);
+          border-color: rgba(52, 211, 153, 0.3);
+          box-shadow: 0 8px 32px rgba(16, 185, 129, 0.08);
+        }
+
+        .liquid-glass-title {
+          background: linear-gradient(135deg, rgba(52, 211, 153, 0.08), rgba(16, 185, 129, 0.02));
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border: 1px solid rgba(52, 211, 153, 0.15);
+          box-shadow: 
+            inset 0 1px 1px rgba(255, 255, 255, 0.08),
+            0 4px 24px rgba(16, 185, 129, 0.08);
+          color: rgba(52, 211, 153, 0.9);
+          text-shadow: 0 0 20px rgba(52, 211, 153, 0.2);
+        }
+
+        @keyframes fade-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes fade-in-up {
+          from {
+            opacity: 0;
+            transform: translateY(16px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.5s ease-out;
+        }
+        .animate-fade-in-up {
+          animation: fade-in-up 0.5s ease-out forwards;
+          opacity: 0;
+        }
+        .animation-delay-100 {
+          animation-delay: 100ms;
+        }
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+      `}</style>
     </div>
   );
 }
