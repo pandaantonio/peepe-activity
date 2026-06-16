@@ -1,41 +1,46 @@
 // lib/debugLogger.js
-// Sistema de logs visível na UI para debug em Discord Activities (sem console)
+import { getDiscordSDK } from "./discord";
 
-let logs = [];
-let listeners = [];
+// Função utilitária interna para despachar o log para o Discord se o SDK estiver pronto
+function sendToDiscordLog(level, message, object = null) {
+  try {
+    const sdk = getDiscordSDK();
+    
+    // Concatena o objeto em string se ele existir para não perder dados no log
+    const fullMessage = object 
+      ? `${message} | Dados: ${JSON.stringify(object)}` 
+      : message;
 
-export function addLog(level, message, data = null) {
-  const entry = {
-    id: Date.now() + Math.random(),
-    timestamp: new Date().toLocaleTimeString('pt-BR'),
-    level, // 'info', 'warn', 'error', 'success'
-    message,
-    data: data ? JSON.stringify(data, null, 2) : null,
-  };
-  logs.push(entry);
-  // Manter apenas últimos 100 logs
-  if (logs.length > 100) logs = logs.slice(-100);
-  listeners.forEach(fn => fn([...logs]));
+    // Se o SDK já foi instanciado, envia para o console do Discord
+    if (sdk && sdk.commands && typeof sdk.commands.captureLog === 'function') {
+      sdk.commands.captureLog({
+        level: level, // 'log' | 'warn' | 'error' | 'info'
+        message: fullMessage,
+      });
+    }
+  } catch (err) {
+    // Fallback silencioso para evitar que um erro no logger quebre a aplicação
+    console.error("Erro interno no debugLogger:", err);
+  }
 }
 
-export function getLogs() {
-  return [...logs];
+export function logInfo(message, object) {
+  console.log(`ℹ️ [INFO] ${message}`, object || '');
+  sendToDiscordLog('info', message, object);
 }
 
-export function clearLogs() {
-  logs = [];
-  listeners.forEach(fn => fn([]));
+export function logWarn(message, object) {
+  console.warn(`⚠️ [WARN] ${message}`, object || '');
+  sendToDiscordLog('warn', message, object);
 }
 
-export function subscribe(callback) {
-  listeners.push(callback);
-  callback([...logs]);
-  return () => {
-    listeners = listeners.filter(fn => fn !== callback);
-  };
+export function logError(message, object) {
+  console.error(`🚨 [ERROR] ${message}`, object || '');
+  sendToDiscordLog('error', message, object);
 }
 
-export const logInfo = (msg, data) => addLog('info', msg, data);
-export const logWarn = (msg, data) => addLog('warn', msg, data);
-export const logError = (msg, data) => addLog('error', msg, data);
-export const logSuccess = (msg, data) => addLog('success', msg, data);
+export function logSuccess(message, object) {
+  console.log(`✅ [SUCCESS] ${message}`, object || '');
+  // 'success' não é um nível padrão do captureLog, usamos 'log' como fallback
+  sendToDiscordLog('log', `✅ ${message}`, object);
+}

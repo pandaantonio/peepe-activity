@@ -7,18 +7,20 @@ let discordSdk;
 export function getDiscordSDK() {
   if (!discordSdk && typeof window !== "undefined") {
     const clientId = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID;
-    logInfo("[DISCORD] Tentando instanciar SDK", { clientId: clientId ? "DEFINIDO" : "AUSENTE", length: clientId?.length });
+    
+    // Use console nativo aqui para evitar o loop
+    console.log("[DISCORD] Tentando instanciar SDK nativamente"); 
 
     if (!clientId) {
-      logError("[DISCORD] NEXT_PUBLIC_DISCORD_CLIENT_ID não está definido!");
+      console.error("[DISCORD] NEXT_PUBLIC_DISCORD_CLIENT_ID ausente!");
       return null;
     }
 
     try {
       discordSdk = new DiscordSDK(clientId);
-      logSuccess("[DISCORD] SDK instanciado com sucesso");
+      console.log("[DISCORD] SDK instanciado com sucesso");
     } catch (err) {
-      logError("[DISCORD] Falha ao instanciar SDK", { error: err.message });
+      console.error("[DISCORD] Falha ao instanciar SDK", err);
       return null;
     }
   }

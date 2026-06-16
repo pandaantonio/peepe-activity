@@ -3,6 +3,9 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { getDiscordSDK, setupDiscordSdk } from '@/lib/discord';
 import { logInfo, logWarn, logError, logSuccess } from '@/lib/debugLogger';
 
+// Importando os Eventos do SDK do Discord para o Listener Multiplayer
+import { Events } from '@discord/embedded-app-sdk';
+
 export const DiscordContext = createContext(null);
 
 export function DiscordProvider({ children }) {
@@ -11,8 +14,21 @@ export function DiscordProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isDiscordFrame, setIsDiscordFrame] = useState(false);
+  
+  // Novos estados para Multiplayer e Perfil
+  const [participants, setParticipants] = useState([]);
+  const [userData, setUserData] = useState({ username: '', avatarSrc: '' });
 
   useEffect(() => {
+    let sdkInstance = null;
+    let isSubscribed = false;
+
+    // Função de callback para quando a lista de participantes mudar (alguém entra/sai)
+    function handleParticipantsUpdate(data) {
+      logInfo("[MULTIPLAYER] Participantes atualizados via evento", data.participants);
+      setParticipants(data.participants || []);
+    }
+
     async function init() {
       if (typeof window === 'undefined') {
         logInfo("[CONTEXT] window undefined (SSR), pulando init");
@@ -27,14 +43,6 @@ export function DiscordProvider({ children }) {
       const isFrame = !!frameId || 
                       window.location.ancestorOrigins?.contains('https://discord.com') ||
                       (typeof navigator !== 'undefined' && navigator.userAgent.includes('Discord'));
-
-      logInfo("[CONTEXT] Detecção de ambiente", {
-        frameId,
-        isFrame,
-        ancestorOrigins: window.location.ancestorOrigins?.[0],
-        userAgent: navigator.userAgent?.substring(0, 50),
-        href: window.location.href
-      });
 
       setIsDiscordFrame(isFrame);
 
@@ -52,6 +60,7 @@ export function DiscordProvider({ children }) {
         if (!sdk) {
           throw new Error("Não foi possível instanciar o Discord SDK.");
         }
+        sdkInstance = sdk; // Guarda a referência local para limpar o evento no return do useEffect
         setDiscordSdk(sdk);
 
         logInfo("[CONTEXT] Chamando setupDiscordSdk()...");
@@ -61,9 +70,39 @@ export function DiscordProvider({ children }) {
           logSuccess("[CONTEXT] Autenticação obtida com sucesso", {
             hasUser: !!userAuth.user,
             username: userAuth.user?.username,
-            hasAccessToken: !!userAuth.access_token
           });
           setAuth(userAuth);
+
+          // === PROCESSANDO DADOS DO USUÁRIO LOGADO ===
+          const user = userAuth.user;
+          let avatarUrl = '';
+          
+          if (user.avatar) {
+            avatarUrl = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=256`;
+          } else {
+            // Fallback para o índice de avatar padrão baseado na ID (Bitwise shift)
+            const defaultAvatarIndex = Number((BigInt(user.id) >> 22n) % 6n);
+            avatarUrl = `https://cdn.discordapp.com/embed/avatars/${defaultAvatarIndex}.png`;
+          }
+
+          const finalUsername = user.global_name ?? `${user.username}${user.discriminator !== '0' ? `#${user.discriminator}` : ''}`;
+          
+          setUserData({
+            username: finalUsername,
+            avatarSrc: avatarUrl,
+            raw: user // Guarda o objeto original se precisar de IDs depois
+          });
+
+          // === LÓGICA MULTIPLAYER (PARTICIPANTES) ===
+          logInfo("[MULTIPLAYER] Buscando participantes iniciais...");
+          const initialParticipants = await sdk.commands.getInstanceConnectedParticipants();
+          setParticipants(initialParticipants.participants || []);
+
+          // Se inscrevendo no evento em tempo real
+          logInfo("[MULTIPLAYER] Ativando Listener de entrada/saída de usuários...");
+          sdk.subscribe(Events.ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE, handleParticipantsUpdate);
+          isSubscribed = true;
+
         } else {
           logError("[CONTEXT] setupDiscordSdk() retornou null - autenticação falhou");
           setError("Falha na autenticação com Discord.");
@@ -82,6 +121,18 @@ export function DiscordProvider({ children }) {
     }
 
     init();
+
+    // Função de limpeza (Cleanup): Desinscreve do evento quando o app fecha/reinicia
+    return () => {
+      if (sdkInstance && isSubscribed) {
+        try {
+          sdkInstance.unsubscribe(Events.ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE, handleParticipantsUpdate);
+          console.log("[MULTIPLAYER] Listener removido com sucesso.");
+        } catch (e) {
+          console.error("Erro ao remover listener do Discord:", e);
+        }
+      }
+    };
   }, []);
 
   const value = {
@@ -91,16 +142,14 @@ export function DiscordProvider({ children }) {
     error,
     isDiscordFrame,
     isAuthenticated: !!(auth && auth.user),
-    isContextReady: !loading
+    isContextReady: !loading,
+    
+    // Novas propriedades expostas globalmente
+    participants,
+    userAvatar: userData.avatarSrc,
+    username: userData.username,
+    currentUserRaw: userData.raw
   };
-
-  logInfo("[CONTEXT] Renderizando provider", {
-    loading,
-    isDiscordFrame,
-    isAuthenticated: value.isAuthenticated,
-    hasAuth: !!auth,
-    hasError: !!error
-  });
 
   return (
     <DiscordContext.Provider value={value}>

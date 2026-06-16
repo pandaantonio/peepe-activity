@@ -33,7 +33,7 @@ const GridCell = memo(({ cell, rowIndex, colIndex, isWinning, isLastMove, gameOv
 
 GridCell.displayName = 'GridCell';
 
-export default function TicTacToe() {
+export default function TicTacToeMedium() {
   const router = useRouter();
   const [board, setBoard] = useState([
     ['', '', ''],
@@ -49,8 +49,9 @@ export default function TicTacToe() {
   const [moveHistory, setMoveHistory] = useState([]);
   const scoreLockRef = React.useRef(false);
 
+  // Retorna para a tela de seleção de dificuldades
   const handleExit = () => {
-    router.push('/');
+    router.push('/game/tttai');
   };
 
   const checkVictory = useCallback((player, currentBoard) => {
@@ -181,6 +182,7 @@ export default function TicTacToe() {
     setCurrentPlayer('O');
   }, [gameOver, currentPlayer, board, playMove]);
 
+  // LÓGICA DO MODO MÉDIO: 20% de margem de erro para vulnerabilidade humana
   useEffect(() => {
     if (gameOver || currentPlayer !== 'O') return;
 
@@ -191,10 +193,12 @@ export default function TicTacToe() {
       if (emptyCells.length === 0) return;
 
       let move;
-      if (Math.random() < 0.15) {
+      if (Math.random() < 0.20) {
+        // 20% de chance de falhar e mover aleatoriamente
         const randomIndex = Math.floor(Math.random() * emptyCells.length);
         move = emptyCells[randomIndex];
       } else {
+        // 80% de precisão calculada por Minimax
         move = findBestMove(board);
       }
 
@@ -232,7 +236,7 @@ export default function TicTacToe() {
     if (winner === 'O') return "PERDA DE CONTROLO INTEGRAL";
     if (isDraw) return "REDE EM EQUILÍBRIO";
     if (currentPlayer === 'X') return "A SUA VEZ DE AGIR";
-    return "IA CALCULANDO VETORES...";
+    return "IA CALCULANDO VETORES INTERMEDIÁRIOS...";
   };
 
   const getStatusColorClass = () => {
@@ -254,22 +258,18 @@ export default function TicTacToe() {
 
   return (
     <div className={styles.container}>
-
-      {/* Background ambient luminoso */}
       <div className={styles.bgGradient}>
         <div className={styles.bgBlur1} />
         <div className={styles.bgBlur2} />
       </div>
 
-      {/* Topbar Glassmorphism */}
       <div className={styles.topbar}>
         <div className={styles.topbarContent}>
-          
           <div className={styles.buttonGroup}>
-            <button onClick={handleExit} className={styles.iconButton}>
+            <button onClick={handleExit} className={styles.iconButton} title="Voltar ao Menu">
               <FaArrowLeft size={18} />
             </button>
-            <button onClick={resetGame} className={styles.iconButton}>
+            <button onClick={resetGame} className={styles.iconButton} title="Reiniciar Partida">
               <FaRedo size={16} />
             </button>
           </div>
@@ -288,22 +288,18 @@ export default function TicTacToe() {
         </div>
       </div>
 
-      {/* Main Content Area */}
       <div className={styles.mainContent}>
         <div className={styles.gameLayout}>
-
+          
           {/* COLUNA ESQUERDA: Placar */}
           <div className={`${styles.scoreCard} ${styles.glassCard}`}>
-
             <div className={styles.scoreHeader}>
-              <span className={styles.scoreLabel}>MÓDULO DO PLACAR</span>
+              <span className={styles.scoreLabel}>MODO MÉDIO Ativo</span>
               <h2 className={styles.scoreTitle}>Consola de Desempenho</h2>
             </div>
 
             <div className={styles.scorePanel}>
               <div className={styles.scoreGrid}>
-
-                {/* Score Jogador */}
                 <div className={styles.scoreItem}>
                   <div className={`${styles.scoreIcon} ${styles.scoreIconPlayer}`}>
                     <FaUser size={16} />
@@ -312,25 +308,21 @@ export default function TicTacToe() {
                   <span className={styles.scoreValue}>{scores.player}</span>
                 </div>
 
-                {/* Empates */}
                 <div className={styles.drawItem}>
                   <span className={styles.scoreLabelText}>Empates</span>
                   <span className={styles.drawValue}>{scores.draws}</span>
                   <span className={styles.drawTotal}>Partidas: {totalGames}</span>
                 </div>
 
-                {/* Score IA */}
                 <div className={styles.scoreItem}>
                   <div className={`${styles.scoreIcon} ${styles.scoreIconAI}`}>
                     <FaRobot size={16} />
                   </div>
-                  <span className={styles.scoreLabelText}>IA (O)</span>
+                  <span className={styles.scoreLabelText}>IA Padrão (O)</span>
                   <span className={styles.scoreValue}>{scores.ai}</span>
                 </div>
-
               </div>
 
-              {/* Barra de Distribuição Fluida */}
               <div className={styles.progressBar}>
                 <div className={styles.progressPlayer} style={{ width: `${totalGames > 0 ? (scores.player / totalGames) * 100 : 33.3}%` }} />
                 <div className={styles.progressDraw} style={{ width: `${totalGames > 0 ? (scores.draws / totalGames) * 100 : 33.4}%` }} />
@@ -338,17 +330,15 @@ export default function TicTacToe() {
               </div>
             </div>
 
-            {/* Módulo de Dica */}
             <div className={styles.tipCard}>
               <FaTrophy size={16} className={styles.tipIcon} />
               <div className={styles.tipContent}>
-                <span className={styles.tipTitle}>ALGORITMO</span>
+                <span className={styles.tipTitle}>DIAGNÓSTICO</span>
                 <p className={styles.tipText}>
-                  Minimax ativo. Bloqueie ameaças imediatamente.
+                  Minimax operando parcialmente. Fique atento a armadilhas de dupla ameaça.
                 </p>
               </div>
             </div>
-
           </div>
 
           {/* COLUNA DIREITA: Tabuleiro */}
@@ -408,14 +398,14 @@ export default function TicTacToe() {
                     {isDraw && 'EMPATE DETETADO'}
                   </h2>
                   <p className={styles.overlayText}>
-                    {winner === 'X' && 'Conseguiu ultrapassar as barreiras lógicas do adversário.'}
-                    {winner === 'O' && 'O algoritmo da IA previu as suas jogadas finais.'}
-                    {isDraw && 'Nenhum dos sistemas conseguiu obter vantagem espacial.'}
+                    {winner === 'X' && 'Excelente! Conseguiu explorar as janelas táticas da IA.'}
+                    {winner === 'O' && 'O algoritmo estruturou os vetores antes que você pudesse contra-atacar.'}
+                    {isDraw && 'Equilíbrio exato. Ambos os sistemas anularam as jogadas ofensivas.'}
                   </p>
                 </div>
 
                 <button onClick={resetGame} className={styles.overlayButton}>
-                  Reiniciar Vetores
+                  Próxima Simulação
                 </button>
               </div>
             )}
