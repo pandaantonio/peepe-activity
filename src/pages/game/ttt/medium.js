@@ -51,7 +51,7 @@ export default function TicTacToeMedium() {
 
   // Retorna para a tela de seleção de dificuldades
   const handleExit = () => {
-    router.push('/game/tttai');
+    router.push('/game/ttt');
   };
 
   const checkVictory = useCallback((player, currentBoard) => {

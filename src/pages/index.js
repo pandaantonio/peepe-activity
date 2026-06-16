@@ -17,13 +17,13 @@ const games = [
     banner: "/imgs/hexagon.png"
   },
   {
-    id: "tttai",
+    id: "ttt",
     badge: "ESTRATÉGIA",
-    title: "Jogo da Velha (IA)",
+    title: "Jogo da Velha",
     desc: "Desafie uma IA baseada no algoritmo Minimax em um duelo tático de inteligência.",
     color: "emerald",
     icon: <FaChess size={24} />,
-    path: "/game/tttai",
+    path: "/game/ttt",
     banner: "/imgs/tttai.png"
   },
   {

@@ -2,9 +2,6 @@
 import { logInfo, logError } from '@/lib/debugLogger';
 
 export default async function handler(req, res) {
-  // Como não podemos usar o logger do lado do servidor diretamente no cliente,
-  // vamos retornar informações detalhadas no response para debug
-
   if (req.method !== 'POST') {
     return res.status(405).json({
       error: 'Método não permitido',
@@ -21,7 +18,7 @@ export default async function handler(req, res) {
     });
   }
 
-  const clientId = process.env.DISCORD_CLIENT_ID;
+  const clientId = process.env.DISCORD_CLIENT_ID || process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID;
   const clientSecret = process.env.DISCORD_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
@@ -30,19 +27,24 @@ export default async function handler(req, res) {
       debug: {
         hasClientId: !!clientId,
         hasClientSecret: !!clientSecret,
-        clientIdLength: clientId?.length,
-        clientSecretLength: clientSecret?.length
+        envKeys: Object.keys(process.env).filter(k => k.includes('DISCORD') || k.includes('CLIENT')),
       }
     });
   }
 
   try {
+    // IMPORTANTE: Discord exige redirect_uri mesmo para Activities (usamos placeholder)
     const body = new URLSearchParams({
       client_id: clientId,
       client_secret: clientSecret,
       grant_type: 'authorization_code',
-      code,
+      code: code,
+      redirect_uri: 'https://127.0.0.1',
     });
+
+    console.log('[TOKEN] Enviando request para Discord OAuth2...');
+    console.log('[TOKEN] client_id prefix:', clientId.substring(0, 6));
+    console.log('[TOKEN] code length:', code.length);
 
     const response = await fetch(
       'https://discord.com/api/v10/oauth2/token',
@@ -58,6 +60,11 @@ export default async function handler(req, res) {
     const data = await response.json();
 
     if (!response.ok) {
+      console.error('[TOKEN] Discord retornou erro:', {
+        status: response.status,
+        error: data.error,
+        description: data.error_description,
+      });
       return res.status(response.status).json({
         error: 'OAuth2 falhou',
         details: data.error_description || data.error,
@@ -67,28 +74,34 @@ export default async function handler(req, res) {
           discordErrorDescription: data.error_description,
           hasClientId: !!clientId,
           clientIdPrefix: clientId?.substring(0, 6),
-          codeLength: code?.length
+          codeLength: code?.length,
         }
       });
     }
+
+    console.log('[TOKEN] Token obtido com sucesso!');
 
     return res.status(200).json({
       access_token: data.access_token,
       token_type: data.token_type,
       expires_in: data.expires_in,
+      refresh_token: data.refresh_token,
+      scope: data.scope,
       debug: {
         success: true,
         hasAccessToken: !!data.access_token,
         tokenType: data.token_type,
-        expiresIn: data.expires_in
+        expiresIn: data.expires_in,
+        scope: data.scope,
       }
     });
   } catch (error) {
+    console.error('[TOKEN] Erro interno:', error.message);
     return res.status(500).json({
       error: 'Erro interno do servidor',
       debug: {
         catchError: error.message,
-        stack: error.stack?.split('\n').slice(0, 3)
+        stack: error.stack?.split('').slice(0, 3)
       }
     });
   }

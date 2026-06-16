@@ -1,15 +1,11 @@
 // lib/discord.js
 import { DiscordSDK } from "@discord/embedded-app-sdk";
-import { logInfo, logWarn, logError, logSuccess } from "./debugLogger";
 
-let discordSdk;
+let discordSdk = null;
 
 export function getDiscordSDK() {
   if (!discordSdk && typeof window !== "undefined") {
     const clientId = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID;
-    
-    // Use console nativo aqui para evitar o loop
-    console.log("[DISCORD] Tentando instanciar SDK nativamente"); 
 
     if (!clientId) {
       console.error("[DISCORD] NEXT_PUBLIC_DISCORD_CLIENT_ID ausente!");
@@ -30,37 +26,36 @@ export function getDiscordSDK() {
 export async function setupDiscordSdk() {
   const sdk = getDiscordSDK();
   if (!sdk) {
-    logError("[DISCORD] SDK é null, abortando setup");
+    console.error("[DISCORD] SDK é null, abortando setup");
     return null;
   }
 
   try {
-    logInfo("[DISCORD] === INICIANDO SETUP ===");
+    console.log("[DISCORD] === INICIANDO SETUP ===");
 
     // PASSO 1: ready()
-    logInfo("[DISCORD] Passo 1/4: Chamando sdk.ready()...");
+    console.log("[DISCORD] Passo 1/4: sdk.ready()...");
     await sdk.ready();
-    logSuccess("[DISCORD] Passo 1/4: sdk.ready() OK");
+    console.log("[DISCORD] Passo 1/4: sdk.ready() OK");
 
     // PASSO 2: authorize
-    logInfo("[DISCORD] Passo 2/4: Chamando sdk.commands.authorize()...");
+    console.log("[DISCORD] Passo 2/4: authorize...");
     const clientId = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID;
-    logInfo("[DISCORD] Usando client_id", { clientId: clientId ? "DEFINIDO" : "AUSENTE" });
 
     const authParams = {
       client_id: clientId,
       response_type: 'code',
       state: '',
       prompt: 'none',
-      scope: ['identify'],
+      scope: ['identify', 'guilds'],
     };
-    logInfo("[DISCORD] Parâmetros de authorize", authParams);
+    console.log("[DISCORD] Parâmetros de authorize:", JSON.stringify(authParams, null, 2));
 
     const { code } = await sdk.commands.authorize(authParams);
-    logSuccess("[DISCORD] Passo 2/4: Autorização OK, código recebido", { codeLength: code?.length, codePrefix: code?.substring(0, 10) + "..." });
+    console.log("[DISCORD] Passo 2/4: Autorização OK, código recebido (length:", code?.length, ")");
 
     // PASSO 3: trocar código por token
-    logInfo("[DISCORD] Passo 3/4: POST /api/token com o código...");
+    console.log("[DISCORD] Passo 3/4: POST /api/token...");
     const response = await fetch('/api/token', {
       method: 'POST',
       headers: {
@@ -69,7 +64,7 @@ export async function setupDiscordSdk() {
       body: JSON.stringify({ code }),
     });
 
-    logInfo("[DISCORD] Resposta de /api/token", { status: response.status, statusText: response.statusText, ok: response.ok });
+    console.log("[DISCORD] Resposta /api/token:", response.status, response.statusText);
 
     if (!response.ok) {
       let errorData;
@@ -78,44 +73,40 @@ export async function setupDiscordSdk() {
       } catch (e) {
         errorData = { raw: await response.text() };
       }
-      logError("[DISCORD] /api/token retornou erro", errorData);
-      throw new Error(`Falha ao trocar código: ${errorData.error || response.status}`);
+      console.error("[DISCORD] /api/token erro:", errorData);
+      throw new Error(`Token exchange falhou: ${errorData.error || errorData.details || response.status}`);
     }
 
     const tokenData = await response.json();
-    logSuccess("[DISCORD] Passo 3/4: Token recebido", {
+    console.log("[DISCORD] Passo 3/4: Token recebido!", {
       hasAccessToken: !!tokenData.access_token,
-      accessTokenLength: tokenData.access_token?.length,
       tokenType: tokenData.token_type,
       expiresIn: tokenData.expires_in,
-      keys: Object.keys(tokenData)
     });
 
     // PASSO 4: authenticate
-    logInfo("[DISCORD] Passo 4/4: Chamando sdk.commands.authenticate()...");
+    console.log("[DISCORD] Passo 4/4: authenticate...");
     const newAuth = await sdk.commands.authenticate({
       access_token: tokenData.access_token,
     });
 
     if (!newAuth) {
-      logError("[DISCORD] authenticate retornou null/undefined");
+      console.error("[DISCORD] authenticate retornou null");
       throw new Error("Falha na autenticação do SDK.");
     }
 
-    logSuccess("[DISCORD] Passo 4/4: Autenticação completa!", {
+    console.log("[DISCORD] Passo 4/4: Autenticação completa!", {
       hasUser: !!newAuth.user,
       username: newAuth.user?.username,
-      hasAccessToken: !!newAuth.access_token,
-      authKeys: Object.keys(newAuth)
+      scopes: newAuth.scopes,
     });
 
     return newAuth;
 
   } catch (authError) {
-    logError("[DISCORD] Erro no setupDiscordSdk", {
+    console.error("[DISCORD] Erro no setupDiscordSdk:", {
       message: authError.message,
       name: authError.name,
-      stack: authError.stack?.split('').slice(0, 3),
     });
     return null;
   }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useRouter } from 'next/router';
-import { FaArrowLeft, FaRobot, FaBrain, FaSkull } from 'react-icons/fa';
+import { FaArrowLeft, FaRobot, FaBrain, FaSkull, FaUsers } from 'react-icons/fa';
 import styles from '@/styles/TicTacToe.module.css';
 
 export default function TicTacToeSelection() {
@@ -12,21 +12,28 @@ export default function TicTacToeSelection() {
       title: 'Modo Fácil',
       description: 'A IA toma decisões majoritariamente aleatórias. Ideal para aquecimento.',
       icon: <FaRobot size={32} style={{ color: '#4ade80' }} />,
-      path: '/game/tttai/easy',
+      path: '/game/ttt/easy',
     },
     {
       id: 'medium',
       title: 'Modo Médio',
       description: 'Equilíbrio tático. A IA calcula algumas jogadas, mas ainda comete deslizes humanos.',
       icon: <FaBrain size={32} style={{ color: '#fbbf24' }} />,
-      path: '/game/tttai/medium',
+      path: '/game/ttt/medium',
     },
     {
       id: 'impossible',
       title: 'Modo Impossível',
       description: 'Minimax puro e implacável. O algoritmo prevê todos os cenários. O melhor resultado é o empate.',
       icon: <FaSkull size={32} style={{ color: '#f87171' }} />,
-      path: '/game/tttai/impossible',
+      path: '/game/ttt/impossible',
+    },
+    {
+      id: 'multiplayer',
+      title: 'Multiplayer',
+      description: 'Desafie um amigo em tempo real. Um joga como X, o outro como O. Sincronização via BroadcastChannel.',
+      icon: <FaUsers size={32} style={{ color: '#a78bfa' }} />,
+      path: '/game/ttt/multiplayer',
     },
   ];
 
@@ -93,7 +100,7 @@ export default function TicTacToeSelection() {
                 className={styles.overlayButton} 
                 style={{ marginTop: '24px', width: '100%', position: 'static' }}
               >
-                Iniciar Vetor
+                {diff.id === 'multiplayer' ? 'Conectar' : 'Iniciar Vetor'}
               </button>
             </div>
           ))}
