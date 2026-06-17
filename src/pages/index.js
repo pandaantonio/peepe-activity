@@ -6,6 +6,17 @@ import { useEffect, useState } from 'react';
 import { useDiscord } from '@/contexts/DiscordContext';
 
 const games = [
+  // ... (mantenha a sua lista de jogos idêntica)
+  {
+    id: "tntrun",
+    badge: "NOVIDADE",
+    title: "Tnt run",
+    desc: "Controle um robô em um grid de hexágonos coloridos. 5 segundos para pisar na cor certa ou caia no abismo!",
+    color: "purple",
+    icon: <FiZap size={24} />,
+    path: "/game/tntrun",
+    banner: "/imgs/tntrun.png"
+  },
   {
     id: "hexagon",
     badge: "NOVIDADE",
@@ -69,54 +80,29 @@ const games = [
 ];
 
 export default function GameHub() {
-  const { isContextReady, user } = useDiscord();
+  // Alterado para buscar as propriedades corretas do seu context
+  const { isContextReady, isDiscordFrame, username, userAvatar } = useDiscord();
   const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
     setMounted(true);
   }, []);
 
   const colorClasses = {
-    emerald: {
-      accent: "text-emerald-400",
-      glow: "shadow-emerald-500/20",
-      border: "border-emerald-500/15",
-      badge: "bg-emerald-500/8 text-emerald-400 border-emerald-500/20"
-    },
-    cyan: {
-      accent: "text-cyan-400",
-      glow: "shadow-cyan-500/20",
-      border: "border-cyan-500/15",
-      badge: "bg-cyan-500/8 text-cyan-400 border-cyan-500/20"
-    },
-    purple: {
-      accent: "text-purple-400",
-      glow: "shadow-purple-500/20",
-      border: "border-purple-500/15",
-      badge: "bg-purple-500/8 text-purple-400 border-purple-500/20"
-    },
-    orange: {
-      accent: "text-orange-400",
-      glow: "shadow-orange-500/20",
-      border: "border-orange-500/15",
-      badge: "bg-orange-500/8 text-orange-400 border-orange-500/20"
-    },
-    blue: {
-      accent: "text-blue-400",
-      glow: "shadow-blue-500/20",
-      border: "border-blue-500/15",
-      badge: "bg-blue-500/8 text-blue-400 border-blue-500/20"
-    },
-    indigo: {
-      accent: "text-indigo-400",
-      glow: "shadow-indigo-500/20",
-      border: "border-indigo-500/15",
-      badge: "bg-indigo-500/8 text-indigo-400 border-indigo-500/20"
-    }
+    emerald: { accent: "text-emerald-400", glow: "shadow-emerald-500/20", border: "border-emerald-500/15", badge: "bg-emerald-500/8 text-emerald-400 border-emerald-500/20" },
+    cyan: { accent: "text-cyan-400", glow: "shadow-cyan-500/20", border: "border-cyan-500/15", badge: "bg-cyan-500/8 text-cyan-400 border-cyan-500/20" },
+    purple: { accent: "text-purple-400", glow: "shadow-purple-500/20", border: "border-purple-500/15", badge: "bg-purple-500/8 text-purple-400 border-purple-500/20" },
+    orange: { accent: "text-orange-400", glow: "shadow-orange-500/20", border: "border-orange-500/15", badge: "bg-orange-500/8 text-orange-400 border-orange-500/20" },
+    blue: { accent: "text-blue-400", glow: "shadow-blue-500/20", border: "border-blue-500/15", badge: "bg-blue-500/8 text-blue-400 border-blue-500/20" },
+    indigo: { accent: "text-indigo-400", glow: "shadow-indigo-500/20", border: "border-indigo-500/15", badge: "bg-indigo-500/8 text-indigo-400 border-indigo-500/20" }
   };
 
   const displayItems = [...games];
 
-  if (!mounted || !isContextReady) {
+  // CORREÇÃO DA TRAVA: 
+  // Se não estiver montado no cliente, ou se for o frame do Discord e o contexto ainda estiver carregando, mostra o esqueleto.
+  // Se NÃO for um frame do Discord, ignora o carregamento do SDK e renderiza direto.
+  if (!mounted || (isDiscordFrame && !isContextReady)) {
     return (
       <div className="min-h-screen bg-[#0a0a0c]">
         <div className="pt-24 pb-16 px-6 max-w-6xl mx-auto">
@@ -137,15 +123,23 @@ export default function GameHub() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0c] relative overflow-hidden">
+      {/* Background decorativo */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/3 w-[600px] h-[600px] bg-emerald-500/[0.03] rounded-full blur-[120px]" />
         <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-purple-500/[0.03] rounded-full blur-[100px]" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-white/[0.01] rounded-full blur-[150px]" />
       </div>
 
-
-
       <div className="relative pt-16 pb-16 px-6 max-w-6xl mx-auto">
+        
+        {/* Opcional: Mostrar perfil do usuário do Discord caso ele exista */}
+        {isDiscordFrame && username && (
+          <div className="flex items-center justify-end gap-3 mb-6 text-white/80 text-sm bg-white/5 w-fit ml-auto px-4 py-2 rounded-xl border border-white/5">
+            <img src={userAvatar} alt={username} className="w-6 h-6 rounded-full" />
+            <span>Olá, <b>{username}</b></span>
+          </div>
+        )}
+
         <div className="text-center mb-12">
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-semibold mb-3 tracking-tight animate-fade-in-up">
             <span className="text-white/90">Biblioteca de </span>
@@ -217,82 +211,21 @@ export default function GameHub() {
             );
           })}
         </div>
-
       </div>
 
+      {/* ... (mantenha suas tags <style jsx> idênticas) */}
       <style jsx>{`
-        .glass-card {
-          background: rgba(255, 255, 255, 0.03);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          box-shadow: 
-            0 1px 2px rgba(0, 0, 0, 0.1),
-            inset 0 1px 0 rgba(255, 255, 255, 0.04);
-        }
-
-        .glass-card:hover {
-          background: rgba(255, 255, 255, 0.05);
-          box-shadow: 
-            0 20px 40px rgba(0, 0, 0, 0.3),
-            0 0 0 1px rgba(255, 255, 255, 0.08),
-            inset 0 1px 0 rgba(255, 255, 255, 0.06);
-        }
-
-        .glass-button {
-          background: rgba(255, 255, 255, 0.02);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-        }
-
-        .glass-button:hover {
-          background: rgba(255, 255, 255, 0.06);
-          border-color: rgba(52, 211, 153, 0.3);
-          box-shadow: 0 8px 32px rgba(16, 185, 129, 0.08);
-        }
-
-        .liquid-glass-title {
-          background: linear-gradient(135deg, rgba(52, 211, 153, 0.08), rgba(16, 185, 129, 0.02));
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          border: 1px solid rgba(52, 211, 153, 0.15);
-          box-shadow: 
-            inset 0 1px 1px rgba(255, 255, 255, 0.08),
-            0 4px 24px rgba(16, 185, 129, 0.08);
-          color: rgba(52, 211, 153, 0.9);
-          text-shadow: 0 0 20px rgba(52, 211, 153, 0.2);
-        }
-
-        @keyframes fade-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes fade-in-up {
-          from {
-            opacity: 0;
-            transform: translateY(16px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-fade-in {
-          animation: fade-in 0.5s ease-out;
-        }
-        .animate-fade-in-up {
-          animation: fade-in-up 0.5s ease-out forwards;
-          opacity: 0;
-        }
-        .animation-delay-100 {
-          animation-delay: 100ms;
-        }
-        .line-clamp-2 {
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
+        .glass-card { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.06); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.04); }
+        .glass-card:hover { background: rgba(255, 255, 255, 0.05); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.06); }
+        .glass-button { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        .glass-button:hover { background: rgba(255, 255, 255, 0.06); border-color: rgba(52, 211, 153, 0.3); box-shadow: 0 8px 32px rgba(16, 185, 129, 0.08); }
+        .liquid-glass-title { background: linear-gradient(135deg, rgba(52, 211, 153, 0.08), rgba(16, 185, 129, 0.02)); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(52, 211, 153, 0.15); box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.08), 0 4px 24px rgba(16, 185, 129, 0.08); color: rgba(52, 211, 153, 0.9); text-shadow: 0 0 20px rgba(52, 211, 153, 0.2); }
+        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fade-in-up { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fade-in 0.5s ease-out; }
+        .animate-fade-in-up { animation: fade-in-up 0.5s ease-out forwards; opacity: 0; }
+        .animation-delay-100 { animation-delay: 100ms; }
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
       `}</style>
     </div>
   );
