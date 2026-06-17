@@ -9,54 +9,46 @@ const COLORS = [
   0x5856D6, 0xA2845E, 0x64D2FF, 0x30D158,
 ]
 
-const HEX_RADIUS = 1.2
-const HEX_HEIGHT = 0.5
-const GRID_RADIUS = 6
+const TILE_SIZE = 2.4   // tamanho do quadrado (lado)
+const TILE_HEIGHT = 0.5
+const GRID_RADIUS = 6   // raio em tiles (grade circular de quadrados)
 const FALL_SPEED = 0.15
 const ROUND_TIME = 5
 const PLAYER_SPEED = 0.12
 const CAMERA_HEIGHT = 5
 const CAMERA_DISTANCE = 8
 
-function getHexPosition(q, r) {
-  const x = HEX_RADIUS * 1.75 * q
-  const z = HEX_RADIUS * 1.5 * r + (q % 2 !== 0 ? HEX_RADIUS * 0.75 : 0)
-  return { x, z }
+function getTilePosition(q, r) {
+  // Quadrados se encostam perfeitamente: passo = TILE_SIZE exato
+  return { x: TILE_SIZE * q, z: TILE_SIZE * r }
 }
 
 function generateHexGrid() {
   const hexagons = []
   for (let q = -GRID_RADIUS; q <= GRID_RADIUS; q++) {
     for (let r = -GRID_RADIUS; r <= GRID_RADIUS; r++) {
-      const dist = (Math.abs(q) + Math.abs(r) + Math.abs(-q - r)) / 2
-      if (dist <= GRID_RADIUS) {
-        const pos = getHexPosition(q, r)
-        const colorIndex = Math.floor(Math.random() * COLORS.length)
-        hexagons.push({
-          q, r, x: pos.x, z: pos.z,
-          colorIndex, color: COLORS[colorIndex],
-          active: true, falling: false, fallY: 0,
-        })
-      }
+      // Mantém forma circular usando distância euclidiana em coordenadas de grade
+      if (Math.sqrt(q * q + r * r) > GRID_RADIUS) continue
+      const pos = getTilePosition(q, r)
+      const colorIndex = Math.floor(Math.random() * COLORS.length)
+      hexagons.push({
+        q, r, x: pos.x, z: pos.z,
+        colorIndex, color: COLORS[colorIndex],
+        active: true, falling: false, fallY: 0,
+      })
     }
   }
   return hexagons
 }
 
 function getHexAtPosition(x, z, hexagons) {
-  let closest = null
-  let minDist = Infinity
+  // Para quadrados: basta checar se está dentro do tile (sem distância euclidiana)
+  const half = TILE_SIZE / 2
   for (const hex of hexagons) {
     if (!hex.active) continue
-    const dx = x - hex.x
-    const dz = z - hex.z
-    const dist = Math.sqrt(dx * dx + dz * dz)
-    if (dist < minDist) {
-      minDist = dist
-      closest = hex
-    }
+    if (Math.abs(x - hex.x) <= half && Math.abs(z - hex.z) <= half) return hex
   }
-  return closest
+  return null
 }
 
 export default function HexagonGame() {
@@ -140,9 +132,8 @@ export default function HexagonGame() {
     scene.add(dirLight)
     scene.add(new THREE.HemisphereLight(0x87ceeb, 0x222222, 0.3))
 
-    // Hexagons
-    const hexGeometry = new THREE.CylinderGeometry(HEX_RADIUS, HEX_RADIUS, HEX_HEIGHT, 6)
-    hexGeometry.rotateY(Math.PI / 6)
+    // Tiles quadrados
+    const hexGeometry = new THREE.BoxGeometry(TILE_SIZE, TILE_HEIGHT, TILE_SIZE)
     geometriesToDispose.push(hexGeometry)
 
     const hexagons = generateHexGrid()
@@ -280,7 +271,7 @@ export default function HexagonGame() {
     scene.add(robotGroup)
 
     // Target ring
-    const ringGeo = new THREE.RingGeometry(HEX_RADIUS * 0.5, HEX_RADIUS * 0.7, 32)
+    const ringGeo = new THREE.RingGeometry(TILE_SIZE * 0.25, TILE_SIZE * 0.38, 32)
     geometriesToDispose.push(ringGeo)
     const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, side: THREE.DoubleSide })
     materialsToDispose.push(ringMat)

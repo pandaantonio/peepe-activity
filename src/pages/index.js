@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useDiscord } from '@/contexts/DiscordContext';
 
 const games = [
-  // ... (mantenha a sua lista de jogos idêntica)
+  // ... (lista de jogos mantida idêntica)
   {
     id: "tntrun",
     badge: "NOVIDADE",
@@ -31,7 +31,7 @@ const games = [
     id: "ttt",
     badge: "ESTRATÉGIA",
     title: "Jogo da Velha",
-    desc: "Desafie uma IA baseada no algoritmo Minimax em um duelo tático de inteligência.",
+    desc: "Jogue contra a IA Minimax ou desafie seus amigos no modo multiplayer.",
     color: "emerald",
     icon: <FaChess size={24} />,
     path: "/game/ttt",
@@ -80,7 +80,6 @@ const games = [
 ];
 
 export default function GameHub() {
-  // Alterado para buscar as propriedades corretas do seu context
   const { isContextReady, isDiscordFrame, username, userAvatar } = useDiscord();
   const [mounted, setMounted] = useState(false);
 
@@ -89,19 +88,16 @@ export default function GameHub() {
   }, []);
 
   const colorClasses = {
-    emerald: { accent: "text-emerald-400", glow: "shadow-emerald-500/20", border: "border-emerald-500/15", badge: "bg-emerald-500/8 text-emerald-400 border-emerald-500/20" },
-    cyan: { accent: "text-cyan-400", glow: "shadow-cyan-500/20", border: "border-cyan-500/15", badge: "bg-cyan-500/8 text-cyan-400 border-cyan-500/20" },
-    purple: { accent: "text-purple-400", glow: "shadow-purple-500/20", border: "border-purple-500/15", badge: "bg-purple-500/8 text-purple-400 border-purple-500/20" },
-    orange: { accent: "text-orange-400", glow: "shadow-orange-500/20", border: "border-orange-500/15", badge: "bg-orange-500/8 text-orange-400 border-orange-500/20" },
-    blue: { accent: "text-blue-400", glow: "shadow-blue-500/20", border: "border-blue-500/15", badge: "bg-blue-500/8 text-blue-400 border-blue-500/20" },
-    indigo: { accent: "text-indigo-400", glow: "shadow-indigo-500/20", border: "border-indigo-500/15", badge: "bg-indigo-500/8 text-indigo-400 border-indigo-500/20" }
+    emerald: { accent: "text-emerald-400", glow: "shadow-emerald-500/30", border: "border-emerald-500/20" },
+    cyan: { accent: "text-cyan-400", glow: "shadow-cyan-500/30", border: "border-cyan-500/20" },
+    purple: { accent: "text-purple-400", glow: "shadow-purple-500/30", border: "border-purple-500/20" },
+    orange: { accent: "text-orange-400", glow: "shadow-orange-500/30", border: "border-orange-500/20" },
+    blue: { accent: "text-blue-400", glow: "shadow-blue-500/30", border: "border-blue-500/20" },
+    indigo: { accent: "text-indigo-400", glow: "shadow-indigo-500/30", border: "border-indigo-500/20" }
   };
 
   const displayItems = [...games];
 
-  // CORREÇÃO DA TRAVA: 
-  // Se não estiver montado no cliente, ou se for o frame do Discord e o contexto ainda estiver carregando, mostra o esqueleto.
-  // Se NÃO for um frame do Discord, ignora o carregamento do SDK e renderiza direto.
   if (!mounted || (isDiscordFrame && !isContextReady)) {
     return (
       <div className="min-h-screen bg-[#0a0a0c]">
@@ -122,88 +118,89 @@ export default function GameHub() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0c] relative overflow-hidden">
-      {/* Background decorativo */}
+    <div className="min-h-screen bg-[#05050a] relative overflow-hidden">
+      {/* Fundo Espacial */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/3 w-[600px] h-[600px] bg-emerald-500/[0.03] rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-purple-500/[0.03] rounded-full blur-[100px]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-white/[0.01] rounded-full blur-[150px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(at_50%_30%,rgba(129,140,248,0.08)_0%,transparent_50%)]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(at_20%_70%,rgba(167,139,250,0.07)_0%,transparent_50%)]"></div>
+
+        {/* Estrelas */}
+        <div className="absolute inset-0" style={{
+          backgroundImage: `radial-gradient(white 0.8px, transparent 1px)`,
+          backgroundSize: '80px 80px',
+          opacity: 0.6
+        }}></div>
+
+        <div className="absolute top-0 left-1/4 w-[800px] h-[800px] bg-purple-600/10 rounded-full blur-[140px]" />
+        <div className="absolute bottom-0 right-1/3 w-[700px] h-[700px] bg-cyan-500/10 rounded-full blur-[130px]" />
+        <div className="absolute top-1/3 right-1/4 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[120px]" />
       </div>
 
-      <div className="relative pt-16 pb-16 px-6 max-w-6xl mx-auto">
-        
-        {/* Opcional: Mostrar perfil do usuário do Discord caso ele exista */}
+      <div className="relative pt-16 pb-16 px-6 max-w-6xl mx-auto z-10">
         {isDiscordFrame && username && (
-          <div className="flex items-center justify-end gap-3 mb-6 text-white/80 text-sm bg-white/5 w-fit ml-auto px-4 py-2 rounded-xl border border-white/5">
+          <div className="flex items-center justify-end gap-3 mb-6 text-white/80 text-sm bg-white/5 w-fit ml-auto px-4 py-2 rounded-xl border border-white/10">
             <img src={userAvatar} alt={username} className="w-6 h-6 rounded-full" />
             <span>Olá, <b>{username}</b></span>
           </div>
         )}
 
         <div className="text-center mb-12">
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-semibold mb-3 tracking-tight animate-fade-in-up">
-            <span className="text-white/90">Biblioteca de </span>
-            <span className="liquid-glass-title px-5 py-1.5 rounded-2xl inline-block">
-              Jogos
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 tracking-tighter">
+            <span className="text-white/90">Explorando o </span>
+            <span className="bg-gradient-to-r from-cyan-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(165,243,252,0.5)]">
+              Universo dos Jogos
             </span>
           </h1>
-
-          <p className="text-gray-500 text-base max-w-lg mx-auto mb-6 animate-fade-in-up animation-delay-100">
-            Escolha seu jogo favorito e desafie suas habilidades
+          <p className="text-gray-400 text-lg max-w-md mx-auto">
+            Entre no cosmos e desafie suas habilidades intergalácticas ✨
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {displayItems.map((item, index) => {
             const colors = colorClasses[item.color];
-
             return (
               <Link
                 key={item.id}
                 href={item.path}
-                className="group animate-fade-in-up"
-                style={{ animationDelay: `${100 + index * 60}ms` }}
+                className="group"
+                style={{ animationDelay: `${80 + index * 70}ms` }}
               >
-                <div className="glass-card rounded-2xl overflow-hidden transition-all duration-500 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-white/5 group-hover:border-white/15">
+                <div className={`glass-card rounded-3xl overflow-hidden border ${colors.border} ${colors.glow} transition-all duration-500 hover:-translate-y-3 hover:scale-[1.02]`}>
 
                   {item.banner && (
-                    <div className="w-full relative overflow-hidden">
+                    <div className="relative overflow-hidden">
                       <img
                         src={item.banner}
                         alt={item.title}
-                        className="w-full h-44 object-cover block transition-all duration-700 group-hover:scale-105 group-hover:brightness-110"
+                        className="w-full h-52 object-cover transition-all duration-700 group-hover:scale-110 group-hover:brightness-125"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0c] via-[#0a0a0c]/40 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#05050a]/70 to-[#05050a]" />
                     </div>
                   )}
 
-                  <div className="relative p-5 -mt-8">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className={`px-2.5 py-1 rounded-md border text-[10px] font-semibold tracking-wider uppercase ${colors.badge}`}>
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className={`px-3 py-1 text-xs font-bold tracking-widest rounded-full border ${colors.badge || 'bg-white/5 text-white/70 border-white/10'}`}>
                         {item.badge}
                       </div>
-                      <div className={`${colors.accent} opacity-60 group-hover:opacity-100 transition-all duration-300 group-hover:scale-110`}>
+                      <div className={`${colors.accent} text-2xl transition-transform group-hover:rotate-12 duration-300`}>
                         {item.icon}
                       </div>
                     </div>
 
-                    <h2 className="text-lg font-semibold text-white/90 mb-2 group-hover:text-white transition-colors duration-300">
+                    <h2 className="text-2xl font-semibold text-white mb-2 group-hover:text-cyan-300 transition-colors">
                       {item.title}
                     </h2>
 
-                    <p className="text-gray-500 text-sm leading-relaxed mb-4 line-clamp-2">
+                    <p className="text-gray-400 text-sm leading-relaxed line-clamp-3 mb-6">
                       {item.desc}
                     </p>
 
-                    <div className="flex items-center justify-between pt-3 border-t border-white/5">
-                      <span className="text-[11px] text-gray-600 font-medium">
-                        Jogar agora
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-cyan-400 font-medium flex items-center gap-1">
+                        Iniciar missão <span className="text-lg">→</span>
                       </span>
-                      <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center transition-all duration-300 group-hover:bg-white/10 group-hover:border-white/20 group-hover:translate-x-0.5">
-                        <svg className="w-3.5 h-3.5 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -213,19 +210,20 @@ export default function GameHub() {
         </div>
       </div>
 
-      {/* ... (mantenha suas tags <style jsx> idênticas) */}
       <style jsx>{`
-        .glass-card { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.06); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.04); }
-        .glass-card:hover { background: rgba(255, 255, 255, 0.05); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.06); }
-        .glass-button { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
-        .glass-button:hover { background: rgba(255, 255, 255, 0.06); border-color: rgba(52, 211, 153, 0.3); box-shadow: 0 8px 32px rgba(16, 185, 129, 0.08); }
-        .liquid-glass-title { background: linear-gradient(135deg, rgba(52, 211, 153, 0.08), rgba(16, 185, 129, 0.02)); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(52, 211, 153, 0.15); box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.08), 0 4px 24px rgba(16, 185, 129, 0.08); color: rgba(52, 211, 153, 0.9); text-shadow: 0 0 20px rgba(52, 211, 153, 0.2); }
-        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes fade-in-up { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fade-in 0.5s ease-out; }
-        .animate-fade-in-up { animation: fade-in-up 0.5s ease-out forwards; opacity: 0; }
-        .animation-delay-100 { animation-delay: 100ms; }
-        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .glass-card {
+          background: rgba(15, 23, 42, 0.75);
+          backdrop-filter: blur(24px);
+          -webkit-backdrop-filter: blur(24px);
+          border: 1px solid rgba(148, 163, 184, 0.15);
+          box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.5);
+        }
+        .glass-card:hover {
+          background: rgba(30, 41, 59, 0.9);
+          box-shadow: 0 30px 60px -15px rgb(165 243 252 / 0.15), 
+                      inset 0 1px 0 rgba(255,255,255,0.08);
+        }
+        .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
       `}</style>
     </div>
   );
