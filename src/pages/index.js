@@ -6,7 +6,6 @@ import { useEffect, useState } from 'react';
 import { useDiscord } from '@/contexts/DiscordContext';
 
 const games = [
-  // ... (lista de jogos mantida idêntica)
   {
     id: "tntrun",
     badge: "NOVIDADE",
@@ -35,7 +34,7 @@ const games = [
     color: "emerald",
     icon: <FaChess size={24} />,
     path: "/game/ttt",
-    banner: "/imgs/tttai.png"
+    banner: "/imgs/ttt.png"
   },
   {
     id: "hangman",
