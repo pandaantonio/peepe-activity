@@ -1,5 +1,5 @@
 /**
- * TNT Run — React Three Fiber
+ * TNT Run — React Three Fiber (Versão Mobile 100% Corrigida)
  * Deps: npm install @react-three/fiber @react-three/drei three
  */
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
@@ -63,7 +63,7 @@ function getBlockUnder(x, z, floorIdx, blockStates) {
   return null
 }
 
-// ─── Blocos ────────────────────────────────────────────────────────────────────
+// ─── FloorBlocks ─────────────────────────────────────────────────────────────
 function FloorBlocks({ floorIdx, blockStates }) {
   const meshRef = useRef()
   const blocks = useMemo(() => 
@@ -93,8 +93,6 @@ function FloorBlocks({ floorIdx, blockStates }) {
     if (!mesh || count === 0) return
 
     const dummy = new THREE.Object3D()
-
-    // Garante que o instanceColor existe
     if (!mesh.instanceColor) {
       const colorAttribute = new THREE.InstancedBufferAttribute(colorArray, 3)
       mesh.geometry.setAttribute('color', colorAttribute)
@@ -151,7 +149,7 @@ function FloorBlocks({ floorIdx, blockStates }) {
   )
 }
 
-// ─── Robô ──────────────────────────────────────────────────────────────────────
+// ─── Robot ───────────────────────────────────────────────────────────────────
 function Robot({ playerRef, isGameOverRef, keysRef, joystickRef, cameraRef, blockStates, onGameOver, onFloorChange, gameStateRef, resetKey }) {
   const groupRef = useRef()
   const bobRef = useRef()
@@ -171,7 +169,6 @@ function Robot({ playerRef, isGameOverRef, keysRef, joystickRef, cameraRef, bloc
   const fallAnimRef = useRef(null)
   const blockTimers = useRef({})
 
-  // Reset completo ao reiniciar
   useEffect(() => {
     if (groupRef.current) groupRef.current.rotation.set(0, 0, 0)
     walkTimeRef.current = 0
@@ -339,7 +336,7 @@ function Robot({ playerRef, isGameOverRef, keysRef, joystickRef, cameraRef, bloc
   )
 }
 
-// ─── Câmera ───────────────────────────────────────────────────────────────────
+// ─── Camera & Timer ─────────────────────────────────────────────────────────
 function FollowCamera({ playerRef, cameraRef, isGameOverRef }) {
   const { camera } = useThree()
   useFrame(() => {
@@ -360,7 +357,6 @@ function FollowCamera({ playerRef, cameraRef, isGameOverRef }) {
   return null
 }
 
-// ─── Timer ─────────────────────────────────────────────────────────────────────
 function GameTimer({ gameStateRef, onTick, isGameOverRef }) {
   const elapsedRef = useRef(0)
   useFrame((_, dt) => {
@@ -371,7 +367,6 @@ function GameTimer({ gameStateRef, onTick, isGameOverRef }) {
   return null
 }
 
-// ─── Cena ──────────────────────────────────────────────────────────────────────
 function GameScene({ blockStates, playerRef, cameraRef, keysRef, joystickRef, gameStateRef, isGameOverRef, onGameOver, onFloorChange, onTick, resetKey }) {
   return (
     <>
@@ -404,7 +399,6 @@ function GameScene({ blockStates, playerRef, cameraRef, keysRef, joystickRef, ga
   )
 }
 
-// ─── Countdown ───────────────────────────────────────────────────────────────
 function Countdown({ count }) {
   if (count === null) return null
   return (
@@ -433,7 +427,7 @@ function Countdown({ count }) {
   )
 }
 
-// ─── Componente Principal ─────────────────────────────────────────────────────
+// ─── MAIN COMPONENT ─────────────────────────────────────────────────────────
 export default function TNTRun() {
   const [gameState, setGameState] = useState('menu')
   const [score, setScore] = useState(0)
@@ -453,7 +447,6 @@ export default function TNTRun() {
   const [joystickKnob, setJoystickKnob] = useState({ x: 0, y: 0 })
   const lastScoreRef = useRef(0)
   const blockStates = useRef(generateBlocks()).current
-  const blockTimers = useRef({})
 
   const [isTouchDevice, setIsTouchDevice] = useState(false)
   const [compactLandscape, setCompactLandscape] = useState(false)
@@ -512,9 +505,10 @@ export default function TNTRun() {
     }
   }, [])
 
-  // Touch controls
+  // Touch Controls (Otimizado)
   useEffect(() => {
-    const JOY_MAX = 34, JOY_GRAB = 72
+    const JOY_MAX = 45
+    const JOY_GRAB = 85
     let joyId = null, camId = null, ltx = 0, lty = 0
 
     const onStart = e => {
@@ -523,22 +517,29 @@ export default function TNTRun() {
         const base = joystickBaseRef.current
         const rect = base?.getBoundingClientRect()
         if (rect) {
-          const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2
-          const dx = t.clientX - cx, dy = t.clientY - cy
+          const cx = rect.left + rect.width / 2
+          const cy = rect.top + rect.height / 2
+          const dx = t.clientX - cx
+          const dy = t.clientY - cy
           if (joyId === null && Math.sqrt(dx*dx + dy*dy) < JOY_GRAB) {
             joyId = t.identifier
             const js = joystickRef.current
-            js.active = true; js.originX = cx; js.originY = cy
+            js.active = true
+            js.originX = cx
+            js.originY = cy
             const d = Math.sqrt(dx*dx + dy*dy)
             let kx = dx, ky = dy
-            if (d > JOY_MAX) { kx = dx/d*JOY_MAX; ky = dy/d*JOY_MAX }
-            js.dx = kx/JOY_MAX; js.dy = ky/JOY_MAX
+            if (d > JOY_MAX) { kx = (dx/d)*JOY_MAX; ky = (dy/d)*JOY_MAX }
+            js.dx = kx/JOY_MAX
+            js.dy = ky/JOY_MAX
             setJoystickKnob({ x: kx, y: ky })
             continue
           }
         }
         if (camId === null && gameStateRef.current === 'playing') {
-          camId = t.identifier; ltx = t.clientX; lty = t.clientY
+          camId = t.identifier
+          ltx = t.clientX
+          lty = t.clientY
         }
       }
     }
@@ -548,15 +549,18 @@ export default function TNTRun() {
       for (const t of e.changedTouches) {
         if (t.identifier === joyId) {
           const js = joystickRef.current
-          let dx = t.clientX - js.originX, dy = t.clientY - js.originY
+          let dx = t.clientX - js.originX
+          let dy = t.clientY - js.originY
           const d = Math.sqrt(dx*dx + dy*dy)
-          if (d > JOY_MAX) { dx = dx/d*JOY_MAX; dy = dy/d*JOY_MAX }
-          js.dx = dx/JOY_MAX; js.dy = dy/JOY_MAX
+          if (d > JOY_MAX) { dx = (dx/d)*JOY_MAX; dy = (dy/d)*JOY_MAX }
+          js.dx = dx/JOY_MAX
+          js.dy = dy/JOY_MAX
           setJoystickKnob({ x: dx, y: dy })
         } else if (t.identifier === camId && gameStateRef.current === 'playing') {
-          cameraRef.current.angle -= (t.clientX - ltx) * 0.006
-          cameraRef.current.pitch = Math.max(0.12, Math.min(0.75, cameraRef.current.pitch - (t.clientY - lty) * 0.006))
-          ltx = t.clientX; lty = t.clientY
+          cameraRef.current.angle -= (t.clientX - ltx) * 0.0065
+          cameraRef.current.pitch = Math.max(0.12, Math.min(0.75, cameraRef.current.pitch - (t.clientY - lty) * 0.0065))
+          ltx = t.clientX
+          lty = t.clientY
         }
       }
     }
@@ -605,8 +609,6 @@ export default function TNTRun() {
       screen.orientation?.lock?.('landscape').catch(() => {})
     }
 
-    Object.values(blockTimers.current).forEach(clearTimeout)
-    blockTimers.current = {}
     blockStates.forEach(b => { b.state = 'solid'; b.fallY = 0 })
 
     playerRef.current = { x: 0, y: floorSurface(0), z: 0, angle: 0 }
@@ -637,8 +639,6 @@ export default function TNTRun() {
     })
   }, [isTouchDevice, blockStates])
 
-  const colorHex = (hex) => '#' + hex.toString(16).padStart(6, '0')
-
   return (
     <>
       <Head>
@@ -647,14 +647,20 @@ export default function TNTRun() {
         <meta name="apple-mobile-web-app-capable" content="yes" />
       </Head>
 
-      <div className="relative w-full h-screen overflow-hidden bg-black select-none touch-none pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
-
+      <div 
+        className="relative w-full h-screen overflow-hidden bg-black select-none touch-none"
+        style={{ touchAction: 'none' }}
+      >
         <Canvas
           className="absolute inset-0"
-          gl={{ antialias: false, powerPreference: 'high-performance' }}
+          gl={{ 
+            antialias: true, 
+            powerPreference: 'high-performance',
+            alpha: false 
+          }}
           camera={{ fov: 60, near: 0.1, far: 200 }}
-          dpr={1}
-          style={{ background: '#080810' }}
+          dpr={Math.min(window.devicePixelRatio, 2)}
+          style={{ background: '#080810', touchAction: 'none' }}
         >
           {(gameState === 'playing' || gameState === 'countdown' || gameState === 'gameover') && (
             <GameScene
@@ -685,56 +691,36 @@ export default function TNTRun() {
         <Countdown count={countdown} />
 
         {(gameState === 'playing' || gameState === 'countdown') && (
-          <>
-            {/* HUD */}
-            {compactLandscape ? (
-              <div className="absolute top-2 left-1/2 -translate-x-1/2 flex items-center gap-2 pointer-events-none">
-                <div className="bg-black/70 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-white/10 text-center">
-                  <div className="text-white font-bold text-base">{gameTime}s</div>
-                  <div className="text-white/40 text-[9px] uppercase tracking-wider">Tempo</div>
-                </div>
-                <div className="bg-black/70 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-white/10 text-center">
-                  <div className="text-white font-bold text-base">{score}</div>
-                  <div className="text-white/40 text-[9px] uppercase tracking-wider">Pontos</div>
-                </div>
-                <div className="bg-black/70 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-orange-500/40 text-center">
-                  <div className="text-orange-400 font-bold text-base">{currentFloor + 1}/{FLOORS}</div>
-                  <div className="text-white/40 text-[9px] uppercase tracking-wider">Andar</div>
-                </div>
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-3 pointer-events-none z-40">
+            <div className="bg-black/70 backdrop-blur-sm rounded-xl px-5 py-2 border border-white/10 text-center min-w-[70px]">
+              <div className="text-white text-2xl font-bold font-mono">{gameTime}s</div>
+              <div className="text-white/40 text-xs uppercase tracking-wider">Tempo</div>
+            </div>
+            <div className="bg-black/70 backdrop-blur-sm rounded-xl px-5 py-2 border border-white/10 text-center min-w-[70px]">
+              <div className="text-white text-2xl font-bold">{score}</div>
+              <div className="text-white/40 text-xs uppercase tracking-wider">Pontos</div>
+            </div>
+            <div className="bg-black/70 backdrop-blur-sm rounded-xl px-5 py-2 border border-orange-500/40 text-center min-w-[70px]">
+              <div className="text-orange-400 text-2xl font-bold">
+                {currentFloor + 1}<span className="text-white/30 text-base">/{FLOORS}</span>
               </div>
-            ) : (
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-3 pointer-events-none">
-                <div className="bg-black/70 backdrop-blur-sm rounded-xl px-5 py-2 border border-white/10 text-center min-w-[70px]">
-                  <div className="text-white text-2xl font-bold font-mono">{gameTime}s</div>
-                  <div className="text-white/40 text-xs uppercase tracking-wider">Tempo</div>
-                </div>
-                <div className="bg-black/70 backdrop-blur-sm rounded-xl px-5 py-2 border border-white/10 text-center min-w-[70px]">
-                  <div className="text-white text-2xl font-bold">{score}</div>
-                  <div className="text-white/40 text-xs uppercase tracking-wider">Pontos</div>
-                </div>
-                <div className="bg-black/70 backdrop-blur-sm rounded-xl px-5 py-2 border border-orange-500/40 text-center min-w-[70px]">
-                  <div className="text-orange-400 text-2xl font-bold">
-                    {currentFloor + 1}<span className="text-white/30 text-base">/{FLOORS}</span>
-                  </div>
-                  <div className="text-white/40 text-xs uppercase tracking-wider">Andar</div>
-                </div>
-              </div>
-            )}
-          </>
+              <div className="text-white/40 text-xs uppercase tracking-wider">Andar</div>
+            </div>
+          </div>
         )}
 
         {/* Menu */}
         {gameState === 'menu' && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-40 overflow-y-auto">
-            <div className={`text-center px-4 ${compactLandscape ? 'py-4' : ''}`}>
-              <h1 className={`font-black text-white mb-1 tracking-tight ${compactLandscape ? 'text-3xl' : 'text-5xl md:text-6xl'}`}>
+          <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-40">
+            <div className="text-center px-4">
+              <h1 className="font-black text-white mb-1 tracking-tight text-5xl md:text-6xl">
                 TNT <span className="block text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-red-400 to-yellow-400">RUN</span>
               </h1>
-              <p className={`text-white/50 max-w-md mx-auto ${compactLandscape ? 'text-sm mb-3' : 'text-base md:text-lg mb-6'}`}>
+              <p className="text-white/50 max-w-md mx-auto text-base md:text-lg mb-6">
                 Ande sobre os blocos — eles desaparecem sob seus pés!<br />
                 Sobreviva o máximo que puder.
               </p>
-              <button onClick={handleStart} className={`bg-gradient-to-r from-orange-600 to-red-600 text-white font-bold rounded-xl hover:from-orange-500 hover:to-red-500 transition-all transform hover:scale-105 shadow-lg shadow-orange-500/30 ${compactLandscape ? 'px-8 py-3 text-lg' : 'px-10 py-4 text-xl'}`}>
+              <button onClick={handleStart} className="bg-gradient-to-r from-orange-600 to-red-600 text-white font-bold rounded-xl hover:from-orange-500 hover:to-red-500 transition-all transform hover:scale-105 shadow-lg shadow-orange-500/30 px-10 py-4 text-xl">
                 JOGAR
               </button>
               {highScore > 0 && <p className="text-white/30 mt-4">Recorde: {highScore} pts</p>}
@@ -744,20 +730,20 @@ export default function TNTRun() {
 
         {/* Game Over */}
         {gameState === 'gameover' && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-40 overflow-y-auto">
-            <div className={`text-center px-4 ${compactLandscape ? 'py-4' : ''}`}>
-              <h2 className={`font-black text-red-400 mb-2 ${compactLandscape ? 'text-3xl' : 'text-4xl md:text-5xl'}`}>GAME OVER</h2>
-              <div className={`flex justify-center gap-2 ${compactLandscape ? 'mb-4' : 'mb-8'}`}>
-                <div className={`bg-white/5 rounded-xl ${compactLandscape ? 'px-5 py-2' : 'px-6 py-4'}`}>
+          <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-40">
+            <div className="text-center px-4">
+              <h2 className="font-black text-red-400 mb-2 text-4xl md:text-5xl">GAME OVER</h2>
+              <div className="flex justify-center gap-4 mb-8">
+                <div className="bg-white/5 rounded-xl px-6 py-4">
                   <div className="text-white/40 text-sm uppercase tracking-wider">Pontuação</div>
-                  <div className={`text-white font-bold ${compactLandscape ? 'text-2xl' : 'text-3xl'}`}>{score}</div>
+                  <div className="text-white font-bold text-3xl">{score}</div>
                 </div>
-                <div className={`bg-white/5 rounded-xl ${compactLandscape ? 'px-5 py-2' : 'px-6 py-4'}`}>
+                <div className="bg-white/5 rounded-xl px-6 py-4">
                   <div className="text-white/40 text-sm uppercase tracking-wider">Tempo</div>
-                  <div className={`text-white font-bold ${compactLandscape ? 'text-2xl' : 'text-3xl'}`}>{gameTime}s</div>
+                  <div className="text-white font-bold text-3xl">{gameTime}s</div>
                 </div>
               </div>
-              <button onClick={handleStart} className={`bg-gradient-to-r from-orange-600 to-red-600 text-white font-bold rounded-xl hover:from-orange-500 hover:to-red-500 transition-all transform hover:scale-105 shadow-lg shadow-orange-500/30 ${compactLandscape ? 'px-8 py-3 text-lg' : 'px-10 py-4 text-xl'}`}>
+              <button onClick={handleStart} className="bg-gradient-to-r from-orange-600 to-red-600 text-white font-bold rounded-xl hover:from-orange-500 hover:to-red-500 transition-all transform hover:scale-105 shadow-lg shadow-orange-500/30 px-10 py-4 text-xl">
                 JOGAR NOVAMENTE
               </button>
               {highScore > 0 && <p className="text-white/30 mt-4">Recorde: {highScore} pts</p>}
@@ -767,9 +753,19 @@ export default function TNTRun() {
 
         {/* Joystick */}
         {isTouchDevice && (gameState === 'playing' || gameState === 'countdown') && (
-          <div ref={joystickBaseRef} className="fixed z-50 pointer-events-none" style={{ left: 'calc(env(safe-area-inset-left) + 20px)', bottom: 'calc(env(safe-area-inset-bottom) + 20px)' }}>
-            <div className="w-[110px] h-[110px] rounded-full bg-white/10 border-2 border-white/20 backdrop-blur-sm flex items-center justify-center">
-              <div className="w-12 h-12 rounded-full bg-white/40 border border-white/50 shadow-lg" style={{ transform: `translate(${joystickKnob.x}px, ${joystickKnob.y}px)` }} />
+          <div 
+            ref={joystickBaseRef} 
+            className="fixed z-50 pointer-events-auto" 
+            style={{ 
+              left: 'calc(env(safe-area-inset-left) + 24px)', 
+              bottom: 'calc(env(safe-area-inset-bottom) + 24px)' 
+            }}
+          >
+            <div className="w-[130px] h-[130px] rounded-full bg-white/10 border-2 border-white/30 backdrop-blur-sm flex items-center justify-center">
+              <div 
+                className="w-14 h-14 rounded-full bg-white/40 border border-white/60 shadow-xl" 
+                style={{ transform: `translate(${joystickKnob.x}px, ${joystickKnob.y}px)` }} 
+              />
             </div>
           </div>
         )}
@@ -778,7 +774,13 @@ export default function TNTRun() {
           <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center px-6 text-center">
             <div className="text-6xl mb-4 animate-bounce">📱</div>
             <h2 className="text-white text-xl font-bold mb-2">Gire seu dispositivo</h2>
-            <button onClick={() => { document.documentElement.requestFullscreen?.().catch(()=>{}); screen.orientation?.lock?.('landscape').catch(()=>{}) }} className="px-6 py-2.5 bg-white/10 border border-white/20 rounded-lg text-white/70 text-sm hover:bg-white/20 transition-all">
+            <button 
+              onClick={() => { 
+                document.documentElement.requestFullscreen?.().catch(()=>{})
+                screen.orientation?.lock?.('landscape').catch(()=>{})
+              }} 
+              className="px-6 py-2.5 bg-white/10 border border-white/20 rounded-lg text-white/70 text-sm hover:bg-white/20 transition-all"
+            >
               Tentar girar automaticamente
             </button>
           </div>

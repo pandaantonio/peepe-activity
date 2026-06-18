@@ -1,7 +1,6 @@
 // pages/api/ttt/room/[id].js
 import { adminDb } from "@/lib/firebaseAdmin";
 
-// Converte o board do Firebase (objeto ou array) para array JS limpo de 9 posições
 function normalizeBoard(board) {
   if (Array.isArray(board)) return board.map(v => v || "");
   if (board && typeof board === "object") {
@@ -32,122 +31,101 @@ function checkWinner(board) {
 export default async function handler(req, res) {
   try {
     const { id: roomId } = req.query;
+    if (!roomId) return res.status(400).json({ error: "roomId é obrigatório" });
 
-    if (!roomId) {
-      return res.status(400).json({ error: "roomId é obrigatório" });
-    }
+    const roomRef = adminDb.ref(`ttt-rooms/${roomId}`);
 
-    // GET → Buscar estado da sala (normaliza board antes de retornar)
+    // GET
     if (req.method === "GET") {
-      const snapshot = await adminDb.ref(`ttt-rooms/${roomId}`).once("value");
-
-      if (!snapshot.exists()) {
-        return res.status(404).json({ error: "Sala não encontrada" });
-      }
+      const snapshot = await roomRef.once("value");
+      if (!snapshot.exists()) return res.status(404).json({ error: "Sala não encontrada" });
 
       const data = snapshot.val();
       data.board = normalizeBoard(data.board);
       data.result = data.result || "";
-
       return res.status(200).json(data);
     }
 
-    // PATCH → Entrar na sala como O
+    // PATCH - Join as O
     if (req.method === "PATCH") {
       const { playerName } = req.body;
+      if (!playerName) return res.status(400).json({ error: "playerName é obrigatório" });
 
-      if (!playerName) {
-        return res.status(400).json({ error: "playerName é obrigatório" });
-      }
-
-      const snapshot = await adminDb.ref(`ttt-rooms/${roomId}`).once("value");
-
-      if (!snapshot.exists()) {
-        return res.status(404).json({ error: "Sala não encontrada" });
-      }
+      const snapshot = await roomRef.once("value");
+      if (!snapshot.exists()) return res.status(404).json({ error: "Sala não encontrada" });
 
       const data = snapshot.val();
+      if (data.players?.O) return res.status(409).json({ error: "Sala já está cheia" });
 
-      if (data.players?.O) {
-        return res.status(409).json({ error: "Sala já está cheia" });
-      }
-
-      await adminDb.ref(`ttt-rooms/${roomId}/players/O`).set({
+      await roomRef.child("players/O").set({
         name: playerName,
         joinedAt: Date.now(),
+        lastSeen: Date.now(),
       });
+
+      // Update activity
+      await roomRef.child("lastActivity").set(Date.now());
 
       return res.status(200).json({ roomId, symbol: "O" });
     }
 
-    // PUT → Fazer uma jogada
+    // PUT - Move
     if (req.method === "PUT") {
       const { index, symbol } = req.body;
+      if (index === undefined || !symbol) return res.status(400).json({ error: "index e symbol obrigatórios" });
 
-      if (index === undefined || !symbol) {
-        return res.status(400).json({ error: "index e symbol são obrigatórios" });
-      }
-
-      const snapshot = await adminDb.ref(`ttt-rooms/${roomId}`).once("value");
-
-      if (!snapshot.exists()) {
-        return res.status(404).json({ error: "Sala não encontrada" });
-      }
+      const snapshot = await roomRef.once("value");
+      if (!snapshot.exists()) return res.status(404).json({ error: "Sala não encontrada" });
 
       const data = snapshot.val();
       const board = normalizeBoard(data.board);
 
-      if (data.result) {
-        return res.status(400).json({ error: "Jogo já encerrado" });
-      }
-      if (data.currentTurn !== symbol) {
-        return res.status(400).json({ error: "Não é sua vez" });
-      }
-      if (board[index]) {
-        return res.status(400).json({ error: "Célula já ocupada" });
-      }
+      if (data.result) return res.status(400).json({ error: "Jogo já encerrado" });
+      if (data.currentTurn !== symbol) return res.status(400).json({ error: "Não é sua vez" });
+      if (board[index]) return res.status(400).json({ error: "Célula já ocupada" });
 
       board[index] = symbol;
       const winResult = checkWinner(board);
 
-      // Salva board como objeto para o Firebase não perder índices
       const boardObj = {};
-      board.forEach((v, i) => { boardObj[i] = v || ""; });
+      board.forEach((v, i) => boardObj[i] = v || "");
 
       const updates = {
         board: boardObj,
         currentTurn: symbol === "X" ? "O" : "X",
+        lastActivity: Date.now(),
       };
 
       if (winResult) {
         updates.result = winResult.winner;
         if (winResult.winner !== "draw") {
-          updates[`scores/${winResult.winner}`] =
-            (data.scores?.[winResult.winner] || 0) + 1;
+          updates[`scores/${winResult.winner}`] = (data.scores?.[winResult.winner] || 0) + 1;
         }
       }
 
-      await adminDb.ref(`ttt-rooms/${roomId}`).update(updates);
-
-      return res.status(200).json({ success: true });
+      await roomRef.update(updates);
+      return res.status(200).json({ success: true, winResult });
     }
 
-    // POST → Revanche
+    // POST - Rematch request
     if (req.method === "POST") {
-      const snapshot = await adminDb.ref(`ttt-rooms/${roomId}`).once("value");
+      const { action = "rematch" } = req.body || {}; // support for future actions
 
-      if (!snapshot.exists()) {
-        return res.status(404).json({ error: "Sala não encontrada" });
-      }
+      const snapshot = await roomRef.once("value");
+      if (!snapshot.exists()) return res.status(404).json({ error: "Sala não encontrada" });
 
       const data = snapshot.val();
-      const nextFirst = data.currentTurn === "X" ? "O" : "X";
 
-      await adminDb.ref(`ttt-rooms/${roomId}`).update({
-        board: emptyBoard(),
-        currentTurn: nextFirst,
-        result: "",
-      });
+      if (action === "rematch") {
+        const nextFirst = (data.currentTurn || "X") === "X" ? "O" : "X"; // alternate starter
+        await roomRef.update({
+          board: emptyBoard(),
+          currentTurn: nextFirst,
+          result: "",
+          rematchRequestedBy: null, // reset
+          lastActivity: Date.now(),
+        });
+      }
 
       return res.status(200).json({ success: true });
     }
