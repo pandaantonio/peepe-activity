@@ -1,5 +1,5 @@
 /**
- * TNT Run — React Three Fiber (Versão Mobile 100% Corrigida)
+ * TNT Run — React Three Fiber (Versão Mobile 100% Corrigida para Discord Activities)
  * Deps: npm install @react-three/fiber @react-three/drei three
  */
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
@@ -338,7 +338,7 @@ function Robot({ playerRef, isGameOverRef, keysRef, joystickRef, cameraRef, bloc
 
 // ─── Camera & Timer ─────────────────────────────────────────────────────────
 function FollowCamera({ playerRef, cameraRef, isGameOverRef }) {
-  const { camera, size } = useThree() // Usando o hook 'size' nativo do fiber ao invés de ler do 'window' global
+  const { camera, size } = useThree()
   useFrame(() => {
     if (isGameOverRef.current) return
     const p = playerRef.current
@@ -505,7 +505,7 @@ export default function TNTRun() {
     }
   }, [])
 
-  // Touch Controls (Otimizado para mobile)
+  // Touch Controls (Mapeado e ajustado para o bounding box correto do Discord)
   useEffect(() => {
     const JOY_MAX = 45
     const JOY_GRAB = 85
@@ -647,6 +647,16 @@ export default function TNTRun() {
         <meta name="apple-mobile-web-app-capable" content="yes" />
       </Head>
 
+      {/* Injeção global das variáveis seguras de Safe Area recomendadas pelo Discord */}
+      <style jsx global>{`
+        :root {
+          --sait: var(--discord-safe-area-inset-top, env(safe-area-inset-top));
+          --saib: var(--discord-safe-area-inset-bottom, env(safe-area-inset-bottom));
+          --sail: var(--discord-safe-area-inset-left, env(safe-area-inset-left));
+          --sair: var(--discord-safe-area-inset-right, env(safe-area-inset-right));
+        }
+      `}</style>
+
       <div 
         className="relative w-full h-screen overflow-hidden bg-black select-none touch-none"
         style={{ touchAction: 'none' }}
@@ -751,14 +761,14 @@ export default function TNTRun() {
           </div>
         )}
 
-        {/* Joystick */}
+        {/* Joystick Ajustado para a Safe Area Customizada do Discord */}
         {isTouchDevice && (gameState === 'playing' || gameState === 'countdown') && (
           <div 
             ref={joystickBaseRef} 
             className="fixed z-50 pointer-events-auto" 
             style={{ 
-              left: 'calc(env(safe-area-inset-left) + 24px)', 
-              bottom: 'calc(env(safe-area-inset-bottom) + 24px)' 
+              left: 'calc(var(--sail) + 24px)', 
+              bottom: 'calc(var(--saib) + 24px)' 
             }}
           >
             <div className="w-[130px] h-[130px] rounded-full bg-white/10 border-2 border-white/30 backdrop-blur-sm flex items-center justify-center">
