@@ -505,7 +505,7 @@ export default function TNTRun() {
     }
   }, [])
 
-  // Touch Controls (Mapeado e ajustado para o bounding box correto do Discord)
+  // Touch Controls (Mapeado para o bounding box correto do Discord)
   useEffect(() => {
     const JOY_MAX = 45
     const JOY_GRAB = 85
@@ -647,7 +647,7 @@ export default function TNTRun() {
         <meta name="apple-mobile-web-app-capable" content="yes" />
       </Head>
 
-      {/* Injeção global das variáveis seguras de Safe Area recomendadas pelo Discord */}
+      {/* Injeção global das variáveis recomendadas pelo Discord */}
       <style jsx global>{`
         :root {
           --sait: var(--discord-safe-area-inset-top, env(safe-area-inset-top));
@@ -761,7 +761,7 @@ export default function TNTRun() {
           </div>
         )}
 
-        {/* Joystick Ajustado para a Safe Area Customizada do Discord */}
+        {/* Joystick Mapado com as variáveis seguras injetadas do Discord */}
         {isTouchDevice && (gameState === 'playing' || gameState === 'countdown') && (
           <div 
             ref={joystickBaseRef} 
