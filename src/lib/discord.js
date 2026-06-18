@@ -62,7 +62,7 @@ export async function setupDiscordSdk() {
       response_type: 'code',
       state: '',
       prompt: 'none',
-      scope: ['identify', 'guilds'],
+      scope: ['identify'],
     };
 
     const { code } = await sdk.commands.authorize(authParams);
