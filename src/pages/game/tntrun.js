@@ -338,12 +338,12 @@ function Robot({ playerRef, isGameOverRef, keysRef, joystickRef, cameraRef, bloc
 
 // ─── Camera & Timer ─────────────────────────────────────────────────────────
 function FollowCamera({ playerRef, cameraRef, isGameOverRef }) {
-  const { camera } = useThree()
+  const { camera, size } = useThree() // Usando o hook 'size' nativo do fiber ao invés de ler do 'window' global
   useFrame(() => {
     if (isGameOverRef.current) return
     const p = playerRef.current
     const cam = cameraRef.current
-    const short = window.innerHeight < 520 && window.innerWidth > window.innerHeight
+    const short = size.height < 520 && size.width > size.height
     const dist = short ? CAMERA_DISTANCE * 1.25 : CAMERA_DISTANCE
     const height = short ? CAMERA_HEIGHT * 1.15 : CAMERA_HEIGHT
 
@@ -505,7 +505,7 @@ export default function TNTRun() {
     }
   }, [])
 
-  // Touch Controls (Otimizado)
+  // Touch Controls (Otimizado para mobile)
   useEffect(() => {
     const JOY_MAX = 45
     const JOY_GRAB = 85
