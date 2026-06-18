@@ -659,7 +659,7 @@ export default function TNTRun() {
             alpha: false 
           }}
           camera={{ fov: 60, near: 0.1, far: 200 }}
-          dpr={Math.min(window.devicePixelRatio, 2)}
+          dpr={typeof window !== 'undefined' ? Math.min(window.devicePixelRatio, 2) : 1}
           style={{ background: '#080810', touchAction: 'none' }}
         >
           {(gameState === 'playing' || gameState === 'countdown' || gameState === 'gameover') && (
