@@ -64,7 +64,7 @@ function getBlockUnder(x, z, floorIdx, blockStates) {
 }
 
 // ─── FloorBlocks ─────────────────────────────────────────────────────────────
-function FloorBlocks({ floorIdx, blockStates }) {
+function FloorBlocks({ floorIdx, blockStates, resetKey }) {
   const meshRef = useRef()
   const blocks = useMemo(() => 
     blockStates.filter(b => b.floorIdx === floorIdx), 
@@ -88,6 +88,7 @@ function FloorBlocks({ floorIdx, blockStates }) {
     return arr
   }, [blocks, floorIdx, count])
 
+  // Reset quando resetKey mudar
   useEffect(() => {
     const mesh = meshRef.current
     if (!mesh || count === 0) return
@@ -100,6 +101,11 @@ function FloorBlocks({ floorIdx, blockStates }) {
     }
 
     blocks.forEach((b, i) => {
+      // Resetar posição para a original
+      b.fallY = 0
+      if (b.state === 'falling' || b.state === 'gone') {
+        b.state = 'solid'
+      }
       dummy.position.set(b.baseX, b.baseY, b.baseZ)
       dummy.updateMatrix()
       mesh.setMatrixAt(i, dummy.matrix)
@@ -108,7 +114,7 @@ function FloorBlocks({ floorIdx, blockStates }) {
 
     mesh.instanceMatrix.needsUpdate = true
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
-  }, [blocks, colorArray, count])
+  }, [blocks, colorArray, count, resetKey])
 
   useFrame(() => {
     const mesh = meshRef.current
@@ -170,14 +176,32 @@ function Robot({ playerRef, isGameOverRef, keysRef, joystickRef, cameraRef, bloc
   const blockTimers = useRef({})
 
   useEffect(() => {
-    if (groupRef.current) groupRef.current.rotation.set(0, 0, 0)
+    if (groupRef.current) {
+      groupRef.current.rotation.set(0, 0, 0)
+      groupRef.current.position.set(0, floorSurface(0), 0)
+    }
     walkTimeRef.current = 0
     velYRef.current = 0
     curFloorRef.current = 0
     onGroundRef.current = true
     fallAnimRef.current = null
-    blockTimers.current = {}
-  }, [resetKey])
+    
+    // Limpar timers
+    Object.keys(blockTimers.current).forEach(key => {
+      clearTimeout(blockTimers.current[key])
+      delete blockTimers.current[key]
+    })
+    
+    // Resetar posição do jogador
+    playerRef.current.x = 0
+    playerRef.current.y = floorSurface(0)
+    playerRef.current.z = 0
+    playerRef.current.angle = 0
+    
+    // Resetar câmera
+    cameraRef.current.angle = Math.PI / 5
+    cameraRef.current.pitch = 0.38
+  }, [resetKey, playerRef, cameraRef])
 
   function triggerBlock(b) {
     if (blockTimers.current[b.id]) return
@@ -218,13 +242,16 @@ function Robot({ playerRef, isGameOverRef, keysRef, joystickRef, cameraRef, bloc
     const cam = cameraRef.current
     let mx = 0, mz = 0
 
+    // Teclado
     if (keys['w'] || keys['arrowup']) { mx -= Math.sin(cam.angle); mz -= Math.cos(cam.angle) }
     if (keys['s'] || keys['arrowdown']) { mx += Math.sin(cam.angle); mz += Math.cos(cam.angle) }
     if (keys['a'] || keys['arrowleft']) { mx -= Math.cos(cam.angle); mz += Math.sin(cam.angle) }
     if (keys['d'] || keys['arrowright']) { mx += Math.cos(cam.angle); mz -= Math.sin(cam.angle) }
+    
+    // Joystick - CORRIGIDO: Invertido dx e dy
     if (js.active) {
-      mx += Math.cos(cam.angle) * js.dx - Math.sin(cam.angle) * js.dy
-      mz += -Math.sin(cam.angle) * js.dx - Math.cos(cam.angle) * js.dy
+      mx += Math.cos(cam.angle) * js.dy - Math.sin(cam.angle) * js.dx
+      mz += -Math.sin(cam.angle) * js.dy - Math.cos(cam.angle) * js.dx
     }
 
     const len = Math.sqrt(mx * mx + mz * mz)
@@ -376,7 +403,7 @@ function GameScene({ blockStates, playerRef, cameraRef, keysRef, joystickRef, ga
       <hemisphereLight skyColor={0x6688cc} groundColor={0x222244} intensity={0.25} />
 
       {Array.from({ length: FLOORS }).map((_, f) => (
-        <FloorBlocks key={f} floorIdx={f} blockStates={blockStates} />
+        <FloorBlocks key={`${f}_${resetKey}`} floorIdx={f} blockStates={blockStates} resetKey={resetKey} />
       ))}
 
       <Robot
@@ -446,7 +473,21 @@ export default function TNTRun() {
   const joystickBaseRef = useRef(null)
   const [joystickKnob, setJoystickKnob] = useState({ x: 0, y: 0 })
   const lastScoreRef = useRef(0)
-  const blockStates = useRef(generateBlocks()).current
+  
+  // Usar useRef para os blocos e recriar quando resetar
+  const blockStatesRef = useRef(null)
+  
+  // Função para resetar blocos
+  const resetBlocks = useCallback(() => {
+    blockStatesRef.current = generateBlocks()
+  }, [])
+
+  // Inicializar blocos
+  useEffect(() => {
+    resetBlocks()
+  }, [resetBlocks])
+
+  const blockStates = blockStatesRef.current || []
 
   const [isTouchDevice, setIsTouchDevice] = useState(false)
   const [compactLandscape, setCompactLandscape] = useState(false)
@@ -648,12 +689,19 @@ export default function TNTRun() {
       console.log('Fullscreen não disponível')
     }
 
-    blockStates.forEach(b => { b.state = 'solid'; b.fallY = 0 })
-
+    // Resetar blocos completamente
+    resetBlocks()
+    
+    // Resetar estado do jogador
     playerRef.current = { x: 0, y: floorSurface(0), z: 0, angle: 0 }
     cameraRef.current = { angle: Math.PI / 5, pitch: 0.38 }
     isGameOverRef.current = false
     lastScoreRef.current = 0
+    
+    // Resetar timers
+    Object.keys(blockStatesRef.current?.blockTimers || {}).forEach(key => {
+      clearTimeout(blockStatesRef.current.blockTimers[key])
+    })
 
     setScore(0)
     setGameTime(0)
@@ -676,7 +724,7 @@ export default function TNTRun() {
         }
       }, i * 1000)
     })
-  }, [isTouchDevice, blockStates])
+  }, [isTouchDevice, resetBlocks])
 
   return (
     <>
@@ -723,7 +771,7 @@ export default function TNTRun() {
           }}
           onTouchStart={e => e.preventDefault()}
         >
-          {(gameState === 'playing' || gameState === 'countdown' || gameState === 'gameover') && (
+          {(gameState === 'playing' || gameState === 'countdown' || gameState === 'gameover') && blockStates.length > 0 && (
             <GameScene
               blockStates={blockStates}
               playerRef={playerRef}
