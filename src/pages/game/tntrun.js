@@ -484,35 +484,67 @@ export default function TNTRun() {
     }
   }, [])
 
-  // Mouse camera
+  // Mouse/Touch camera control (corrigido)
   useEffect(() => {
     let down = false, lx = 0, ly = 0
-    const md = e => { down = true; lx = e.clientX; ly = e.clientY }
-    const mu = () => { down = false }
-    const mm = e => {
-      if (!down || gameStateRef.current !== 'playing') return
-      cameraRef.current.angle -= (e.clientX - lx) * 0.005
-      cameraRef.current.pitch = Math.max(0.12, Math.min(0.75, cameraRef.current.pitch - (e.clientY - ly) * 0.005))
-      lx = e.clientX; ly = e.clientY
+    
+    const md = (e) => {
+      const clientX = e.clientX || e.touches?.[0]?.clientX || 0
+      const clientY = e.clientY || e.touches?.[0]?.clientY || 0
+      if (clientX === 0 && clientY === 0) return
+      down = true
+      lx = clientX
+      ly = clientY
     }
+    
+    const mu = () => { down = false }
+    
+    const mm = (e) => {
+      if (!down || gameStateRef.current !== 'playing') return
+      const clientX = e.clientX || e.touches?.[0]?.clientX || 0
+      const clientY = e.clientY || e.touches?.[0]?.clientY || 0
+      if (clientX === 0 && clientY === 0) return
+      
+      cameraRef.current.angle -= (clientX - lx) * 0.005
+      cameraRef.current.pitch = Math.max(0.12, Math.min(0.75, cameraRef.current.pitch - (clientY - ly) * 0.005))
+      lx = clientX
+      ly = clientY
+    }
+
+    // Mouse events
     window.addEventListener('mousedown', md, { passive: true })
     window.addEventListener('mouseup', mu, { passive: true })
     window.addEventListener('mousemove', mm, { passive: true })
+    
+    // Touch events for camera
+    const canvas = document.querySelector('canvas')
+    if (canvas && isTouchDevice) {
+      canvas.addEventListener('touchstart', md, { passive: true })
+      canvas.addEventListener('touchmove', mm, { passive: true })
+      canvas.addEventListener('touchend', mu, { passive: true })
+      canvas.addEventListener('touchcancel', mu, { passive: true })
+    }
+
     return () => {
       window.removeEventListener('mousedown', md)
       window.removeEventListener('mouseup', mu)
       window.removeEventListener('mousemove', mm)
+      if (canvas) {
+        canvas.removeEventListener('touchstart', md)
+        canvas.removeEventListener('touchmove', mm)
+        canvas.removeEventListener('touchend', mu)
+        canvas.removeEventListener('touchcancel', mu)
+      }
     }
-  }, [])
+  }, [isTouchDevice])
 
-  // Touch Controls (Mapeado para o bounding box correto do Discord)
+  // Touch Controls (Corrigido para Discord Activities)
   useEffect(() => {
     const JOY_MAX = 45
     const JOY_GRAB = 85
     let joyId = null, camId = null, ltx = 0, lty = 0
 
-    const onStart = e => {
-      if (e.cancelable) e.preventDefault()
+    const onStart = (e) => {
       for (const t of e.changedTouches) {
         const base = joystickBaseRef.current
         const rect = base?.getBoundingClientRect()
@@ -544,8 +576,8 @@ export default function TNTRun() {
       }
     }
 
-    const onMove = e => {
-      if (e.cancelable) e.preventDefault()
+    const onMove = (e) => {
+      e.preventDefault()
       for (const t of e.changedTouches) {
         if (t.identifier === joyId) {
           const js = joystickRef.current
@@ -565,7 +597,7 @@ export default function TNTRun() {
       }
     }
 
-    const onEnd = e => {
+    const onEnd = (e) => {
       for (const t of e.changedTouches) {
         if (t.identifier === joyId) {
           joyId = null
@@ -576,7 +608,7 @@ export default function TNTRun() {
       }
     }
 
-    window.addEventListener('touchstart', onStart, { passive: false })
+    window.addEventListener('touchstart', onStart, { passive: true })
     window.addEventListener('touchmove', onMove, { passive: false })
     window.addEventListener('touchend', onEnd, { passive: true })
     window.addEventListener('touchcancel', onEnd, { passive: true })
@@ -604,9 +636,16 @@ export default function TNTRun() {
   }, [])
 
   const handleStart = useCallback(() => {
-    if (isTouchDevice) {
-      document.documentElement.requestFullscreen?.().catch(() => {})
-      screen.orientation?.lock?.('landscape').catch(() => {})
+    // Tentar fullscreen, mas não travar se falhar
+    try {
+      if (isTouchDevice && document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {})
+      }
+      if (isTouchDevice && screen.orientation?.lock) {
+        screen.orientation.lock('landscape').catch(() => {})
+      }
+    } catch (e) {
+      console.log('Fullscreen não disponível')
     }
 
     blockStates.forEach(b => { b.state = 'solid'; b.fallY = 0 })
@@ -655,6 +694,11 @@ export default function TNTRun() {
           --sail: var(--discord-safe-area-inset-left, env(safe-area-inset-left));
           --sair: var(--discord-safe-area-inset-right, env(safe-area-inset-right));
         }
+        * {
+          -webkit-touch-callout: none;
+          -webkit-user-select: none;
+          user-select: none;
+        }
       `}</style>
 
       <div 
@@ -666,11 +710,18 @@ export default function TNTRun() {
           gl={{ 
             antialias: true, 
             powerPreference: 'high-performance',
-            alpha: false 
+            alpha: false,
+            stencil: false,
+            depth: true,
           }}
           camera={{ fov: 60, near: 0.1, far: 200 }}
-          dpr={typeof window !== 'undefined' ? Math.min(window.devicePixelRatio, 2) : 1}
-          style={{ background: '#080810', touchAction: 'none' }}
+          dpr={typeof window !== 'undefined' ? Math.min(window.devicePixelRatio, 1.5) : 1}
+          style={{ 
+            background: '#080810', 
+            touchAction: 'none',
+            pointerEvents: 'none',
+          }}
+          onTouchStart={e => e.preventDefault()}
         >
           {(gameState === 'playing' || gameState === 'countdown' || gameState === 'gameover') && (
             <GameScene
@@ -761,33 +812,41 @@ export default function TNTRun() {
           </div>
         )}
 
-        {/* Joystick Mapado com as variáveis seguras injetadas do Discord */}
+        {/* Joystick */}
         {isTouchDevice && (gameState === 'playing' || gameState === 'countdown') && (
           <div 
             ref={joystickBaseRef} 
             className="fixed z-50 pointer-events-auto" 
             style={{ 
-              left: 'calc(var(--sail) + 24px)', 
-              bottom: 'calc(var(--saib) + 24px)' 
+              left: 'calc(var(--sail) + 20px)', 
+              bottom: 'calc(var(--saib) + 20px)',
+              touchAction: 'none',
             }}
           >
-            <div className="w-[130px] h-[130px] rounded-full bg-white/10 border-2 border-white/30 backdrop-blur-sm flex items-center justify-center">
+            <div className="w-[140px] h-[140px] rounded-full bg-white/10 border-2 border-white/30 backdrop-blur-sm flex items-center justify-center">
               <div 
-                className="w-14 h-14 rounded-full bg-white/40 border border-white/60 shadow-xl" 
-                style={{ transform: `translate(${joystickKnob.x}px, ${joystickKnob.y}px)` }} 
+                className="w-16 h-16 rounded-full bg-white/40 border border-white/60 shadow-xl transition-transform duration-50" 
+                style={{ 
+                  transform: `translate(${joystickKnob.x}px, ${joystickKnob.y}px)`,
+                  touchAction: 'none',
+                }} 
               />
             </div>
           </div>
         )}
 
+        {/* Portrait warning */}
         {isPortraitTouch && (
           <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center px-6 text-center">
             <div className="text-6xl mb-4 animate-bounce">📱</div>
             <h2 className="text-white text-xl font-bold mb-2">Gire seu dispositivo</h2>
+            <p className="text-white/60 text-sm mb-4">Para melhor experiência, jogue na horizontal</p>
             <button 
               onClick={() => { 
-                document.documentElement.requestFullscreen?.().catch(()=>{})
-                screen.orientation?.lock?.('landscape').catch(()=>{})
+                try {
+                  document.documentElement.requestFullscreen?.().catch(()=>{})
+                  screen.orientation?.lock?.('landscape').catch(()=>{})
+                } catch(e) {}
               }} 
               className="px-6 py-2.5 bg-white/10 border border-white/20 rounded-lg text-white/70 text-sm hover:bg-white/20 transition-all"
             >
