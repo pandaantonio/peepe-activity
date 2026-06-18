@@ -1,9 +1,10 @@
 // pages/index.js
 import Link from 'next/link';
-import { FaChess, FaUsers, FaLock, FaSlidersH } from 'react-icons/fa';
-import { FiZap, FiUser, FiCpu } from 'react-icons/fi';
+import { FaChess, FaLock, FaDiscord } from 'react-icons/fa';
+import { FiZap, FiUser, FiCpu, FiLogOut } from 'react-icons/fi';
 import { useEffect, useState } from 'react';
-import { useDiscord } from '@/contexts/DiscordContext';
+import { useRouter } from 'next/router';
+import { useDiscord } from '@/contexts/DiscordContext'; // Importando para saber se está no Discord
 
 const games = [
   {
@@ -79,12 +80,83 @@ const games = [
 ];
 
 export default function GameHub() {
-  const { isContextReady, isDiscordFrame, username, userAvatar } = useDiscord();
+  const { isContextReady, isDiscordFrame, currentUserRaw } = useDiscord(); // Pegando dados do Discord
   const [mounted, setMounted] = useState(false);
+  const [user, setUser] = useState(null);
+  const [linking, setLinking] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+
+    async function handleAuthCheck() {
+      const localUser = localStorage.getItem('user');
+      
+      if (localUser) {
+        setUser(JSON.parse(localUser));
+        return;
+      }
+
+      // Se não está logado localmente, mas ESTÁ dentro do Discord, tenta o Login Automático pelo ID do Discord
+      if (isDiscordFrame && isContextReady && currentUserRaw?.id) {
+        try {
+          const res = await fetch('/api/auth/discord-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ discordId: currentUserRaw.id })
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            const loggedUser = { username: data.username, discordId: data.discordId };
+            localStorage.setItem('user', JSON.stringify(loggedUser));
+            setUser(loggedUser);
+            return;
+          }
+        } catch (err) {
+          console.error("Falha ao tentar login automático:", err);
+        }
+      }
+
+      // Se falhou tudo e não achou conta vinculada, joga para a tela de Login tradicional
+      if (isContextReady || !isDiscordFrame) {
+        router.push('/login');
+      }
+    }
+
+    handleAuthCheck();
+  }, [router, isDiscordFrame, isContextReady, currentUserRaw]);
+
+  // Função para vincular a conta atual com o ID do Discord ativo
+  const handleLinkDiscord = async () => {
+    if (!user || !currentUserRaw?.id || linking) return;
+    setLinking(true);
+
+    try {
+      const res = await fetch('/api/auth/link-discord', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: user.username, discordId: currentUserRaw.id })
+      });
+
+      if (res.ok) {
+        const updatedUser = { ...user, discordId: currentUserRaw.id };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        setUser(updatedUser);
+      } else {
+        alert("Erro ao vincular conta.");
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLinking(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    router.push('/login');
+  };
 
   const colorClasses = {
     emerald: { accent: "text-emerald-400", glow: "shadow-emerald-500/30", border: "border-emerald-500/20" },
@@ -95,11 +167,9 @@ export default function GameHub() {
     indigo: { accent: "text-indigo-400", glow: "shadow-indigo-500/30", border: "border-indigo-500/20" }
   };
 
-  const displayItems = [...games];
-
-  if (!mounted || (isDiscordFrame && !isContextReady)) {
+  if (!mounted || !user) {
     return (
-      <div className="min-h-screen bg-[#0a0a0c]">
+      <div className="min-h-screen bg-[#020205]">
         <div className="pt-24 pb-16 px-6 max-w-6xl mx-auto">
           <div className="text-center mb-10">
             <div className="w-28 h-7 bg-white/5 rounded-full mx-auto mb-8 animate-pulse" />
@@ -116,33 +186,61 @@ export default function GameHub() {
     );
   }
 
+  // Define se a conta atual do usuário já possui o mesmo ID do Discord ativo salvo
+  const isLinked = user.discordId && currentUserRaw?.id && user.discordId === currentUserRaw.id;
+
   return (
-    <div className="min-h-screen bg-[#05050a] relative overflow-hidden">
-      {/* Fundo Espacial */}
+    <div className="min-h-screen bg-[#020205] relative overflow-hidden">
+      
+      {/* NAVBAR */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#020205] border-b border-white/5 px-6 py-3">
+        <div className="max-w-6xl mx-auto flex items-center justify-end gap-3">
+          
+          {/* Botão Logotipo do Discord (Aparece apenas dentro do Discord Frame) */}
+          {isDiscordFrame && currentUserRaw?.id && (
+            <button
+              onClick={handleLinkDiscord}
+              disabled={isLinked || linking}
+              className={`p-2 rounded-xl border flex items-center justify-center transition-all duration-300 ${
+                isLinked 
+                  ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-400 shadow-lg shadow-emerald-500/10" 
+                  : "bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10"
+              }`}
+              title={isLinked ? "Conta do Discord vinculada!" : "Vincular esta conta ao seu Discord"}
+            >
+              <FaDiscord size={18} />
+            </button>
+          )}
+
+          <div className="flex items-center gap-3 text-white/80 text-sm bg-white/5 px-4 py-1.5 rounded-xl border border-white/5">
+            <div className="w-6 h-6 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+              <FiUser size={13} />
+            </div>
+            <span className="text-cyan-400 font-bold">{user.username}</span>
+            
+            <button 
+              onClick={handleLogout}
+              className="text-gray-400 hover:text-red-400 transition-colors flex items-center border-l border-white/10 pl-3 ml-1"
+              title="Sair da Conta"
+            >
+              <FiLogOut size={16} />
+            </button>
+          </div>
+
+        </div>
+      </nav>
+
+      {/* FUNDO DO CÉU NOTURNO */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(at_50%_30%,rgba(129,140,248,0.08)_0%,transparent_50%)]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(at_20%_70%,rgba(167,139,250,0.07)_0%,transparent_50%)]"></div>
-
-        {/* Estrelas */}
         <div className="absolute inset-0" style={{
-          backgroundImage: `radial-gradient(white 0.8px, transparent 1px)`,
-          backgroundSize: '80px 80px',
-          opacity: 0.6
+          backgroundImage: `radial-gradient(rgba(255, 255, 255, 0.7) 0.8px, transparent 1px)`,
+          backgroundSize: '70px 70px',
+          opacity: 0.45
         }}></div>
-
-        <div className="absolute top-0 left-1/4 w-[800px] h-[800px] bg-purple-600/10 rounded-full blur-[140px]" />
-        <div className="absolute bottom-0 right-1/3 w-[700px] h-[700px] bg-cyan-500/10 rounded-full blur-[130px]" />
-        <div className="absolute top-1/3 right-1/4 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[120px]" />
       </div>
 
-      <div className="relative pt-16 pb-16 px-6 max-w-6xl mx-auto z-10">
-        {isDiscordFrame && username && (
-          <div className="flex items-center justify-end gap-3 mb-6 text-white/80 text-sm bg-white/5 w-fit ml-auto px-4 py-2 rounded-xl border border-white/10">
-            <img src={userAvatar} alt={username} className="w-6 h-6 rounded-full" />
-            <span>Olá, <b>{username}</b></span>
-          </div>
-        )}
-
+      <div className="relative pt-24 pb-16 px-6 max-w-6xl mx-auto z-10">
+        
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 tracking-tighter">
             <span className="text-white/90">Explorando o </span>
@@ -156,7 +254,7 @@ export default function GameHub() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {displayItems.map((item, index) => {
+          {games.map((item, index) => {
             const colors = colorClasses[item.color];
             return (
               <Link
@@ -174,7 +272,7 @@ export default function GameHub() {
                         alt={item.title}
                         className="w-full h-52 object-cover transition-all duration-700 group-hover:scale-110 group-hover:brightness-125"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#05050a]/70 to-[#05050a]" />
+                      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#020205]/70 to-[#020205]" />
                     </div>
                   )}
 
@@ -211,16 +309,17 @@ export default function GameHub() {
 
       <style jsx>{`
         .glass-card {
-          background: rgba(15, 23, 42, 0.75);
+          background: rgba(10, 10, 15, 0.85);
           backdrop-filter: blur(24px);
           -webkit-backdrop-filter: blur(24px);
-          border: 1px solid rgba(148, 163, 184, 0.15);
-          box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.5);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.7);
         }
         .glass-card:hover {
-          background: rgba(30, 41, 59, 0.9);
-          box-shadow: 0 30px 60px -15px rgb(165 243 252 / 0.15), 
-                      inset 0 1px 0 rgba(255,255,255,0.08);
+          background: rgba(20, 20, 28, 0.95);
+          border-color: rgba(255, 255, 255, 0.15);
+          box-shadow: 0 30px 60px -15px rgb(165 243 252 / 0.05), 
+                      inset 0 1px 0 rgba(255,255,255,0.05);
         }
         .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
       `}</style>
