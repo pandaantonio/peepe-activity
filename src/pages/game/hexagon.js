@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
 import * as THREE from 'three'
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
+import { createMinecraftPlayer } from '@/components/PlayerModel'
 
 const COLORS = [
   0xFF3B30, 0x007AFF, 0x34C759, 0xFF9500,
@@ -9,9 +11,9 @@ const COLORS = [
   0x5856D6, 0xA2845E, 0x64D2FF, 0x30D158,
 ]
 
-const TILE_SIZE = 2.4   // tamanho do quadrado (lado)
+const TILE_SIZE = 2.4
 const TILE_HEIGHT = 0.5
-const GRID_RADIUS = 6   // raio em tiles (grade circular de quadrados)
+const GRID_RADIUS = 6
 const FALL_SPEED = 0.15
 const ROUND_TIME = 5
 const PLAYER_SPEED = 0.12
@@ -19,7 +21,6 @@ const CAMERA_HEIGHT = 5
 const CAMERA_DISTANCE = 8
 
 function getTilePosition(q, r) {
-  // Quadrados se encostam perfeitamente: passo = TILE_SIZE exato
   return { x: TILE_SIZE * q, z: TILE_SIZE * r }
 }
 
@@ -27,7 +28,6 @@ function generateHexGrid() {
   const hexagons = []
   for (let q = -GRID_RADIUS; q <= GRID_RADIUS; q++) {
     for (let r = -GRID_RADIUS; r <= GRID_RADIUS; r++) {
-      // Mantém forma circular usando distância euclidiana em coordenadas de grade
       if (Math.sqrt(q * q + r * r) > GRID_RADIUS) continue
       const pos = getTilePosition(q, r)
       const colorIndex = Math.floor(Math.random() * COLORS.length)
@@ -42,7 +42,6 @@ function generateHexGrid() {
 }
 
 function getHexAtPosition(x, z, hexagons) {
-  // Para quadrados: basta checar se está dentro do tile (sem distância euclidiana)
   const half = TILE_SIZE / 2
   for (const hex of hexagons) {
     if (!hex.active) continue
@@ -63,12 +62,10 @@ export default function HexagonGame() {
   const [highScore, setHighScore] = useState(0)
   const [shake, setShake] = useState(false)
 
-  // Joystick state (joystick fixo no canto inferior esquerdo)
   const joystickRef = useRef({ active: false, originX: 0, originY: 0, dx: 0, dy: 0 })
   const joystickBaseRef = useRef(null)
   const [joystickKnob, setJoystickKnob] = useState({ x: 0, y: 0 })
 
-  // Detecção de dispositivo touch e orientação, para otimizar o layout mobile/landscape
   const [isTouchDevice, setIsTouchDevice] = useState(false)
   const [compactLandscape, setCompactLandscape] = useState(false)
   const [isPortraitTouch, setIsPortraitTouch] = useState(false)
@@ -82,7 +79,6 @@ export default function HexagonGame() {
     const checkLayout = () => {
       const portrait = window.innerHeight > window.innerWidth
       setIsPortraitTouch(touch && portrait)
-      // Layout compacto: telas curtas em paisagem (celulares na horizontal)
       setCompactLandscape(!portrait && window.innerHeight < 520)
     }
     checkLayout()
@@ -96,9 +92,8 @@ export default function HexagonGame() {
 
   const initGame = useCallback(() => {
     const mount = mountRef.current
-    if (!mount) return () => {}
+    if (!mount) return () => { }
 
-    // Coletores de lixo locais para limpeza cirúrgica da VRAM
     const geometriesToDispose = []
     const materialsToDispose = []
 
@@ -112,12 +107,11 @@ export default function HexagonGame() {
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" })
     renderer.setSize(window.innerWidth, window.innerHeight)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)) // Evita borrão em telas mobile de alta densidade
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = THREE.PCFSoftShadowMap
     mount.appendChild(renderer.domElement)
 
-    // Lights
     scene.add(new THREE.AmbientLight(0xffffff, 0.5))
     const dirLight = new THREE.DirectionalLight(0xffffff, 0.7)
     dirLight.position.set(10, 25, 10)
@@ -132,7 +126,6 @@ export default function HexagonGame() {
     scene.add(dirLight)
     scene.add(new THREE.HemisphereLight(0x87ceeb, 0x222222, 0.3))
 
-    // Tiles quadrados
     const hexGeometry = new THREE.BoxGeometry(TILE_SIZE, TILE_HEIGHT, TILE_SIZE)
     geometriesToDispose.push(hexGeometry)
 
@@ -153,124 +146,28 @@ export default function HexagonGame() {
       hexMeshes.push(mesh)
     })
 
-    // ========== ROBÔZINHO ==========
+    // ========== CONTÊINER DO PLAYER ==========
     const robotGroup = new THREE.Group()
-    const robotMat = new THREE.MeshStandardMaterial({ color: 0x4a90d9, metalness: 0.4, roughness: 0.3 })
-    const robotDarkMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50, metalness: 0.5, roughness: 0.3 })
-    const robotAccentMat = new THREE.MeshStandardMaterial({ color: 0xe74c3c, metalness: 0.3, roughness: 0.4 })
-    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc })
-    materialsToDispose.push(robotMat, robotDarkMat, robotAccentMat, eyeMat)
-
-    // Torso
-    const torsoGeo = new THREE.BoxGeometry(0.5, 0.6, 0.35)
-    geometriesToDispose.push(torsoGeo)
-    const torso = new THREE.Mesh(torsoGeo, robotMat)
-    torso.position.y = 0.9
-    torso.castShadow = true
-    robotGroup.add(torso)
-
-    // Peito / painel
-    const chestGeo = new THREE.BoxGeometry(0.3, 0.2, 0.05)
-    geometriesToDispose.push(chestGeo)
-    const chest = new THREE.Mesh(chestGeo, robotDarkMat)
-    chest.position.set(0, 1.0, 0.18)
-    robotGroup.add(chest)
-
-    // Luz do peito
-    const chestLightGeo = new THREE.SphereGeometry(0.06, 8, 8)
-    geometriesToDispose.push(chestLightGeo)
-    const chestLight = new THREE.Mesh(chestLightGeo, eyeMat)
-    chestLight.position.set(0, 1.0, 0.21)
-    robotGroup.add(chestLight)
-
-    // Cabeça
-    const headGeo = new THREE.BoxGeometry(0.4, 0.35, 0.4)
-    geometriesToDispose.push(headGeo)
-    const head = new THREE.Mesh(headGeo, robotMat)
-    head.position.y = 1.45
-    head.castShadow = true
-    robotGroup.add(head)
-
-    // Olhos
-    const eyeGeo = new THREE.SphereGeometry(0.07, 8, 8)
-    geometriesToDispose.push(eyeGeo)
-    const leftEye = new THREE.Mesh(eyeGeo, eyeMat)
-    leftEye.position.set(-0.1, 1.45, 0.22)
-    robotGroup.add(leftEye)
-    const rightEye = new THREE.Mesh(eyeGeo, eyeMat)
-    rightEye.position.set(0.1, 1.45, 0.22)
-    robotGroup.add(rightEye)
-
-    // Antena
-    const antennaGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.3, 6)
-    geometriesToDispose.push(antennaGeo)
-    const antenna = new THREE.Mesh(antennaGeo, robotDarkMat)
-    antenna.position.set(0, 1.8, 0)
-    robotGroup.add(antenna)
-    const antennaBallGeo = new THREE.SphereGeometry(0.05, 8, 8)
-    geometriesToDispose.push(antennaBallGeo)
-    const antennaBall = new THREE.Mesh(antennaBallGeo, eyeMat)
-    antennaBall.position.set(0, 1.95, 0)
-    robotGroup.add(antennaBall)
-
-    // Braços (com pivô para animação)
-    const armGeo = new THREE.BoxGeometry(0.12, 0.5, 0.12)
-    geometriesToDispose.push(armGeo)
-    
-    const leftArmGroup = new THREE.Group()
-    leftArmGroup.position.set(-0.35, 1.05, 0)
-    const leftArm = new THREE.Mesh(armGeo, robotMat)
-    leftArm.position.y = -0.2
-    leftArm.castShadow = true
-    leftArmGroup.add(leftArm)
-    robotGroup.add(leftArmGroup)
-
-    const rightArmGroup = new THREE.Group()
-    rightArmGroup.position.set(0.35, 1.05, 0)
-    const rightArm = new THREE.Mesh(armGeo, robotMat)
-    rightArm.position.y = -0.2
-    rightArm.castShadow = true
-    rightArmGroup.add(rightArm)
-    robotGroup.add(rightArmGroup)
-
-    // Pernas (com pivô para animação)
-    const legGeo = new THREE.BoxGeometry(0.15, 0.5, 0.15)
-    geometriesToDispose.push(legGeo)
-    
-    const leftLegGroup = new THREE.Group()
-    leftLegGroup.position.set(-0.15, 0.5, 0)
-    const leftLeg = new THREE.Mesh(legGeo, robotDarkMat)
-    leftLeg.position.y = -0.2
-    leftLeg.castShadow = true
-    leftLegGroup.add(leftLeg)
-    robotGroup.add(leftLegGroup)
-
-    const rightLegGroup = new THREE.Group()
-    rightLegGroup.position.set(0.15, 0.5, 0)
-    const rightLeg = new THREE.Mesh(legGeo, robotDarkMat)
-    rightLeg.position.y = -0.2
-    rightLeg.castShadow = true
-    rightLegGroup.add(rightLeg)
-    robotGroup.add(rightLegGroup)
-
-    // Pés
-    const footGeo = new THREE.BoxGeometry(0.18, 0.08, 0.25)
-    geometriesToDispose.push(footGeo)
-    const leftFoot = new THREE.Mesh(footGeo, robotAccentMat)
-    leftFoot.position.set(0, -0.5, 0.05)
-    leftLegGroup.add(leftFoot)
-    const rightFoot = new THREE.Mesh(footGeo, robotAccentMat)
-    rightFoot.position.set(0, -0.5, 0.05)
-    rightLegGroup.add(rightFoot)
-
-    // Glow do robô
-    const robotGlow = new THREE.PointLight(0x00ffcc, 0.6, 5)
-    robotGroup.add(robotGlow)
-
-    robotGroup.position.set(0, 0, 0)
     scene.add(robotGroup)
 
-    // Target ring
+    // Instancia o nosso modelo procedural estilo Minecraft
+    const playerModel = createMinecraftPlayer(robotGroup)
+
+    // Mantém o tamanho grande
+    if (playerModel && playerModel.group) {
+      playerModel.group.scale.set(1.45, 1.45, 1.45)
+    }
+
+    playerModel.geometries.forEach(g => geometriesToDispose.push(g))
+    playerModel.materials.forEach(m => materialsToDispose.push(m))
+
+    let animationTime = 0
+    let mixer = null
+
+    const robotGlow = new THREE.PointLight(0x00ffcc, 0.4, 4)
+    robotGlow.position.y = 1
+    robotGroup.add(robotGlow)
+
     const ringGeo = new THREE.RingGeometry(TILE_SIZE * 0.25, TILE_SIZE * 0.38, 32)
     geometriesToDispose.push(ringGeo)
     const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, side: THREE.DoubleSide })
@@ -280,14 +177,13 @@ export default function HexagonGame() {
     targetRing.position.y = 0.1
     scene.add(targetRing)
 
-    // Arrow pointing to target
     const arrowGeo = new THREE.ConeGeometry(0.12, 0.4, 8)
     geometriesToDispose.push(arrowGeo)
     const arrowMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 })
     materialsToDispose.push(arrowMat)
     const arrow = new THREE.Mesh(arrowGeo, arrowMat)
     arrow.rotation.x = Math.PI
-    arrow.position.y = 2.3
+    arrow.position.y = 2.5
     robotGroup.add(arrow)
 
     const mouse = new THREE.Vector2()
@@ -307,13 +203,12 @@ export default function HexagonGame() {
     let isMouseDown = false
     let lastMouseX = 0
     let lastMouseY = 0
-    let walkTime = 0
     let isWalking = false
 
     const keys = {}
     const handleKeyDown = (e) => { keys[e.key.toLowerCase()] = true }
     const handleKeyUp = (e) => { keys[e.key.toLowerCase()] = false }
-    
+
     const handleMouseDown = (e) => {
       isMouseDown = true
       lastMouseX = e.clientX
@@ -333,13 +228,12 @@ export default function HexagonGame() {
       mouse.y = -(e.clientY / window.innerHeight) * 2 + 1
     }
 
-    // Joystick fixo (canto inferior esquerdo) + olhar com o dedo no resto da tela
     let joystickTouchId = null
     let cameraTouchId = null
     let lastTouchX = 0
     let lastTouchY = 0
     const JOY_MAX_DIST = 32
-    const JOY_GRAB_RADIUS = 70 // raio generoso para facilitar pegar o joystick com o polegar
+    const JOY_GRAB_RADIUS = 70
 
     const handleTouchStart = (e) => {
       if (e.cancelable) e.preventDefault()
@@ -455,14 +349,13 @@ export default function HexagonGame() {
       if (isGameOver) return
       isGameOver = true
       let fallVelocity = 0
+
+      if (mixer) mixer.stopAllAction()
+
       const fallPlayer = () => {
         if (robotGroup.position.y > -20) {
           fallVelocity += 0.02
           robotGroup.position.y -= fallVelocity
-          leftArmGroup.rotation.z = Math.sin(performance.now() * 0.01) * 2
-          rightArmGroup.rotation.z = Math.cos(performance.now() * 0.01) * 2
-          leftLegGroup.rotation.x = Math.sin(performance.now() * 0.01) * 1
-          rightLegGroup.rotation.x = Math.cos(performance.now() * 0.01) * 1
           robotGroup.rotation.x += 0.02
           robotGroup.rotation.z += 0.01
           requestAnimationFrame(fallPlayer)
@@ -482,15 +375,10 @@ export default function HexagonGame() {
       playerAngle = 0
       cameraAngle = Math.PI / 6
       cameraPitch = 0.35
-      walkTime = 0
       isWalking = false
 
       robotGroup.position.set(0, 0, 0)
       robotGroup.rotation.set(0, 0, 0)
-      leftArmGroup.rotation.set(0, 0, 0)
-      rightArmGroup.rotation.set(0, 0, 0)
-      leftLegGroup.rotation.set(0, 0, 0)
-      rightLegGroup.rotation.set(0, 0, 0)
 
       hexagons.forEach((hex, i) => {
         hex.active = true
@@ -520,7 +408,6 @@ export default function HexagonGame() {
       let moveX = 0
       let moveZ = 0
 
-      // Keyboard input
       if (keys['w'] || keys['arrowup']) {
         moveX -= Math.sin(cameraAngle) * PLAYER_SPEED
         moveZ -= Math.cos(cameraAngle) * PLAYER_SPEED
@@ -535,10 +422,9 @@ export default function HexagonGame() {
       }
       if (keys['d'] || keys['arrowright']) {
         moveX += Math.cos(cameraAngle) * PLAYER_SPEED
-        moveZ -= Math.sin(cameraAngle) * PLAYER_SPEED
+        moveZ -= Math.cos(cameraAngle) * PLAYER_SPEED
       }
 
-      // Joystick input
       const js = joystickRef.current
       if (js.active) {
         moveX += js.dx * PLAYER_SPEED
@@ -552,72 +438,62 @@ export default function HexagonGame() {
       }
 
       isWalking = len > 0.01
+      animationTime += delta * (isWalking ? 14 : 3)
+
+      // CORREÇÃO: Altura Y fixa no nível superior dos blocos (sem flutuar no ar)
+      if (playerModel && playerModel.group) {
+        playerModel.group.position.y = TILE_HEIGHT / 2
+      }
 
       if (isWalking) {
         playerAngle = Math.atan2(moveX, moveZ)
         robotGroup.rotation.y = playerAngle
-        walkTime += delta * 8
 
-        const walkCycle = Math.sin(walkTime)
-        const walkCycle2 = Math.sin(walkTime + Math.PI)
+        playerModel.leftLeg.rotation.x = Math.sin(animationTime) * 0.65
+        playerModel.rightLeg.rotation.x = -Math.sin(animationTime) * 0.65
 
-        leftArmGroup.rotation.x = walkCycle2 * 0.6
-        rightArmGroup.rotation.x = walkCycle * 0.6
-        leftArmGroup.rotation.z = 0.1
-        rightArmGroup.rotation.z = -0.1
+        playerModel.leftArm.rotation.x = -Math.sin(animationTime) * 0.5
+        playerModel.leftArm.rotation.z = (Math.cos(animationTime) * 0.1) + 0.05
+        playerModel.rightArm.rotation.x = Math.sin(animationTime) * 0.5
+        playerModel.rightArm.rotation.z = -(Math.cos(animationTime) * 0.1) - 0.05
 
-        leftLegGroup.rotation.x = walkCycle * 0.5
-        rightLegGroup.rotation.x = walkCycle2 * 0.5
-
-        robotGroup.position.y = Math.abs(Math.sin(walkTime * 2)) * 0.05
+        playerModel.torso.rotation.x = 0.15
+        playerModel.head.rotation.x = -0.05
         
-        antenna.rotation.z = Math.sin(walkTime * 3) * 0.15
-        antennaBall.position.x = Math.sin(walkTime * 3) * 0.05
+        playerModel.group.rotation.x = THREE.MathUtils.lerp(playerModel.group.rotation.x, 0.12, 0.1)
       } else {
-        walkTime = 0
-        leftArmGroup.rotation.x = THREE.MathUtils.lerp(leftArmGroup.rotation.x, 0, 0.1)
-        rightArmGroup.rotation.x = THREE.MathUtils.lerp(rightArmGroup.rotation.x, 0, 0.1)
-        leftArmGroup.rotation.z = THREE.MathUtils.lerp(leftArmGroup.rotation.z, 0.1, 0.1)
-        rightArmGroup.rotation.z = THREE.MathUtils.lerp(rightArmGroup.rotation.z, -0.1, 0.1)
-        leftLegGroup.rotation.x = THREE.MathUtils.lerp(leftLegGroup.rotation.x, 0, 0.1)
-        rightLegGroup.rotation.x = THREE.MathUtils.lerp(rightLegGroup.rotation.x, 0, 0.1)
-        robotGroup.position.y = THREE.MathUtils.lerp(robotGroup.position.y, 0, 0.1)
-        antenna.rotation.z = THREE.MathUtils.lerp(antenna.rotation.z, 0, 0.1)
-        antennaBall.position.x = THREE.MathUtils.lerp(antennaBall.position.x, 0, 0.1)
+        playerModel.leftLeg.rotation.x *= 0.8
+        playerModel.rightLeg.rotation.x *= 0.8
+        playerModel.torso.rotation.x *= 0.8
+
+        playerModel.leftArm.rotation.x = Math.sin(animationTime) * 0.05
+        playerModel.leftArm.rotation.z = 0.05 + Math.sin(animationTime) * 0.03
+        playerModel.rightArm.rotation.x = Math.sin(animationTime) * 0.05
+        playerModel.rightArm.rotation.z = -0.05 - Math.sin(animationTime) * 0.03
+
+        playerModel.head.rotation.y = Math.sin(animationTime * 0.5) * 0.08
+        playerModel.head.rotation.x = (Math.cos(animationTime) * 0.02)
+        
+        playerModel.group.rotation.x = THREE.MathUtils.lerp(playerModel.group.rotation.x, 0, 0.1)
       }
 
-      const blink = Math.sin(performance.now() * 0.003) > 0.98
-      leftEye.scale.y = blink ? 0.1 : 1
-      rightEye.scale.y = blink ? 0.1 : 1
-
-      // Tentativa de movimento
       let newX = playerPos.x + moveX
       let newZ = playerPos.z + moveZ
 
-      // Verifica se a nova posição está sobre algum hexágono ativo
       const closestHex = getHexAtPosition(newX, newZ, hexagons)
-      
+
       if (closestHex) {
-        // Está sobre um hexágono → pode mover
         playerPos.x = newX
         playerPos.z = newZ
       } else {
-        // Fora da área → tenta mover apenas no eixo X
         const hexX = getHexAtPosition(newX, playerPos.z, hexagons)
-        if (hexX) {
-          playerPos.x = newX
-        }
-        
-        // Tenta mover apenas no eixo Z
+        if (hexX) playerPos.x = newX
+
         const hexZ = getHexAtPosition(playerPos.x, newZ, hexagons)
-        if (hexZ) {
-          playerPos.z = newZ
-        }
-        
-        // Se ainda estiver fora (caso extremo), reposiciona no hexágono mais próximo
+        if (hexZ) playerPos.z = newZ
+
         const finalHex = getHexAtPosition(playerPos.x, playerPos.z, hexagons)
         if (!finalHex) {
-          // Encontra o hexágono ativo mais próximo
           let nearest = null
           let minDist = Infinity
           for (const hex of hexagons) {
@@ -644,7 +520,6 @@ export default function HexagonGame() {
     }
 
     function updateCamera() {
-      // Em telas curtas (celular na horizontal), afasta um pouco a câmera para enxergar mais do cenário
       const shortScreen = window.innerHeight < 520 && window.innerWidth > window.innerHeight
       const distance = shortScreen ? CAMERA_DISTANCE * 1.25 : CAMERA_DISTANCE
       const height = shortScreen ? CAMERA_HEIGHT * 1.15 : CAMERA_HEIGHT
@@ -729,17 +604,15 @@ export default function HexagonGame() {
       camera.aspect = window.innerWidth / window.innerHeight
       camera.updateProjectionMatrix()
       renderer.setSize(window.innerWidth, window.innerHeight)
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)) // Garante nitidez consistente no resize/ajuste de orientação
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     }
     window.addEventListener('resize', handleResize, { passive: true })
 
     animate()
 
     return () => {
-      // Cancela loops pendentes para evitar concorrência e loops duplicados
       if (animFrameId) cancelAnimationFrame(animFrameId)
-      
-      // Limpeza estrita de todos os manipuladores com suas exatas assinaturas
+
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
       window.removeEventListener('mousedown', handleMouseDown)
@@ -750,12 +623,11 @@ export default function HexagonGame() {
       mount.removeEventListener('touchend', handleTouchEnd)
       mount.removeEventListener('touchcancel', handleTouchEnd)
       window.removeEventListener('resize', handleResize)
-      
-      // Desaloca explicitamente geometrias e materiais da VRAM
+
       geometriesToDispose.forEach(g => g.dispose())
       materialsToDispose.forEach(m => m.dispose())
       renderer.dispose()
-      
+
       if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement)
     }
   }, [])
@@ -769,10 +641,10 @@ export default function HexagonGame() {
     if (isTouchDevice) {
       const elem = document.documentElement
       if (elem.requestFullscreen) {
-        elem.requestFullscreen().catch(() => {})
+        elem.requestFullscreen().catch(() => { })
       }
       if (screen.orientation && screen.orientation.lock) {
-        screen.orientation.lock('landscape').catch(() => {})
+        screen.orientation.lock('landscape').catch(() => { })
       }
     }
     if (gameRef.current) gameRef.current.startGame()
@@ -791,7 +663,6 @@ export default function HexagonGame() {
       <div className="relative w-full h-screen overflow-hidden bg-black select-none touch-none pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
         <div ref={mountRef} className="absolute inset-0 cursor-crosshair" />
 
-        {/* Botão Voltar pro Hub */}
         <Link href="/">
           <button className={`absolute z-50 bg-black/70 backdrop-blur-sm border border-white/10 rounded-xl text-white/80 font-medium hover:bg-white/10 hover:text-white transition-all flex items-center gap-2 ${compactLandscape ? 'top-2 left-2 px-3 py-1.5 text-xs' : 'top-4 left-4 px-4 py-2 text-sm'}`}>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -927,7 +798,6 @@ export default function HexagonGame() {
           </div>
         )}
 
-        {/* Joystick fixo no canto inferior esquerdo, sempre visível em dispositivos touch durante o jogo */}
         {isTouchDevice && gameState === 'playing' && (
           <div
             ref={joystickBaseRef}
@@ -943,7 +813,6 @@ export default function HexagonGame() {
           </div>
         )}
 
-        {/* Aviso para girar o aparelho em dispositivos touch no modo retrato */}
         {isPortraitTouch && (
           <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center px-6 text-center">
             <div className="text-6xl mb-4 animate-bounce">📱</div>
@@ -954,8 +823,8 @@ export default function HexagonGame() {
             <button
               onClick={() => {
                 const elem = document.documentElement
-                if (elem.requestFullscreen) elem.requestFullscreen().catch(() => {})
-                if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {})
+                if (elem.requestFullscreen) elem.requestFullscreen().catch(() => { })
+                if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => { })
               }}
               className="px-6 py-2.5 bg-white/10 border border-white/20 rounded-lg text-white/70 text-sm hover:bg-white/20 transition-all"
             >

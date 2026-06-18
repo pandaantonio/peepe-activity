@@ -1,10 +1,11 @@
 // pages/index.js
 import Link from 'next/link';
-import { FaChess, FaLock, FaDiscord } from 'react-icons/fa';
-import { FiZap, FiUser, FiCpu, FiLogOut } from 'react-icons/fi';
+import { FaChess, FaLock } from 'react-icons/fa';
+import { FiZap, FiUser, FiCpu } from 'react-icons/fi';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { useDiscord } from '@/contexts/DiscordContext'; // Importando para saber se está no Discord
+import { useDiscord } from '@/contexts/DiscordContext';
+import Navbar from '@/components/Navbar'; // Importando a nova Navbar
 
 const games = [
   {
@@ -80,10 +81,9 @@ const games = [
 ];
 
 export default function GameHub() {
-  const { isContextReady, isDiscordFrame, currentUserRaw } = useDiscord(); // Pegando dados do Discord
+  const { isContextReady, isDiscordFrame, currentUserRaw } = useDiscord();
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState(null);
-  const [linking, setLinking] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -97,7 +97,6 @@ export default function GameHub() {
         return;
       }
 
-      // Se não está logado localmente, mas ESTÁ dentro do Discord, tenta o Login Automático pelo ID do Discord
       if (isDiscordFrame && isContextReady && currentUserRaw?.id) {
         try {
           const res = await fetch('/api/auth/discord-login', {
@@ -118,7 +117,6 @@ export default function GameHub() {
         }
       }
 
-      // Se falhou tudo e não achou conta vinculada, joga para a tela de Login tradicional
       if (isContextReady || !isDiscordFrame) {
         router.push('/login');
       }
@@ -126,37 +124,6 @@ export default function GameHub() {
 
     handleAuthCheck();
   }, [router, isDiscordFrame, isContextReady, currentUserRaw]);
-
-  // Função para vincular a conta atual com o ID do Discord ativo
-  const handleLinkDiscord = async () => {
-    if (!user || !currentUserRaw?.id || linking) return;
-    setLinking(true);
-
-    try {
-      const res = await fetch('/api/auth/link-discord', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: user.username, discordId: currentUserRaw.id })
-      });
-
-      if (res.ok) {
-        const updatedUser = { ...user, discordId: currentUserRaw.id };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        setUser(updatedUser);
-      } else {
-        alert("Erro ao vincular conta.");
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLinking(false);
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    router.push('/login');
-  };
 
   const colorClasses = {
     emerald: { accent: "text-emerald-400", glow: "shadow-emerald-500/30", border: "border-emerald-500/20" },
@@ -186,49 +153,11 @@ export default function GameHub() {
     );
   }
 
-  // Define se a conta atual do usuário já possui o mesmo ID do Discord ativo salvo
-  const isLinked = user.discordId && currentUserRaw?.id && user.discordId === currentUserRaw.id;
-
   return (
     <div className="min-h-screen bg-[#020205] relative overflow-hidden">
       
-      {/* NAVBAR */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#020205] border-b border-white/5 px-6 py-3">
-        <div className="max-w-6xl mx-auto flex items-center justify-end gap-3">
-          
-          {/* Botão Logotipo do Discord (Aparece apenas dentro do Discord Frame) */}
-          {isDiscordFrame && currentUserRaw?.id && (
-            <button
-              onClick={handleLinkDiscord}
-              disabled={isLinked || linking}
-              className={`p-2 rounded-xl border flex items-center justify-center transition-all duration-300 ${
-                isLinked 
-                  ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-400 shadow-lg shadow-emerald-500/10" 
-                  : "bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10"
-              }`}
-              title={isLinked ? "Conta do Discord vinculada!" : "Vincular esta conta ao seu Discord"}
-            >
-              <FaDiscord size={18} />
-            </button>
-          )}
-
-          <div className="flex items-center gap-3 text-white/80 text-sm bg-white/5 px-4 py-1.5 rounded-xl border border-white/5">
-            <div className="w-6 h-6 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-              <FiUser size={13} />
-            </div>
-            <span className="text-cyan-400 font-bold">{user.username}</span>
-            
-            <button 
-              onClick={handleLogout}
-              className="text-gray-400 hover:text-red-400 transition-colors flex items-center border-l border-white/10 pl-3 ml-1"
-              title="Sair da Conta"
-            >
-              <FiLogOut size={16} />
-            </button>
-          </div>
-
-        </div>
-      </nav>
+      {/* ADICIONADA NAVBAR COMPARTILHADA */}
+      <Navbar />
 
       {/* FUNDO DO CÉU NOTURNO */}
       <div className="fixed inset-0 pointer-events-none">
@@ -239,7 +168,7 @@ export default function GameHub() {
         }}></div>
       </div>
 
-      <div className="relative pt-24 pb-16 px-6 max-w-6xl mx-auto z-10">
+      <div className="relative pt-28 pb-16 px-6 max-w-6xl mx-auto z-10">
         
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 tracking-tighter">
@@ -255,7 +184,7 @@ export default function GameHub() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {games.map((item, index) => {
-            const colors = colorClasses[item.color];
+            const colors = colorClasses[item.color] || colorClasses.purple;
             return (
               <Link
                 key={item.id}
@@ -278,7 +207,7 @@ export default function GameHub() {
 
                   <div className="p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <div className={`px-3 py-1 text-xs font-bold tracking-widest rounded-full border ${colors.badge || 'bg-white/5 text-white/70 border-white/10'}`}>
+                      <div className={`px-3 py-1 text-xs font-bold tracking-widest rounded-full border bg-white/5 text-white/70 border-white/10`}>
                         {item.badge}
                       </div>
                       <div className={`${colors.accent} text-2xl transition-transform group-hover:rotate-12 duration-300`}>

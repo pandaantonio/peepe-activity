@@ -7,6 +7,7 @@ import Head from 'next/head'
 import Link from 'next/link'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
+import { PlayerModel } from '@/components/PlayerModel' // Importação do novo modelo procedural
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────────
 const COLS       = 22
@@ -88,7 +89,6 @@ function FloorBlocks({ floorIdx, blockStates, resetKey }) {
     return arr
   }, [blocks, floorIdx, count])
 
-  // Reset quando resetKey mudar
   useEffect(() => {
     const mesh = meshRef.current
     if (!mesh || count === 0) return
@@ -101,7 +101,6 @@ function FloorBlocks({ floorIdx, blockStates, resetKey }) {
     }
 
     blocks.forEach((b, i) => {
-      // Resetar posição para a original
       b.fallY = 0
       if (b.state === 'falling' || b.state === 'gone') {
         b.state = 'solid'
@@ -155,50 +154,44 @@ function FloorBlocks({ floorIdx, blockStates, resetKey }) {
   )
 }
 
-// ─── Robot ───────────────────────────────────────────────────────────────────
-function Robot({ playerRef, isGameOverRef, keysRef, joystickRef, cameraRef, blockStates, onGameOver, onFloorChange, gameStateRef, resetKey }) {
+// ─── Player Controller ───────────────────────────────────────────────────────
+function PlayerController({ playerRef, isGameOverRef, keysRef, joystickRef, cameraRef, blockStates, onGameOver, onFloorChange, gameStateRef, resetKey }) {
   const groupRef = useRef()
-  const bobRef = useRef()
-  const leftArmRef = useRef()
-  const rightArmRef = useRef()
-  const leftLegRef = useRef()
-  const rightLegRef = useRef()
-  const antennaRef = useRef()
-  const antBallRef = useRef()
-  const leftEyeRef = useRef()
-  const rightEyeRef = useRef()
-
-  const walkTimeRef = useRef(0)
+  const meshOffsetRef = useRef() // Ref interna para aplicar flutuação e rotações suaves isoladas da física do jogo
+  const [isWalking, setIsWalking] = useState(false)
   const velYRef = useRef(0)
   const curFloorRef = useRef(0)
   const onGroundRef = useRef(true)
   const fallAnimRef = useRef(null)
   const blockTimers = useRef({})
+  const animationTimeRef = useRef(0) // Tempo acumulado para a onda senoidal
 
   useEffect(() => {
     if (groupRef.current) {
       groupRef.current.rotation.set(0, 0, 0)
       groupRef.current.position.set(0, floorSurface(0), 0)
     }
-    walkTimeRef.current = 0
+    if (meshOffsetRef.current) {
+      meshOffsetRef.current.position.set(0, 0, 0)
+      meshOffsetRef.current.rotation.set(0, 0, 0)
+    }
     velYRef.current = 0
     curFloorRef.current = 0
     onGroundRef.current = true
     fallAnimRef.current = null
+    animationTimeRef.current = 0
+    setIsWalking(false)
     
-    // Limpar timers
     Object.keys(blockTimers.current).forEach(key => {
       clearTimeout(blockTimers.current[key])
       delete blockTimers.current[key]
     })
     
-    // Resetar posição do jogador
     playerRef.current.x = 0
     playerRef.current.y = floorSurface(0)
     playerRef.current.z = 0
     playerRef.current.angle = 0
     
-    // Resetar câmera
     cameraRef.current.angle = Math.PI / 5
     cameraRef.current.pitch = 0.38
   }, [resetKey, playerRef, cameraRef])
@@ -226,10 +219,6 @@ function Robot({ playerRef, isGameOverRef, keysRef, joystickRef, cameraRef, bloc
       const fa = fallAnimRef.current
       fa.fv += 0.03; fa.t++
       groupRef.current.position.y -= fa.fv
-      if (leftArmRef.current) leftArmRef.current.rotation.z = Math.sin(fa.t * 0.09) * 2.2
-      if (rightArmRef.current) rightArmRef.current.rotation.z = Math.cos(fa.t * 0.09) * 2.2
-      if (leftLegRef.current) leftLegRef.current.rotation.x = Math.sin(fa.t * 0.09) * 1.5
-      if (rightLegRef.current) rightLegRef.current.rotation.x = Math.cos(fa.t * 0.09) * 1.5
       groupRef.current.rotation.x += 0.025
       groupRef.current.rotation.z += 0.012
       return
@@ -242,13 +231,11 @@ function Robot({ playerRef, isGameOverRef, keysRef, joystickRef, cameraRef, bloc
     const cam = cameraRef.current
     let mx = 0, mz = 0
 
-    // Teclado
     if (keys['w'] || keys['arrowup']) { mx -= Math.sin(cam.angle); mz -= Math.cos(cam.angle) }
     if (keys['s'] || keys['arrowdown']) { mx += Math.sin(cam.angle); mz += Math.cos(cam.angle) }
     if (keys['a'] || keys['arrowleft']) { mx -= Math.cos(cam.angle); mz += Math.sin(cam.angle) }
     if (keys['d'] || keys['arrowright']) { mx += Math.cos(cam.angle); mz -= Math.sin(cam.angle) }
     
-    // Joystick - CORRIGIDO: Invertido dx e dy
     if (js.active) {
       mx += Math.cos(cam.angle) * js.dy - Math.sin(cam.angle) * js.dx
       mz += -Math.sin(cam.angle) * js.dy - Math.cos(cam.angle) * js.dx
@@ -256,7 +243,9 @@ function Robot({ playerRef, isGameOverRef, keysRef, joystickRef, cameraRef, bloc
 
     const len = Math.sqrt(mx * mx + mz * mz)
     if (len > 1) { mx /= len; mz /= len }
+    
     const walking = len > 0.05
+    if (walking !== isWalking) setIsWalking(walking)
 
     p.x = Math.max(-HALF, Math.min(HALF, p.x + mx * PLAYER_SPEED))
     p.z = Math.max(-HALF, Math.min(HALF, p.z + mz * PLAYER_SPEED))
@@ -298,66 +287,34 @@ function Robot({ playerRef, isGameOverRef, keysRef, joystickRef, cameraRef, bloc
     if (walking) {
       p.angle = Math.atan2(mx, mz)
       groupRef.current.rotation.y = p.angle
-      walkTimeRef.current += dt * 8
-      const wt = walkTimeRef.current
-      const wc = Math.sin(wt), wc2 = Math.sin(wt + Math.PI)
-      if (leftArmRef.current) { leftArmRef.current.rotation.x = wc2 * 0.6; leftArmRef.current.rotation.z = 0.1 }
-      if (rightArmRef.current) { rightArmRef.current.rotation.x = wc * 0.6; rightArmRef.current.rotation.z = -0.1 }
-      if (leftLegRef.current) leftLegRef.current.rotation.x = wc * 0.55
-      if (rightLegRef.current) rightLegRef.current.rotation.x = wc2 * 0.55
-      if (bobRef.current) bobRef.current.position.y = Math.abs(Math.sin(wt * 2)) * 0.04
-      if (antennaRef.current) antennaRef.current.rotation.z = Math.sin(wt * 3) * 0.15
-      if (antBallRef.current) antBallRef.current.position.x = Math.sin(wt * 3) * 0.05
-    } else {
-      walkTimeRef.current = 0
-      const l = 0.12
-      const lerpR = (ref, ax, target) => {
-        if (ref.current) ref.current.rotation[ax] = THREE.MathUtils.lerp(ref.current.rotation[ax], target, l)
-      }
-      lerpR(leftArmRef, 'x', 0); lerpR(leftArmRef, 'z', 0.1)
-      lerpR(rightArmRef, 'x', 0); lerpR(rightArmRef, 'z', -0.1)
-      lerpR(leftLegRef, 'x', 0); lerpR(rightLegRef, 'x', 0)
-      if (bobRef.current) bobRef.current.position.y = THREE.MathUtils.lerp(bobRef.current.position.y, 0, l)
-      if (antennaRef.current) antennaRef.current.rotation.z = THREE.MathUtils.lerp(antennaRef.current.rotation.z, 0, l)
-      if (antBallRef.current) antBallRef.current.position.x = THREE.MathUtils.lerp(antBallRef.current.position.x, 0, l)
     }
 
-    const blink = Math.sin(state.clock.elapsedTime * 3) > 0.97
-    if (leftEyeRef.current) leftEyeRef.current.scale.y = blink ? 0.1 : 1
-    if (rightEyeRef.current) rightEyeRef.current.scale.y = blink ? 0.1 : 1
-  })
+    // ─── ANIMAÇÃO DE FLUTUAÇÃO E HOVERING PROCEDURAL ───
+    if (meshOffsetRef.current) {
+      animationTimeRef.current += dt * 4 // Velocidade da flutuação suave
 
-  const robotMat = useMemo(() => new THREE.MeshPhongMaterial({ color: 0x4a90d9, shininess: 30 }), [])
-  const robotDarkMat = useMemo(() => new THREE.MeshPhongMaterial({ color: 0x2c3e50, shininess: 30 }), [])
-  const robotAccentMat = useMemo(() => new THREE.MeshPhongMaterial({ color: 0xe74c3c, shininess: 20 }), [])
-  const eyeMat = useMemo(() => new THREE.MeshBasicMaterial({ color: 0x00ffcc }), [])
+      // Altura base pairando ligeiramente acima do nível do bloco + onda senoidal contínua
+      meshOffsetRef.current.position.y = 0.5 + Math.sin(animationTimeRef.current) * 0.15
+
+      if (walking) {
+        // Inclinação dinâmica para a frente e balanço lateral suave ao mover-se
+        meshOffsetRef.current.rotation.x = THREE.MathUtils.lerp(meshOffsetRef.current.rotation.x, 0.15, 0.1)
+        meshOffsetRef.current.rotation.z = Math.sin(animationTimeRef.current * 1.5) * 0.05
+      } else {
+        // Quando o jogador para, ele estabiliza a rotação de forma suave e continua apenas a flutuar no eixo Y
+        meshOffsetRef.current.rotation.x = THREE.MathUtils.lerp(meshOffsetRef.current.rotation.x, 0, 0.1)
+        meshOffsetRef.current.rotation.z = THREE.MathUtils.lerp(meshOffsetRef.current.rotation.z, 0, 0.1)
+      }
+    }
+  })
 
   return (
     <group ref={groupRef}>
-      <group ref={bobRef}>
-        <mesh material={robotMat} position={[0, 0.9, 0]}><boxGeometry args={[0.5, 0.6, 0.35]} /></mesh>
-        <mesh material={robotDarkMat} position={[0, 1.0, 0.18]}><boxGeometry args={[0.3, 0.2, 0.05]} /></mesh>
-        <mesh material={eyeMat} position={[0, 1.0, 0.21]}><sphereGeometry args={[0.06, 4, 4]} /></mesh>
-        <mesh material={robotMat} position={[0, 1.45, 0]}><boxGeometry args={[0.4, 0.35, 0.4]} /></mesh>
-        <mesh ref={leftEyeRef} material={eyeMat} position={[-0.1, 1.45, 0.22]}><sphereGeometry args={[0.07, 4, 4]} /></mesh>
-        <mesh ref={rightEyeRef} material={eyeMat} position={[0.1, 1.45, 0.22]}><sphereGeometry args={[0.07, 4, 4]} /></mesh>
-        <mesh ref={antennaRef} material={robotDarkMat} position={[0, 1.8, 0]}><cylinderGeometry args={[0.02, 0.02, 0.3, 4]} /></mesh>
-        <mesh ref={antBallRef} material={eyeMat} position={[0, 1.95, 0]}><sphereGeometry args={[0.05, 4, 4]} /></mesh>
-
-        <group ref={leftArmRef} position={[-0.35, 1.05, 0]}>
-          <mesh material={robotMat} position={[0, -0.2, 0]}><boxGeometry args={[0.12, 0.5, 0.12]} /></mesh>
-        </group>
-        <group ref={rightArmRef} position={[0.35, 1.05, 0]}>
-          <mesh material={robotMat} position={[0, -0.2, 0]}><boxGeometry args={[0.12, 0.5, 0.12]} /></mesh>
-        </group>
-        <group ref={leftLegRef} position={[-0.15, 0.5, 0]}>
-          <mesh material={robotDarkMat} position={[0, -0.2, 0]}><boxGeometry args={[0.15, 0.5, 0.15]} /></mesh>
-          <mesh material={robotAccentMat} position={[0, -0.5, 0.05]}><boxGeometry args={[0.18, 0.08, 0.25]} /></mesh>
-        </group>
-        <group ref={rightLegRef} position={[0.15, 0.5, 0]}>
-          <mesh material={robotDarkMat} position={[0, -0.2, 0]}><boxGeometry args={[0.15, 0.5, 0.15]} /></mesh>
-          <mesh material={robotAccentMat} position={[0, -0.5, 0.05]}><boxGeometry args={[0.18, 0.08, 0.25]} /></mesh>
-        </group>
+      {/* Criamos um grupo interno intermédio para gerir a flutuação isolada 
+        e definimos a propriedade "scale" maior (ex: 1.45) para aumentar o tamanho do fantasma
+      */}
+      <group ref={meshOffsetRef} scale={[1.45, 1.45, 1.45]}>
+        <PlayerModel isWalking={isWalking} />
       </group>
     </group>
   )
@@ -406,7 +363,7 @@ function GameScene({ blockStates, playerRef, cameraRef, keysRef, joystickRef, ga
         <FloorBlocks key={`${f}_${resetKey}`} floorIdx={f} blockStates={blockStates} resetKey={resetKey} />
       ))}
 
-      <Robot
+      <PlayerController
         key={resetKey}
         playerRef={playerRef}
         isGameOverRef={isGameOverRef}
@@ -474,15 +431,12 @@ export default function TNTRun() {
   const [joystickKnob, setJoystickKnob] = useState({ x: 0, y: 0 })
   const lastScoreRef = useRef(0)
   
-  // Usar useRef para os blocos e recriar quando resetar
   const blockStatesRef = useRef(null)
   
-  // Função para resetar blocos
   const resetBlocks = useCallback(() => {
     blockStatesRef.current = generateBlocks()
   }, [])
 
-  // Inicializar blocos
   useEffect(() => {
     resetBlocks()
   }, [resetBlocks])
@@ -495,7 +449,6 @@ export default function TNTRun() {
 
   useEffect(() => { gameStateRef.current = gameState }, [gameState])
 
-  // Device detection
   useEffect(() => {
     const touch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0
     setIsTouchDevice(touch)
@@ -513,7 +466,6 @@ export default function TNTRun() {
     }
   }, [])
 
-  // Keyboard
   useEffect(() => {
     const down = e => { keysRef.current[e.key.toLowerCase()] = true }
     const up = e => { keysRef.current[e.key.toLowerCase()] = false }
@@ -525,7 +477,6 @@ export default function TNTRun() {
     }
   }, [])
 
-  // Mouse/Touch camera control (corrigido)
   useEffect(() => {
     let down = false, lx = 0, ly = 0
     
@@ -552,12 +503,10 @@ export default function TNTRun() {
       ly = clientY
     }
 
-    // Mouse events
     window.addEventListener('mousedown', md, { passive: true })
     window.addEventListener('mouseup', mu, { passive: true })
     window.addEventListener('mousemove', mm, { passive: true })
     
-    // Touch events for camera
     const canvas = document.querySelector('canvas')
     if (canvas && isTouchDevice) {
       canvas.addEventListener('touchstart', md, { passive: true })
@@ -579,7 +528,6 @@ export default function TNTRun() {
     }
   }, [isTouchDevice])
 
-  // Touch Controls (Corrigido para Discord Activities)
   useEffect(() => {
     const JOY_MAX = 45
     const JOY_GRAB = 85
@@ -677,7 +625,6 @@ export default function TNTRun() {
   }, [])
 
   const handleStart = useCallback(() => {
-    // Tentar fullscreen, mas não travar se falhar
     try {
       if (isTouchDevice && document.documentElement.requestFullscreen) {
         document.documentElement.requestFullscreen().catch(() => {})
@@ -689,16 +636,13 @@ export default function TNTRun() {
       console.log('Fullscreen não disponível')
     }
 
-    // Resetar blocos completamente
     resetBlocks()
     
-    // Resetar estado do jogador
     playerRef.current = { x: 0, y: floorSurface(0), z: 0, angle: 0 }
     cameraRef.current = { angle: Math.PI / 5, pitch: 0.38 }
     isGameOverRef.current = false
     lastScoreRef.current = 0
     
-    // Resetar timers
     Object.keys(blockStatesRef.current?.blockTimers || {}).forEach(key => {
       clearTimeout(blockStatesRef.current.blockTimers[key])
     })
@@ -734,7 +678,6 @@ export default function TNTRun() {
         <meta name="apple-mobile-web-app-capable" content="yes" />
       </Head>
 
-      {/* Injeção global das variáveis recomendadas pelo Discord */}
       <style jsx global>{`
         :root {
           --sait: var(--discord-safe-area-inset-top, env(safe-area-inset-top));

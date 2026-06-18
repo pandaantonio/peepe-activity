@@ -290,10 +290,18 @@ const S = {
 };
 
 // ─── Sub-componentes ──────────────────────────────────────────────────────────
-function Lobby({ onCreateRoom, onJoinRoom, loading }) {
+function Lobby({ onCreateRoom, onJoinRoom, loading, initialName }) {
   const [playerName, setPlayerName] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [step, setStep] = useState("name"); // name | actions
+
+  // Atualiza o apelido dinamicamente caso venha do localStorage
+  useEffect(() => {
+    if (initialName) {
+      setPlayerName(initialName);
+      setStep("actions"); // Se já tem o username global, pula a digitação inicial
+    }
+  }, [initialName]);
 
   if (step === "name") {
     return (
@@ -351,6 +359,14 @@ function Lobby({ onCreateRoom, onJoinRoom, loading }) {
         {loading ? <><FaSpinner style={{ animation: "spin 1s linear infinite" }} /> Entrando…</> : "Entrar na Sala"}
       </button>
 
+      {/* Opção extra para redefinir o nickname local nesta sessão se desejado */}
+      <button 
+        style={{ ...S.btn, ...S.btnGhost, marginTop: "8px" }}
+        onClick={() => setStep("name")}
+      >
+        Alterar apelido da sessão
+      </button>
+
       <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
     </div>
   );
@@ -375,7 +391,6 @@ function WaitingRoom({ roomId, onCancel }) {
   };
 
   const fallbackCopy = () => {
-    // Fallback: cria um input temporário e usa execCommand
     const el = document.createElement("input");
     el.value = roomId;
     el.style.position = "fixed";
@@ -530,8 +545,24 @@ export default function MultiplayerTTT() {
   const [gameState, setGameState] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loggedInUsername, setLoggedInUsername] = useState(""); // Captura o usuário autenticado
 
   const pollRef = useRef(null);
+
+  // Efeito executado ao montar a página para coletar dados do localStorage do Hub
+  useEffect(() => {
+    const localUser = localStorage.getItem('user');
+    if (localUser) {
+      try {
+        const parsed = JSON.parse(localUser);
+        if (parsed?.username) {
+          setLoggedInUsername(parsed.username);
+        }
+      } catch (err) {
+        console.error("Falha ao analisar usuário do localStorage", err);
+      }
+    }
+  }, []);
 
   // Polling: busca o estado da sala a cada 1.5s
   useEffect(() => {
@@ -662,7 +693,12 @@ export default function MultiplayerTTT() {
       {/* Conteúdo */}
       <div style={{ marginTop: "64px", display: "flex", justifyContent: "center", width: "100%" }}>
         {phase === "lobby" && (
-          <Lobby onCreateRoom={handleCreateRoom} onJoinRoom={handleJoinRoom} loading={loading} />
+          <Lobby 
+            onCreateRoom={handleCreateRoom} 
+            onJoinRoom={handleJoinRoom} 
+            loading={loading} 
+            initialName={loggedInUsername} // Passando o usuário logado no sistema
+          />
         )}
         {phase === "waiting" && (
           <WaitingRoom roomId={roomId} onCancel={handleCancel} />
