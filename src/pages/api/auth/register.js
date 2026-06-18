@@ -1,6 +1,11 @@
 // pages/api/auth/register.js
 import { adminDb } from '@/lib/firebaseAdmin';
 
+// Função para tornar o username seguro para chaves do Firebase
+function encodeUsername(username) {
+  return username.replace(/\./g, ','); // Substitui todos os pontos por vírgulas na rota do banco
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Método não permitido' });
@@ -21,21 +26,30 @@ export default async function handler(req, res) {
   }
 
   try {
-    const userRef = adminDb.ref(`users/${cleanUsername}`);
+    const dbKey = encodeUsername(cleanUsername);
+    const userRef = adminDb.ref(`users/${dbKey}`);
     const snapshot = await userRef.once('value');
 
     if (snapshot.exists()) {
       return res.status(400).json({ message: 'Este username já está em uso.' });
     }
 
-    // Estrutura do novo usuário
+    // Se um discordId foi fornecido, precisamos garantir que nenhuma OUTRA conta já use esse mesmo Discord
+    if (discordId) {
+      const usersRef = adminDb.ref('users');
+      const discordSnapshot = await usersRef.orderByChild('discordId').equalTo(discordId).once('value');
+      if (discordSnapshot.exists()) {
+        return res.status(400).json({ message: 'Este Discord já está vinculado a outra conta.' });
+      }
+    }
+
+    // Grava a estrutura salvando o username original (com ponto) lá dentro
     const userData = {
-      username: cleanUsername,
+      username: cleanUsername, // Guarda com o ponto original para exibição futura
       password: password,
       createdAt: new Date().toISOString()
     };
 
-    // Adiciona o ID do Discord se foi enviado
     if (discordId) {
       userData.discordId = discordId;
     }

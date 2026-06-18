@@ -1,6 +1,10 @@
 // pages/api/auth/login.js
 import { adminDb } from '@/lib/firebaseAdmin';
 
+function encodeUsername(username) {
+  return username.replace(/\./g, ',');
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Método não permitido' });
@@ -15,7 +19,8 @@ export default async function handler(req, res) {
   const cleanUsername = username.trim().toLowerCase();
 
   try {
-    const userRef = adminDb.ref(`users/${cleanUsername}`);
+    const dbKey = encodeUsername(cleanUsername);
+    const userRef = adminDb.ref(`users/${dbKey}`);
     const snapshot = await userRef.once('value');
 
     if (!snapshot.exists()) {
@@ -30,7 +35,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ 
       message: 'Logado com sucesso!', 
-      username: userData.username,
+      username: userData.username, // Retorna o username correto salvo
       discordId: userData.discordId || null
     });
   } catch (error) {
