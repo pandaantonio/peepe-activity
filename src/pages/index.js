@@ -8,7 +8,7 @@ const games = [
   {
     id: "tntrun",
     badge: "NOVIDADE",
-    title: "Tnt run",
+    title: "Tnt Run",
     desc: "Controle um robô em um grid de hexágonos coloridos. 5 segundos para pisar na cor certa ou caia no abismo!",
     color: "purple",
     icon: <FiZap size={24} />,
@@ -16,14 +16,14 @@ const games = [
     banner: "/imgs/tntrun.png"
   },
   {
-    id: "hexagon",
+    id: "colorRush",
     badge: "NOVIDADE",
-    title: "Hexagon Color Rush",
+    title: "Color Rush",
     desc: "Controle um robô em um grid de hexágonos coloridos. 5 segundos para pisar na cor certa ou caia no abismo!",
     color: "purple",
     icon: <FiZap size={24} />,
-    path: "/game/hexagon",
-    banner: "/imgs/hexagon.png"
+    path: "/game/color_rush",
+    banner: "/imgs/colorRush.png"
   },
   {
     id: "ttt",
