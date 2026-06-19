@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { FaChess, FaLock } from 'react-icons/fa';
 import { FiZap, FiUser, FiCpu } from 'react-icons/fi';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const games = [
   {
@@ -79,10 +79,118 @@ const games = [
 
 export default function GameHub() {
   const [mounted, setMounted] = useState(false);
+  const canvasRef = useRef(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Canvas com campo de estrelas: pontos com profundidade (parallax),
+  // brilho/cintilação individual e linhas de constelação entre estrelas próximas.
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    let animFrameId;
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+
+    const resize = () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    // Três camadas de profundidade: longe (pequenas/lentas) -> perto (maiores/rápidas)
+    const layers = [
+      { count: 90, rMin: 0.4, rMax: 0.9, speed: 0.03, twinkleSpeed: 0.006, baseOpacity: 0.35 },
+      { count: 55, rMin: 0.8, rMax: 1.5, speed: 0.07, twinkleSpeed: 0.01, baseOpacity: 0.55 },
+      { count: 28, rMin: 1.3, rMax: 2.2, speed: 0.12, twinkleSpeed: 0.014, baseOpacity: 0.8 },
+    ];
+
+    let stars = [];
+    layers.forEach((layer, layerIndex) => {
+      for (let i = 0; i < layer.count; i++) {
+        stars.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          r: Math.random() * (layer.rMax - layer.rMin) + layer.rMin,
+          vx: (Math.random() - 0.5) * layer.speed,
+          vy: (Math.random() - 0.5) * layer.speed,
+          baseOpacity: layer.baseOpacity,
+          twinklePhase: Math.random() * Math.PI * 2,
+          twinkleSpeed: layer.twinkleSpeed + Math.random() * 0.004,
+          layer: layerIndex,
+        });
+      }
+    });
+
+    // Tint levemente azulado/violeta pra combinar com o tema do site
+    const tint = "200, 215, 255";
+    const linkDistance = 110;
+
+    const draw = () => {
+      ctx.clearRect(0, 0, width, height);
+
+      stars.forEach((s) => {
+        s.x += s.vx;
+        s.y += s.vy;
+        if (s.x < 0) s.x = width;
+        if (s.x > width) s.x = 0;
+        if (s.y < 0) s.y = height;
+        if (s.y > height) s.y = 0;
+
+        s.twinklePhase += s.twinkleSpeed;
+        const twinkle = (Math.sin(s.twinklePhase) + 1) / 2; // 0..1
+        const opacity = s.baseOpacity * (0.5 + 0.5 * twinkle);
+
+        // núcleo
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${tint}, ${opacity})`;
+        ctx.fill();
+
+        // glow leve só nas estrelas maiores (camada de cima)
+        if (s.layer === 2) {
+          const glowR = s.r * 3.5;
+          const gradient = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, glowR);
+          gradient.addColorStop(0, `rgba(${tint}, ${opacity * 0.5})`);
+          gradient.addColorStop(1, `rgba(${tint}, 0)`);
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, glowR, 0, Math.PI * 2);
+          ctx.fillStyle = gradient;
+          ctx.fill();
+        }
+      });
+
+      // linhas de constelação só entre estrelas da camada da frente (mais próximas)
+      const frontStars = stars.filter((s) => s.layer === 2);
+      frontStars.forEach((a, i) => {
+        frontStars.slice(i + 1).forEach((b) => {
+          const dist = Math.hypot(a.x - b.x, a.y - b.y);
+          if (dist < linkDistance) {
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.strokeStyle = `rgba(${tint}, ${0.12 * (1 - dist / linkDistance)})`;
+            ctx.lineWidth = 0.6;
+            ctx.stroke();
+          }
+        });
+      });
+
+      animFrameId = requestAnimationFrame(draw);
+    };
+    draw();
+
+    return () => {
+      cancelAnimationFrame(animFrameId);
+      window.removeEventListener("resize", resize);
+    };
+  }, [mounted]);
 
   const colorClasses = {
     emerald: { accent: "text-emerald-400", glow: "shadow-emerald-500/30", border: "border-emerald-500/20" },
@@ -94,18 +202,28 @@ export default function GameHub() {
   };
 
   if (!mounted) {
-    return null; // Retorna nulo ou um layout fixo de espera
+    return null;
   }
 
   return (
     <div className="min-h-screen bg-[#020205] relative overflow-hidden">
+      {/* Nebulosa de fundo, bem sutil */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `radial-gradient(rgba(255, 255, 255, 0.7) 0.8px, transparent 1px)`,
-          backgroundSize: '70px 70px',
-          opacity: 0.45
-        }}></div>
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(circle at 15% 15%, rgba(99,60,200,0.10), transparent 45%), radial-gradient(circle at 85% 10%, rgba(34,150,211,0.08), transparent 40%), radial-gradient(circle at 50% 95%, rgba(60,70,160,0.08), transparent 50%)",
+          }}
+        />
       </div>
+
+      {/* Campo de estrelas animado via canvas (com profundidade + constelações) */}
+      <canvas
+        ref={canvasRef}
+        className="fixed inset-0 pointer-events-none"
+        style={{ opacity: 0.9 }}
+      />
 
       <div className="relative pt-28 pb-16 px-6 max-w-6xl mx-auto z-10">
         <div className="text-center mb-12">
@@ -121,7 +239,7 @@ export default function GameHub() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {games.map((item, index) => {
+          {games.map((item) => {
             const colors = colorClasses[item.color] || colorClasses.purple;
             return (
               <Link
@@ -158,6 +276,7 @@ export default function GameHub() {
           })}
         </div>
       </div>
+
       <style jsx>{`
         .glass-card {
           background: rgba(10, 10, 15, 0.85);
