@@ -3,9 +3,6 @@ import Link from 'next/link';
 import { FaChess, FaLock } from 'react-icons/fa';
 import { FiZap, FiUser, FiCpu } from 'react-icons/fi';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
-import { useDiscord } from '@/contexts/DiscordContext';
-import Navbar from '@/components/Navbar'; // Importando a nova Navbar
 
 const games = [
   {
@@ -81,49 +78,11 @@ const games = [
 ];
 
 export default function GameHub() {
-  const { isContextReady, isDiscordFrame, currentUserRaw } = useDiscord();
   const [mounted, setMounted] = useState(false);
-  const [user, setUser] = useState(null);
-  const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
-
-    async function handleAuthCheck() {
-      const localUser = localStorage.getItem('user');
-      
-      if (localUser) {
-        setUser(JSON.parse(localUser));
-        return;
-      }
-
-      if (isDiscordFrame && isContextReady && currentUserRaw?.id) {
-        try {
-          const res = await fetch('/api/auth/discord-login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ discordId: currentUserRaw.id })
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            const loggedUser = { username: data.username, discordId: data.discordId };
-            localStorage.setItem('user', JSON.stringify(loggedUser));
-            setUser(loggedUser);
-            return;
-          }
-        } catch (err) {
-          console.error("Falha ao tentar login automático:", err);
-        }
-      }
-
-      if (isContextReady || !isDiscordFrame) {
-        router.push('/login');
-      }
-    }
-
-    handleAuthCheck();
-  }, [router, isDiscordFrame, isContextReady, currentUserRaw]);
+  }, []);
 
   const colorClasses = {
     emerald: { accent: "text-emerald-400", glow: "shadow-emerald-500/30", border: "border-emerald-500/20" },
@@ -134,32 +93,12 @@ export default function GameHub() {
     indigo: { accent: "text-indigo-400", glow: "shadow-indigo-500/30", border: "border-indigo-500/20" }
   };
 
-  if (!mounted || !user) {
-    return (
-      <div className="min-h-screen bg-[#020205]">
-        <div className="pt-24 pb-16 px-6 max-w-6xl mx-auto">
-          <div className="text-center mb-10">
-            <div className="w-28 h-7 bg-white/5 rounded-full mx-auto mb-8 animate-pulse" />
-            <div className="w-80 h-14 bg-white/5 rounded-2xl mx-auto mb-4 animate-pulse" />
-            <div className="w-56 h-5 bg-white/5 rounded-lg mx-auto animate-pulse" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="h-72 bg-white/5 rounded-2xl animate-pulse" />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+  if (!mounted) {
+    return null; // Retorna nulo ou um layout fixo de espera
   }
 
   return (
     <div className="min-h-screen bg-[#020205] relative overflow-hidden">
-      
-      {/* ADICIONADA NAVBAR COMPARTILHADA */}
-      <Navbar />
-
-      {/* FUNDO DO CÉU NOTURNO */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute inset-0" style={{
           backgroundImage: `radial-gradient(rgba(255, 255, 255, 0.7) 0.8px, transparent 1px)`,
@@ -169,7 +108,6 @@ export default function GameHub() {
       </div>
 
       <div className="relative pt-28 pb-16 px-6 max-w-6xl mx-auto z-10">
-        
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 tracking-tighter">
             <span className="text-white/90">Explorando o </span>
@@ -190,21 +128,14 @@ export default function GameHub() {
                 key={item.id}
                 href={item.path}
                 className="group"
-                style={{ animationDelay: `${80 + index * 70}ms` }}
               >
                 <div className={`glass-card rounded-3xl overflow-hidden border ${colors.border} ${colors.glow} transition-all duration-500 hover:-translate-y-3 hover:scale-[1.02]`}>
-
                   {item.banner && (
                     <div className="relative overflow-hidden">
-                      <img
-                        src={item.banner}
-                        alt={item.title}
-                        className="w-full h-52 object-cover transition-all duration-700 group-hover:scale-110 group-hover:brightness-125"
-                      />
+                      <img src={item.banner} alt={item.title} className="w-full h-52 object-cover transition-all duration-700 group-hover:scale-110 group-hover:brightness-125" />
                       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#020205]/70 to-[#020205]" />
                     </div>
                   )}
-
                   <div className="p-6">
                     <div className="flex items-center justify-between mb-4">
                       <div className={`px-3 py-1 text-xs font-bold tracking-widest rounded-full border bg-white/5 text-white/70 border-white/10`}>
@@ -214,20 +145,12 @@ export default function GameHub() {
                         {item.icon}
                       </div>
                     </div>
-
                     <h2 className="text-2xl font-semibold text-white mb-2 group-hover:text-cyan-300 transition-colors">
                       {item.title}
                     </h2>
-
                     <p className="text-gray-400 text-sm leading-relaxed line-clamp-3 mb-6">
                       {item.desc}
                     </p>
-
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-cyan-400 font-medium flex items-center gap-1">
-                        Iniciar missão <span className="text-lg">→</span>
-                      </span>
-                    </div>
                   </div>
                 </div>
               </Link>
@@ -235,22 +158,13 @@ export default function GameHub() {
           })}
         </div>
       </div>
-
       <style jsx>{`
         .glass-card {
           background: rgba(10, 10, 15, 0.85);
           backdrop-filter: blur(24px);
-          -webkit-backdrop-filter: blur(24px);
           border: 1px solid rgba(255, 255, 255, 0.08);
           box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.7);
         }
-        .glass-card:hover {
-          background: rgba(20, 20, 28, 0.95);
-          border-color: rgba(255, 255, 255, 0.15);
-          box-shadow: 0 30px 60px -15px rgb(165 243 252 / 0.05), 
-                      inset 0 1px 0 rgba(255,255,255,0.05);
-        }
-        .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
       `}</style>
     </div>
   );
