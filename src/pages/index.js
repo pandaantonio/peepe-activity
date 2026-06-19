@@ -6,6 +6,26 @@ import { useEffect, useRef, useState } from 'react';
 
 const games = [
   {
+    id: "mines",
+    badge: "NOVIDADE",
+    title: "Mines",
+    desc: "A sorte está do seu lado? Revelar as gemas ocultas para multiplicar sua aposta, mas cuidado com as minas explosivas!",
+    color: "purple",
+    icon: <FiZap size={24} />,
+    path: "/game/mines",
+    banner: "/imgs/mines.png"
+  },
+  {
+    id: "minesweeper",
+    badge: "NOVIDADE",
+    title: "Campo Minado",
+    desc: "Teste seu raciocínio lógico! Desarme as minas espalhadas pelo campo sem detonar nenhuma. Rápido, preciso e viciante.",
+    color: "purple",
+    icon: <FiZap size={24} />,
+    path: "/game/minesweeper",
+    banner: "/imgs/minesweeper.png"
+  },
+  {
     id: "tntrun",
     badge: "NOVIDADE",
     title: "Tnt Run",

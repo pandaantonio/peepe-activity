@@ -1,251 +1,112 @@
-// pages/index.js
-import { useState, useEffect, useCallback } from 'react';
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import { IoArrowBack } from "react-icons/io5";
 
-const ROWS = 5;
-const COLS = 5;
-const MINES = 5;
+// --- Configurações e Lógica ---
+const GRID_SIZE = 5;
+const TOTAL_TILES = GRID_SIZE * GRID_SIZE;
+const HOUSE_EDGE = 0.99;
+const OPCOES_MINAS = [1, 3, 5, 10, 15, 24];
 
-function createBoard() {
-  const board = Array(ROWS).fill(null).map(() =>
-    Array(COLS).fill(null).map(() => ({
-      isMine: false,
-      isRevealed: false,
-      isFlagged: false,
-      neighborMines: 0,
-    }))
-  );
-
-  // Place mines
-  let minesPlaced = 0;
-  while (minesPlaced < MINES) {
-    const row = Math.floor(Math.random() * ROWS);
-    const col = Math.floor(Math.random() * COLS);
-    if (!board[row][col].isMine) {
-      board[row][col].isMine = true;
-      minesPlaced++;
-    }
+const calcMultiplier = (minas, acertos) => {
+  if (acertos <= 0) return 1;
+  let mult = 1;
+  for (let i = 0; i < acertos; i++) {
+    mult *= (TOTAL_TILES - i) / (TOTAL_TILES - minas - i);
   }
+  return mult * HOUSE_EDGE;
+};
 
-  // Calculate neighbor mines
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      if (!board[r][c].isMine) {
-        let count = 0;
-        for (let dr = -1; dr <= 1; dr++) {
-          for (let dc = -1; dc <= 1; dc++) {
-            const nr = r + dr;
-            const nc = c + dc;
-            if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && board[nr][nc].isMine) {
-              count++;
-            }
-          }
-        }
-        board[r][c].neighborMines = count;
-      }
-    }
-  }
+const formatCurrency = (val) => val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const formatMult = (val) => `${val.toFixed(2)}x`;
 
-  return board;
-}
-
-function revealCell(board, row, col) {
-  const newBoard = board.map(r => r.map(c => ({ ...c })));
-  const queue = [[row, col]];
-  const visited = new Set([`${row},${col}`]);
-
-  while (queue.length > 0) {
-    const [r, c] = queue.shift();
-    const cell = newBoard[r][c];
-    
-    if (cell.isFlagged || cell.isRevealed) continue;
-    
-    cell.isRevealed = true;
-
-    if (cell.neighborMines === 0 && !cell.isMine) {
-      for (let dr = -1; dr <= 1; dr++) {
-        for (let dc = -1; dc <= 1; dc++) {
-          const nr = r + dr;
-          const nc = c + dc;
-          const key = `${nr},${nc}`;
-          if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && !visited.has(key)) {
-            visited.add(key);
-            queue.push([nr, nc]);
-          }
-        }
-      }
-    }
-  }
-
-  return newBoard;
-}
-
-function checkWin(board) {
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      const cell = board[r][c];
-      if (!cell.isMine && !cell.isRevealed) return false;
-    }
-  }
-  return true;
-}
-
+// --- Componente Principal ---
 export default function Mines() {
-  const [board, setBoard] = useState(() => createBoard());
-  const [gameOver, setGameOver] = useState(false);
-  const [won, setWon] = useState(false);
-  const [timer, setTimer] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
-  const [flagCount, setFlagCount] = useState(0);
-  const [firstClick, setFirstClick] = useState(true);
+  const [saldo, setSaldo] = useState(1000);
+  const [aposta, setAposta] = useState(10);
+  const [numMinas, setNumMinas] = useState(3);
+  const [minasSet, setMinasSet] = useState(new Set());
+  const [reveladas, setReveladas] = useState(new Set());
+  const [jogando, setJogando] = useState(false);
+  const [perdeu, setPerdeu] = useState(false);
+  const [acertos, setAcertos] = useState(0);
 
-  useEffect(() => {
-    let interval;
-    if (isRunning && !gameOver) {
-      interval = setInterval(() => setTimer(t => t + 1), 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isRunning, gameOver]);
+  const multAtual = useMemo(() => calcMultiplier(numMinas, acertos), [numMinas, acertos]);
+  const ganhoAtual = aposta * multAtual;
 
-  const handleCellClick = useCallback((row, col) => {
-    if (gameOver || won) return;
-    
-    const cell = board[row][col];
-    if (cell.isRevealed || cell.isFlagged) return;
-
-    if (firstClick) {
-      setIsRunning(true);
-      setFirstClick(false);
-    }
-
-    if (cell.isMine) {
-      // Reveal all mines
-      const newBoard = board.map(r => r.map(c => ({ ...c, isRevealed: c.isMine ? true : c.isRevealed })));
-      setBoard(newBoard);
-      setGameOver(true);
-      setIsRunning(false);
-      return;
-    }
-
-    const newBoard = revealCell(board, row, col);
-    setBoard(newBoard);
-
-    if (checkWin(newBoard)) {
-      setWon(true);
-      setIsRunning(false);
-    }
-  }, [board, gameOver, won, firstClick]);
-
-  const handleRightClick = useCallback((e, row, col) => {
-    e.preventDefault();
-    if (gameOver || won) return;
-    
-    const cell = board[row][col];
-    if (cell.isRevealed) return;
-
-    const newBoard = board.map(r => r.map(c => ({ ...c })));
-    newBoard[row][col].isFlagged = !newBoard[row][col].isFlagged;
-    setBoard(newBoard);
-    setFlagCount(prev => newBoard[row][col].isFlagged ? prev + 1 : prev - 1);
-  }, [board, gameOver, won]);
-
-  const resetGame = () => {
-    setBoard(createBoard());
-    setGameOver(false);
-    setWon(false);
-    setTimer(0);
-    setIsRunning(false);
-    setFlagCount(0);
-    setFirstClick(true);
+  const iniciarJogo = () => {
+    if (aposta > saldo || aposta <= 0) return;
+    setSaldo((s) => s - aposta);
+    const novasMinas = new Set();
+    while (novasMinas.size < numMinas) novasMinas.add(Math.floor(Math.random() * TOTAL_TILES));
+    setMinasSet(novasMinas);
+    setReveladas(new Set());
+    setAcertos(0);
+    setPerdeu(false);
+    setJogando(true);
   };
 
-  const getCellContent = (cell) => {
-    if (cell.isFlagged) return '🚩';
-    if (!cell.isRevealed) return '';
-    if (cell.isMine) return '💣';
-    if (cell.neighborMines === 0) return '';
-    return cell.neighborMines;
-  };
-
-  const getCellColor = (cell) => {
-    if (!cell.isRevealed) return 'bg-slate-600 hover:bg-slate-500';
-    if (cell.isMine) return 'bg-red-500';
-    return 'bg-slate-300';
-  };
-
-  const getNumberColor = (num) => {
-    const colors = {
-      1: 'text-blue-600',
-      2: 'text-green-600',
-      3: 'text-red-600',
-      4: 'text-purple-600',
-      5: 'text-yellow-600',
-    };
-    return colors[num] || 'text-slate-800';
+  const revelarTile = (index) => {
+    if (!jogando || reveladas.has(index)) return;
+    const novasReveladas = new Set(reveladas).add(index);
+    if (minasSet.has(index)) {
+      setReveladas(novasReveladas);
+      setPerdeu(true);
+      setJogando(false);
+    } else {
+      setReveladas(novasReveladas);
+      setAcertos((a) => a + 1);
+      if (acertos + 1 === TOTAL_TILES - numMinas) {
+        setSaldo((s) => s + (aposta * calcMultiplier(numMinas, acertos + 1)));
+        setJogando(false);
+      }
+    }
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-      <div className="bg-slate-800 rounded-2xl shadow-2xl p-6 max-w-md w-full">
-        <h1 className="text-3xl font-bold text-white text-center mb-6">💣 Mines</h1>
-        
-        <div className="flex justify-between items-center mb-4 bg-slate-700 rounded-lg p-3">
-          <div className="flex items-center gap-2 text-white">
-            <span className="text-xl">🚩</span>
-            <span className="font-mono text-lg">{MINES - flagCount}</span>
-          </div>
-          
-          <button
-            onClick={resetGame}
-            className="text-3xl hover:scale-110 transition-transform cursor-pointer"
-          >
-            {gameOver ? '😵' : won ? '😎' : '🙂'}
-          </button>
-          
-          <div className="flex items-center gap-2 text-white">
-            <span className="text-xl">⏱️</span>
-            <span className="font-mono text-lg">{timer}</span>
-          </div>
-        </div>
+    <div className="min-h-screen bg-slate-900 text-white p-4 flex flex-col items-center">
+      {/* Botão Voltar */}
+      <Link href="/" className="self-start mb-4">
+        <button className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg transition">
+          <IoArrowBack size={20} /> Voltar
+        </button>
+      </Link>
 
-        {(gameOver || won) && (
-          <div className={`text-center mb-4 p-3 rounded-lg font-bold ${
-            won ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
-          }`}>
-            {won ? '🎉 Você venceu!' : '💥 Game Over!'}
-          </div>
-        )}
+      <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-[300px_1fr] gap-6">
+        <div className="bg-slate-800 p-6 rounded-xl shadow-xl flex flex-col gap-4">
+          <h2 className="text-xl font-bold">Configurações</h2>
+          <div className="text-2xl font-bold text-emerald-400">{formatCurrency(saldo)}</div>
+          
+          <input type="number" value={aposta} onChange={(e) => setAposta(Number(e.target.value))} disabled={jogando} className="bg-slate-700 p-2 rounded w-full"/>
+          
+          <select value={numMinas} onChange={(e) => setNumMinas(Number(e.target.value))} disabled={jogando} className="bg-slate-700 p-2 rounded">
+            {OPCOES_MINAS.map(n => <option key={n} value={n}>{n} minas</option>)}
+          </select>
 
-        <div 
-          className="grid gap-1 mx-auto"
-          style={{ 
-            gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))`,
-            maxWidth: '350px'
-          }}
-        >
-          {board.map((row, rowIndex) =>
-            row.map((cell, colIndex) => (
-              <button
-                key={`${rowIndex}-${colIndex}`}
-                onClick={() => handleCellClick(rowIndex, colIndex)}
-                onContextMenu={(e) => handleRightClick(e, rowIndex, colIndex)}
-                className={`
-                  aspect-square flex items-center justify-center text-lg font-bold rounded
-                  transition-all duration-100 cursor-pointer select-none
-                  ${getCellColor(cell)}
-                  ${cell.isRevealed && !cell.isMine ? getNumberColor(cell.neighborMines) : 'text-white'}
-                  ${!cell.isRevealed ? 'shadow-[inset_0_2px_4px_rgba(255,255,255,0.1),0_2px_4px_rgba(0,0,0,0.3)] active:shadow-inner active:translate-y-0.5' : ''}
-                `}
-                disabled={gameOver || won}
-              >
-                {getCellContent(cell)}
-              </button>
-            ))
+          {!jogando ? (
+            <button onClick={iniciarJogo} className="bg-emerald-500 py-3 rounded font-bold hover:bg-emerald-600">Apostar</button>
+          ) : (
+            <button onClick={() => { setSaldo(s => s + ganhoAtual); setJogando(false); }} className="bg-blue-500 py-3 rounded font-bold hover:bg-blue-600">Sacar {formatCurrency(ganhoAtual)}</button>
           )}
         </div>
 
-        <div className="mt-6 text-slate-400 text-sm text-center space-y-1">
-          <p>🖱️ Clique esquerdo para revelar</p>
-          <p>🖱️ Clique direito para marcar bandeira</p>
+        <div className="grid grid-cols-5 gap-2">
+          {Array.from({ length: TOTAL_TILES }).map((_, i) => {
+            const revelado = reveladas.has(i);
+            const ehMina = minasSet.has(i);
+            return (
+              <button
+                key={i}
+                onClick={() => revelarTile(i)}
+                disabled={!jogando || revelado}
+                className={`aspect-square rounded-lg flex items-center justify-center text-2xl transition ${
+                  revelado ? (ehMina ? "bg-red-500" : "bg-emerald-500") : "bg-slate-700 hover:bg-slate-600"
+                }`}
+              >
+                {revelado ? (ehMina ? "💣" : "💎") : ""}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
