@@ -1,47 +1,47 @@
 // pages/index.js
 import Link from 'next/link';
-import { FaChess, FaLock } from 'react-icons/fa';
-import { FiZap, FiUser, FiCpu } from 'react-icons/fi';
+import { FaChess, FaLock, FaSnowflake } from 'react-icons/fa';
+import { FiZap, FiUser, FiCpu, FiTarget, FiActivity } from 'react-icons/fi';
 import { useEffect, useRef, useState } from 'react';
 
 const games = [
   {
     id: "mines",
-    badge: "NOVIDADE",
+    badge: "EM ALTA",
     title: "Mines",
-    desc: "A sorte está do seu lado? Revelar as gemas ocultas para multiplicar sua aposta, mas cuidado com as minas explosivas!",
-    color: "purple",
-    icon: <FiZap size={24} />,
+    desc: "Cada clique é uma aposta com a sorte. Revele gemas, multiplique seu prêmio e saiba a hora certa de parar antes que uma mina acabe com tudo.",
+    color: "violet",
+    icon: <FiZap size={22} />,
     path: "/game/mines",
     banner: "/imgs/mines.png"
   },
   {
     id: "minesweeper",
-    badge: "NOVIDADE",
+    badge: "CLÁSSICO",
     title: "Campo Minado",
-    desc: "Teste seu raciocínio lógico! Desarme as minas espalhadas pelo campo sem detonar nenhuma. Rápido, preciso e viciante.",
-    color: "purple",
-    icon: <FiZap size={24} />,
+    desc: "O clássico que testa sua dedução lógica. Use os números como pistas, mapeie o campo com precisão e desarme cada mina sem cometer erros.",
+    color: "rose",
+    icon: <FiTarget size={22} />,
     path: "/game/minesweeper",
     banner: "/imgs/minesweeper.png"
   },
   {
     id: "tntrun",
-    badge: "NOVIDADE",
-    title: "Tnt Run",
-    desc: "Controle um robô em um grid de hexágonos coloridos. 5 segundos para pisar na cor certa ou caia no abismo!",
-    color: "purple",
-    icon: <FiZap size={24} />,
+    badge: "ADRENALINA",
+    title: "TNT Run",
+    desc: "O chão desaparece sob seus pés. Corra, antecipe os blocos que vão cair e sobreviva o máximo possível nesta corrida contra a gravidade.",
+    color: "amber",
+    icon: <FiActivity size={22} />,
     path: "/game/tntrun",
     banner: "/imgs/tntrun.png"
   },
   {
     id: "colorRush",
-    badge: "NOVIDADE",
+    badge: "REFLEXO",
     title: "Color Rush",
-    desc: "Controle um robô em um grid de hexágonos coloridos. 5 segundos para pisar na cor certa ou caia no abismo!",
-    color: "purple",
-    icon: <FiZap size={24} />,
+    desc: "Reflexos em chamas: um grid hexagonal muda de cor a cada instante. Pise na cor certa em frações de segundo ou mergulhe no abismo.",
+    color: "fuchsia",
+    icon: <FiZap size={22} />,
     path: "/game/color_rush",
     banner: "/imgs/colorRush.png"
   },
@@ -49,19 +49,19 @@ const games = [
     id: "ttt",
     badge: "ESTRATÉGIA",
     title: "Jogo da Velha",
-    desc: "Jogue contra a IA Minimax ou desafie seus amigos no modo multiplayer.",
+    desc: "Simples de aprender, difícil de vencer. Enfrente uma IA Minimax imbatível ou chame um amigo para uma partida no modo multiplayer.",
     color: "emerald",
-    icon: <FaChess size={24} />,
+    icon: <FaChess size={22} />,
     path: "/game/ttt",
     banner: "/imgs/ttt.png"
   },
   {
     id: "hangman",
-    badge: "LÓGICA",
+    badge: "PALAVRAS",
     title: "Jogo da Forca",
-    desc: "Decifre a palavra secreta gerada por IA antes que suas tentativas se esgotem.",
+    desc: "Uma palavra secreta, gerada por IA, e tentativas limitadas. Una vocabulário e dedução para decifrá-la antes que o tempo se esgote.",
     color: "orange",
-    icon: <FaLock size={24} />,
+    icon: <FaLock size={22} />,
     path: "/game/hangman",
     banner: "/imgs/hangman.png"
   },
@@ -69,19 +69,19 @@ const games = [
     id: "snake",
     badge: "ARCADE",
     title: "Snake",
-    desc: "Controle a serpente faminta, colete pontos e evite colidir com o próprio corpo.",
+    desc: "O eterno clássico arcade. Guie a serpente, devore cada ponto pelo caminho e cresça sem nunca colidir com o próprio rabo.",
     color: "cyan",
-    icon: <FiZap size={24} />,
+    icon: <FaSnowflake size={22} />,
     path: "/game/snake",
     banner: "/imgs/snake.png"
   },
   {
     id: "guess",
-    badge: "MATEMÁTICA",
+    badge: "RACIOCÍNIO",
     title: "Adivinhe o Número",
-    desc: "Use a lógica para descobrir o número secreto com base nos feedbacks de temperatura.",
+    desc: "Existe um número secreto à espreita. Use pistas de 'quente' e 'frio' para fechar o cerco e acertar com o menor número de tentativas.",
     color: "orange",
-    icon: <FiUser size={24} />,
+    icon: <FiUser size={22} />,
     path: "/game/guess",
     banner: "/imgs/guess.png"
   },
@@ -89,9 +89,9 @@ const games = [
     id: "2048",
     badge: "PUZZLE",
     title: "2048",
-    desc: "Combine os números estrategicamente para alcançar o mítico bloco 2048.",
+    desc: "Deslize, combine e multiplique. Una os blocos certos na ordem certa para escalar até o lendário bloco 2048 sem travar o tabuleiro.",
     color: "blue",
-    icon: <FiCpu size={24} />,
+    icon: <FiCpu size={22} />,
     path: "/game/2048",
     banner: "/imgs/2048.jpg"
   },
@@ -149,7 +149,7 @@ export default function GameHub() {
     });
 
     // Tint levemente azulado/violeta pra combinar com o tema do site
-    const tint = "200, 215, 255";
+    const tint = "190, 200, 255";
     const linkDistance = 110;
 
     const draw = () => {
@@ -212,13 +212,65 @@ export default function GameHub() {
     };
   }, [mounted]);
 
+  // Paleta nova: cada cor tem accent (texto), glow (sombra), border, badgeBg/badgeText (badge colorida)
+  // e gradient (usado na barra superior do card para reforçar identidade visual).
   const colorClasses = {
-    emerald: { accent: "text-emerald-400", glow: "shadow-emerald-500/30", border: "border-emerald-500/20" },
-    cyan: { accent: "text-cyan-400", glow: "shadow-cyan-500/30", border: "border-cyan-500/20" },
-    purple: { accent: "text-purple-400", glow: "shadow-purple-500/30", border: "border-purple-500/20" },
-    orange: { accent: "text-orange-400", glow: "shadow-orange-500/30", border: "border-orange-500/20" },
-    blue: { accent: "text-blue-400", glow: "shadow-blue-500/30", border: "border-blue-500/20" },
-    indigo: { accent: "text-indigo-400", glow: "shadow-indigo-500/30", border: "border-indigo-500/20" }
+    violet: {
+      accent: "text-violet-300",
+      glow: "shadow-violet-500/30",
+      border: "border-violet-500/20",
+      badge: "bg-violet-500/15 text-violet-300 border-violet-400/30",
+      gradient: "from-violet-500 via-fuchsia-500 to-purple-500",
+    },
+    rose: {
+      accent: "text-rose-300",
+      glow: "shadow-rose-500/30",
+      border: "border-rose-500/20",
+      badge: "bg-rose-500/15 text-rose-300 border-rose-400/30",
+      gradient: "from-rose-500 via-red-500 to-orange-500",
+    },
+    amber: {
+      accent: "text-amber-300",
+      glow: "shadow-amber-500/30",
+      border: "border-amber-500/20",
+      badge: "bg-amber-500/15 text-amber-300 border-amber-400/30",
+      gradient: "from-amber-400 via-orange-500 to-rose-500",
+    },
+    fuchsia: {
+      accent: "text-fuchsia-300",
+      glow: "shadow-fuchsia-500/30",
+      border: "border-fuchsia-500/20",
+      badge: "bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-400/30",
+      gradient: "from-fuchsia-500 via-pink-500 to-violet-500",
+    },
+    emerald: {
+      accent: "text-emerald-300",
+      glow: "shadow-emerald-500/30",
+      border: "border-emerald-500/20",
+      badge: "bg-emerald-500/15 text-emerald-300 border-emerald-400/30",
+      gradient: "from-emerald-400 via-teal-500 to-cyan-500",
+    },
+    cyan: {
+      accent: "text-cyan-300",
+      glow: "shadow-cyan-500/30",
+      border: "border-cyan-500/20",
+      badge: "bg-cyan-500/15 text-cyan-300 border-cyan-400/30",
+      gradient: "from-cyan-400 via-sky-500 to-blue-500",
+    },
+    orange: {
+      accent: "text-orange-300",
+      glow: "shadow-orange-500/30",
+      border: "border-orange-500/20",
+      badge: "bg-orange-500/15 text-orange-300 border-orange-400/30",
+      gradient: "from-orange-400 via-amber-500 to-yellow-500",
+    },
+    blue: {
+      accent: "text-blue-300",
+      glow: "shadow-blue-500/30",
+      border: "border-blue-500/20",
+      badge: "bg-blue-500/15 text-blue-300 border-blue-400/30",
+      gradient: "from-blue-500 via-indigo-500 to-violet-500",
+    },
   };
 
   if (!mounted) {
@@ -226,14 +278,14 @@ export default function GameHub() {
   }
 
   return (
-    <div className="min-h-screen bg-[#020205] relative overflow-hidden">
-      {/* Nebulosa de fundo, bem sutil */}
+    <div className="min-h-screen bg-[#04040a] relative overflow-hidden">
+      {/* Nebulosa de fundo, mais viva que a anterior */}
       <div className="fixed inset-0 pointer-events-none">
         <div
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(circle at 15% 15%, rgba(99,60,200,0.10), transparent 45%), radial-gradient(circle at 85% 10%, rgba(34,150,211,0.08), transparent 40%), radial-gradient(circle at 50% 95%, rgba(60,70,160,0.08), transparent 50%)",
+              "radial-gradient(circle at 12% 18%, rgba(139,92,246,0.14), transparent 45%), radial-gradient(circle at 88% 8%, rgba(236,72,153,0.10), transparent 42%), radial-gradient(circle at 50% 100%, rgba(56,189,248,0.10), transparent 50%)",
           }}
         />
       </div>
@@ -247,9 +299,13 @@ export default function GameHub() {
 
       <div className="relative pt-28 pb-16 px-6 max-w-6xl mx-auto z-10">
         <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-5 text-xs font-semibold tracking-widest text-violet-300 uppercase bg-violet-500/10 border border-violet-400/20 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+            9 jogos · grátis · sem download
+          </div>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 tracking-tighter">
             <span className="text-white/90">Explorando o </span>
-            <span className="bg-gradient-to-r from-cyan-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(165,243,252,0.5)]">
+            <span className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(192,132,252,0.45)]">
               Universo dos Jogos
             </span>
           </h1>
@@ -260,35 +316,42 @@ export default function GameHub() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {games.map((item) => {
-            const colors = colorClasses[item.color] || colorClasses.purple;
+            const colors = colorClasses[item.color] || colorClasses.violet;
             return (
               <Link
                 key={item.id}
                 href={item.path}
                 className="group"
               >
-                <div className={`glass-card rounded-3xl overflow-hidden border ${colors.border} ${colors.glow} transition-all duration-500 hover:-translate-y-3 hover:scale-[1.02]`}>
+                <div className={`glass-card relative rounded-3xl overflow-hidden border ${colors.border} ${colors.glow} transition-all duration-500 hover:-translate-y-3 hover:scale-[1.02]`}>
+                  {/* Barra de identidade no topo do card */}
+                  <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${colors.gradient} opacity-80`} />
+
                   {item.banner && (
                     <div className="relative overflow-hidden">
                       <img src={item.banner} alt={item.title} className="w-full h-52 object-cover transition-all duration-700 group-hover:scale-110 group-hover:brightness-125" />
-                      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#020205]/70 to-[#020205]" />
+                      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#04040a]/70 to-[#04040a]" />
                     </div>
                   )}
                   <div className="p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <div className={`px-3 py-1 text-xs font-bold tracking-widest rounded-full border bg-white/5 text-white/70 border-white/10`}>
+                      <div className={`px-3 py-1 text-xs font-bold tracking-widest rounded-full border ${colors.badge}`}>
                         {item.badge}
                       </div>
                       <div className={`${colors.accent} text-2xl transition-transform group-hover:rotate-12 duration-300`}>
                         {item.icon}
                       </div>
                     </div>
-                    <h2 className="text-2xl font-semibold text-white mb-2 group-hover:text-cyan-300 transition-colors">
+                    <h2 className="text-2xl font-semibold text-white mb-2 group-hover:text-white transition-colors">
                       {item.title}
                     </h2>
                     <p className="text-gray-400 text-sm leading-relaxed line-clamp-3 mb-6">
                       {item.desc}
                     </p>
+                    <div className={`inline-flex items-center gap-1.5 text-sm font-medium ${colors.accent} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}>
+                      Jogar agora
+                      <span className="transition-transform group-hover:translate-x-1">→</span>
+                    </div>
                   </div>
                 </div>
               </Link>
@@ -299,7 +362,7 @@ export default function GameHub() {
 
       <style jsx>{`
         .glass-card {
-          background: rgba(10, 10, 15, 0.85);
+          background: rgba(12, 12, 20, 0.85);
           backdrop-filter: blur(24px);
           border: 1px solid rgba(255, 255, 255, 0.08);
           box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.7);

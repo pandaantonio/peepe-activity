@@ -1,17 +1,63 @@
-import React, { useEffect, useRef, useState } from 'react';
+// pages/game/ttt/index.js
 import { useRouter } from 'next/router';
-import { FaArrowLeft, FaRobot, FaBrain, FaSkull, FaUsers } from 'react-icons/fa';
+import { FaArrowLeft, FaBug, FaShieldAlt, FaSkullCrossbones, FaUsers } from 'react-icons/fa';
+import { useEffect, useRef, useState } from 'react';
+
+const difficulties = [
+  {
+    id: "easy",
+    badge: "FÁCIL",
+    title: "Modo Fácil",
+    desc: "A IA joga de forma aleatória, com pouco planejamento. Perfeito para destravar reflexos.",
+    color: "emerald",
+    icon: <FaBug size={24} />,
+    path: "/game/ttt/easy",
+    stat: "15%",
+    statLabel: "Precisão da IA"
+  },
+  {
+    id: "medium",
+    badge: "MÉDIO",
+    title: "Modo Médio",
+    desc: "Minimax ativo. O equilíbrio ideal entre desafio tático e chance real de vitória.",
+    color: "orange",
+    icon: <FaShieldAlt size={24} />,
+    path: "/game/ttt/medium",
+    stat: "80%",
+    statLabel: "Precisão da IA"
+  },
+  {
+    id: "impossible",
+    badge: "IMPOSSÍVEL",
+    title: "Modo Impossível",
+    desc: "Minimax puro. Vencer é matematicamente quase impossível — o empate é uma vitória.",
+    color: "red",
+    icon: <FaSkullCrossbones size={24} />,
+    path: "/game/ttt/impossible",
+    stat: "100%",
+    statLabel: "Precisão da IA"
+  },
+  {
+    id: "multiplayer",
+    badge: "MULTIPLAYER",
+    title: "Amigos",
+    desc: "Desafie alguém de carne e osso. Sincronização em tempo real no mesmo dispositivo.",
+    color: "indigo",
+    icon: <FaUsers size={24} />,
+    path: "/game/ttt/multiplayer",
+    stat: "100%",
+    statLabel: "Humano vs Humano"
+  }
+];
 
 export default function TicTacToeSelection() {
   const router = useRouter();
-  const canvasRef = useRef(null);
   const [mounted, setMounted] = useState(false);
+  const canvasRef = useRef(null);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => { setMounted(true); }, []);
 
-  // Campo de estrelas animado via canvas (profundidade + constelações)
+  // Efeito de estrelas (mesmo do ai.js)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -39,15 +85,11 @@ export default function TicTacToeSelection() {
     layers.forEach((layer, layerIndex) => {
       for (let i = 0; i < layer.count; i++) {
         stars.push({
-          x: Math.random() * width,
-          y: Math.random() * height,
+          x: Math.random() * width, y: Math.random() * height,
           r: Math.random() * (layer.rMax - layer.rMin) + layer.rMin,
-          vx: (Math.random() - 0.5) * layer.speed,
-          vy: (Math.random() - 0.5) * layer.speed,
-          baseOpacity: layer.baseOpacity,
-          twinklePhase: Math.random() * Math.PI * 2,
-          twinkleSpeed: layer.twinkleSpeed + Math.random() * 0.004,
-          layer: layerIndex,
+          vx: (Math.random() - 0.5) * layer.speed, vy: (Math.random() - 0.5) * layer.speed,
+          baseOpacity: layer.baseOpacity, twinklePhase: Math.random() * Math.PI * 2,
+          twinkleSpeed: layer.twinkleSpeed + Math.random() * 0.004, layer: layerIndex,
         });
       }
     });
@@ -57,24 +99,17 @@ export default function TicTacToeSelection() {
 
     const draw = () => {
       ctx.clearRect(0, 0, width, height);
-
       stars.forEach((s) => {
-        s.x += s.vx;
-        s.y += s.vy;
-        if (s.x < 0) s.x = width;
-        if (s.x > width) s.x = 0;
-        if (s.y < 0) s.y = height;
-        if (s.y > height) s.y = 0;
-
+        s.x += s.vx; s.y += s.vy;
+        if (s.x < 0) s.x = width; if (s.x > width) s.x = 0;
+        if (s.y < 0) s.y = height; if (s.y > height) s.y = 0;
         s.twinklePhase += s.twinkleSpeed;
         const twinkle = (Math.sin(s.twinklePhase) + 1) / 2;
         const opacity = s.baseOpacity * (0.5 + 0.5 * twinkle);
-
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(${tint}, ${opacity})`;
         ctx.fill();
-
         if (s.layer === 2) {
           const glowR = s.r * 3.5;
           const gradient = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, glowR);
@@ -86,149 +121,76 @@ export default function TicTacToeSelection() {
           ctx.fill();
         }
       });
-
-      const frontStars = stars.filter((s) => s.layer === 2);
-      frontStars.forEach((a, i) => {
-        frontStars.slice(i + 1).forEach((b) => {
-          const dist = Math.hypot(a.x - b.x, a.y - b.y);
-          if (dist < linkDistance) {
-            ctx.beginPath();
-            ctx.moveTo(a.x, a.y);
-            ctx.lineTo(b.x, b.y);
-            ctx.strokeStyle = `rgba(${tint}, ${0.12 * (1 - dist / linkDistance)})`;
-            ctx.lineWidth = 0.6;
-            ctx.stroke();
-          }
-        });
-      });
-
       animFrameId = requestAnimationFrame(draw);
     };
     draw();
-
-    return () => {
-      cancelAnimationFrame(animFrameId);
-      window.removeEventListener("resize", resize);
-    };
+    return () => { cancelAnimationFrame(animFrameId); window.removeEventListener("resize", resize); };
   }, [mounted]);
 
-  const difficulties = [
-    {
-      id: 'easy',
-      title: 'Modo Fácil',
-      description: 'A IA toma decisões majoritariamente aleatórias. Ideal para aquecimento.',
-      icon: <FaRobot size={36} />,
-      path: '/game/ttt/easy',
-      color: 'emerald',
-      accent: 'from-emerald-500/20 to-emerald-600/10',
-      border: 'border-emerald-500/30'
-    },
-    {
-      id: 'medium',
-      title: 'Modo Médio',
-      description: 'Equilíbrio tático. A IA calcula algumas jogadas, mas ainda comete deslizes humanos.',
-      icon: <FaBrain size={36} />,
-      path: '/game/ttt/medium',
-      color: 'amber',
-      accent: 'from-amber-500/20 to-orange-600/10',
-      border: 'border-amber-500/30'
-    },
-    {
-      id: 'impossible',
-      title: 'Modo Impossível',
-      description: 'Minimax puro e implacável. O algoritmo prevê todos os cenários. O melhor resultado é o empate.',
-      icon: <FaSkull size={36} />,
-      path: '/game/ttt/impossible',
-      color: 'rose',
-      accent: 'from-rose-500/20 to-red-600/10',
-      border: 'border-rose-500/30'
-    },
-    {
-      id: 'multiplayer',
-      title: 'Multiplayer com Amigos',
-      description: 'Desafie um amigo em tempo real. Um joga como X, o outro como O. Sincronização via BroadcastChannel.',
-      icon: <FaUsers size={36} />,
-      path: '/game/ttt/multiplayer',
-      color: 'violet',
-      accent: 'from-violet-500/20 to-purple-600/10',
-      border: 'border-violet-500/30'
-    },
-  ];
+  const colorClasses = {
+    emerald: { accent: "text-emerald-400", glow: "shadow-emerald-500/30", border: "border-emerald-500/20", bar: "bg-emerald-400" },
+    orange: { accent: "text-orange-400", glow: "shadow-orange-500/30", border: "border-orange-500/20", bar: "bg-orange-400" },
+    red: { accent: "text-red-400", glow: "shadow-red-500/30", border: "border-red-500/20", bar: "bg-red-400" },
+    indigo: { accent: "text-indigo-400", glow: "shadow-indigo-500/30", border: "border-indigo-500/20", bar: "bg-indigo-400" },
+  };
+
+  if (!mounted) return null;
 
   return (
-    <div className="min-h-screen bg-[#05050a] relative overflow-hidden text-white">
-      {/* Fundo Espacial */}
+    <div className="min-h-screen bg-[#020205] relative overflow-hidden">
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(at_50%_30%,rgba(129,140,248,0.08)_0%,transparent_60%)]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(at_20%_70%,rgba(167,139,250,0.07)_0%,transparent_60%)]"></div>
-
-        {/* Campo de estrelas animado via canvas (profundidade + constelações) */}
-        <canvas
-          ref={canvasRef}
-          className="absolute inset-0"
-          style={{ opacity: 0.9 }}
-        />
-
-        <div className="absolute top-10 left-20 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-20 right-20 w-[700px] h-[700px] bg-cyan-500/10 rounded-full blur-[130px]" />
+        <div className="absolute inset-0" style={{ background: "radial-gradient(circle at 15% 15%, rgba(99,60,200,0.10), transparent 45%), radial-gradient(circle at 85% 10%, rgba(34,150,211,0.08), transparent 40%), radial-gradient(circle at 50% 95%, rgba(60,70,160,0.08), transparent 50%)" }} />
       </div>
+      <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none" style={{ opacity: 0.9 }} />
 
-      {/* Topbar */}
-      <div className="relative z-20 pt-6 px-6">
-        <div className="flex items-center justify-between max-w-5xl mx-auto">
-          <button 
-            onClick={() => router.push('/')} 
-            className="flex items-center gap-2 text-white/70 hover:text-white transition-colors"
-          >
-            <FaArrowLeft size={20} />
-            <span className="font-medium">Voltar ao Hub</span>
-          </button>
-          
-          <div className="text-center">
-            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-cyan-300 to-purple-300 bg-clip-text text-transparent">
-              Jogo da Velha
-            </h1>
-            <p className="text-gray-400 text-sm">Escolha seu modo de batalha cósmica</p>
-          </div>
+      <div className="relative pt-28 pb-16 px-6 max-w-6xl mx-auto z-10">
+        <button onClick={() => router.push('/')} className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-10">
+          <FaArrowLeft size={14} /> Voltar ao Hub
+        </button>
 
-          <div className="w-10" />
+        <div className="text-center mb-12">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tighter">
+            <span className="text-white/90">Jogo da </span>
+            <span className="bg-gradient-to-r from-cyan-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent">Velha</span>
+          </h1>
+          <p className="text-gray-400 text-lg">Escolha o desafio e inicie a simulação.</p>
         </div>
-      </div>
 
-      {/* Cards com cor */}
-      <div className="relative z-20 flex items-center justify-center min-h-[calc(100vh-140px)] px-6 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl w-full">
-          {difficulties.map((diff, index) => (
-            <div
-              key={diff.id}
-              onClick={() => router.push(diff.path)}
-              className={`group relative overflow-hidden rounded-3xl border ${diff.border} bg-gradient-to-br ${diff.accent} p-10 cursor-pointer transition-all duration-500 hover:-translate-y-3 hover:shadow-2xl hover:shadow-cyan-500/10`}
-              style={{ animationDelay: `${index * 80}ms` }}
-            >
-              {/* Glow sutil no topo */}
-              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
-
-              <div className="flex flex-col items-center text-center h-full">
-                <div className="mb-8 p-6 rounded-2xl bg-black/30 backdrop-blur-md border border-white/10 group-hover:scale-110 transition-transform">
-                  {diff.icon}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {difficulties.map((item) => {
+            const colors = colorClasses[item.color];
+            return (
+              <div key={item.id} onClick={() => router.push(item.path)} className="group cursor-pointer">
+                <div className={`glass-card rounded-3xl overflow-hidden border ${colors.border} ${colors.glow} transition-all duration-500 hover:-translate-y-3 hover:scale-[1.02]`}>
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="px-3 py-1 text-xs font-bold tracking-widest rounded-full border bg-white/5 text-white/70 border-white/10">{item.badge}</div>
+                      <div className={`${colors.accent} text-2xl group-hover:rotate-12 duration-300`}>{item.icon}</div>
+                    </div>
+                    <h2 className="text-xl font-semibold text-white mb-2 group-hover:text-cyan-300">{item.title}</h2>
+                    <p className="text-gray-400 text-sm leading-relaxed mb-6 h-20">{item.desc}</p>
+                    <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5">
+                      <span>{item.statLabel}</span>
+                      <span className={colors.accent}>{item.stat}</span>
+                    </div>
+                    <div className="w-full h-1.5 rounded-full bg-white/10 mb-6 overflow-hidden">
+                      <div className={`h-full rounded-full ${colors.bar}`} style={{ width: item.stat }} />
+                    </div>
+                  </div>
                 </div>
-
-                <h2 className="text-2xl font-semibold mb-4 text-white group-hover:text-cyan-200 transition-colors">
-                  {diff.title}
-                </h2>
-
-                <p className="text-gray-300 leading-relaxed mb-10 flex-1">
-                  {diff.description}
-                </p>
-
-                <button className="w-full py-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/20 hover:border-cyan-400 text-white font-medium transition-all group-hover:scale-105">
-                  {diff.id === 'multiplayer' ? 'Iniciar Sessão Multiplayer' : 'Iniciar Missão'}
-                </button>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
+
+      <style jsx>{`
+        .glass-card {
+          background: rgba(10, 10, 15, 0.85);
+          backdrop-filter: blur(24px);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+      `}</style>
     </div>
   );
 }
