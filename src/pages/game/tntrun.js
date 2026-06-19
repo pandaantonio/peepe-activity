@@ -7,7 +7,7 @@ import Head from 'next/head'
 import Link from 'next/link'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
-import { PlayerModel } from '@/components/PlayerModel' // Importação do novo modelo procedural
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────────
 const COLS       = 22
@@ -155,6 +155,81 @@ function FloorBlocks({ floorIdx, blockStates, resetKey }) {
 }
 
 // ─── Player Controller ───────────────────────────────────────────────────────
+// ─── Robot Model (GLB) ─────────────────────────────────────────────────────
+function RobotModel({ isWalking }) {
+  const groupRef = useRef()
+  const [model, setModel] = useState(null)
+  const mixerRef = useRef(null)
+  const floatTimeRef = useRef(0)
+
+  useEffect(() => {
+    const loader = new GLTFLoader()
+    loader.load(
+      '/models/robot.glb',
+      (gltf) => {
+        const scene = gltf.scene.clone()
+
+        // Enable shadows
+        scene.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true
+            child.receiveShadow = true
+          }
+        })
+
+        // Setup animation mixer if animations exist
+        if (gltf.animations && gltf.animations.length > 0) {
+          mixerRef.current = new THREE.AnimationMixer(scene)
+        }
+
+        setModel(scene)
+      },
+      undefined,
+      (error) => console.error('Error loading robot.glb:', error)
+    )
+
+    return () => {
+      if (mixerRef.current) mixerRef.current.stopAllAction()
+    }
+  }, [])
+
+  useFrame((state, dt) => {
+    if (!groupRef.current) return
+
+    floatTimeRef.current += dt * 4
+
+    // Floating effect - higher position with gentle bobbing
+    const floatHeight = 1.8
+    const floatBob = Math.sin(floatTimeRef.current) * 0.15
+    groupRef.current.position.y = floatHeight + floatBob
+
+    // Handle animations
+    if (mixerRef.current) {
+      mixerRef.current.update(dt)
+
+      if (isWalking) {
+        // Find walk animation or use first available
+        const clips = mixerRef.current._actions.map(a => a._clip).filter(Boolean)
+        const walkClip = clips.find(c => c.name.toLowerCase().includes('walk')) || clips[0]
+        if (walkClip) {
+          const action = mixerRef.current.clipAction(walkClip)
+          action.play()
+        }
+      } else {
+        mixerRef.current.stopAllAction()
+      }
+    }
+  })
+
+  if (!model) return null
+
+  return (
+    <group ref={groupRef}>
+      <primitive object={model} />
+    </group>
+  )
+}
+
 function PlayerController({ playerRef, isGameOverRef, keysRef, joystickRef, cameraRef, blockStates, onGameOver, onFloorChange, gameStateRef, resetKey }) {
   const groupRef = useRef()
   const meshOffsetRef = useRef() // Ref interna para aplicar flutuação e rotações suaves isoladas da física do jogo
@@ -289,23 +364,7 @@ function PlayerController({ playerRef, isGameOverRef, keysRef, joystickRef, came
       groupRef.current.rotation.y = p.angle
     }
 
-    // ─── ANIMAÇÃO DE FLUTUAÇÃO E HOVERING PROCEDURAL ───
-    if (meshOffsetRef.current) {
-      animationTimeRef.current += dt * 4 // Velocidade da flutuação suave
 
-      // Altura base pairando ligeiramente acima do nível do bloco + onda senoidal contínua
-      meshOffsetRef.current.position.y = 0.5 + Math.sin(animationTimeRef.current) * 0.15
-
-      if (walking) {
-        // Inclinação dinâmica para a frente e balanço lateral suave ao mover-se
-        meshOffsetRef.current.rotation.x = THREE.MathUtils.lerp(meshOffsetRef.current.rotation.x, 0.15, 0.1)
-        meshOffsetRef.current.rotation.z = Math.sin(animationTimeRef.current * 1.5) * 0.05
-      } else {
-        // Quando o jogador para, ele estabiliza a rotação de forma suave e continua apenas a flutuar no eixo Y
-        meshOffsetRef.current.rotation.x = THREE.MathUtils.lerp(meshOffsetRef.current.rotation.x, 0, 0.1)
-        meshOffsetRef.current.rotation.z = THREE.MathUtils.lerp(meshOffsetRef.current.rotation.z, 0, 0.1)
-      }
-    }
   })
 
   return (
@@ -314,7 +373,7 @@ function PlayerController({ playerRef, isGameOverRef, keysRef, joystickRef, came
         e definimos a propriedade "scale" maior (ex: 1.45) para aumentar o tamanho do fantasma
       */}
       <group ref={meshOffsetRef} scale={[1.45, 1.45, 1.45]}>
-        <PlayerModel isWalking={isWalking} />
+        <RobotModel isWalking={isWalking} />
       </group>
     </group>
   )

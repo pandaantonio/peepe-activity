@@ -2,8 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
 import * as THREE from 'three'
-import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
-import { createMinecraftPlayer } from '@/components/PlayerModel'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 
 const COLORS = [
   0xFF3B30, 0x007AFF, 0x34C759, 0xFF9500,
@@ -146,23 +145,56 @@ export default function HexagonGame() {
       hexMeshes.push(mesh)
     })
 
-    // ========== CONTÊINER DO PLAYER ==========
+    // ========== PLAYER ROBOT ==========
     const robotGroup = new THREE.Group()
     scene.add(robotGroup)
 
-    // Instancia o nosso modelo procedural estilo Minecraft
-    const playerModel = createMinecraftPlayer(robotGroup)
-
-    // Mantém o tamanho grande
-    if (playerModel && playerModel.group) {
-      playerModel.group.scale.set(1.45, 1.45, 1.45)
-    }
-
-    playerModel.geometries.forEach(g => geometriesToDispose.push(g))
-    playerModel.materials.forEach(m => materialsToDispose.push(m))
-
-    let animationTime = 0
+    // Load robot.glb model
+    let robotModel = null
     let mixer = null
+    let robotAnimations = []
+    let floatTime = 0
+
+    const gltfLoader = new GLTFLoader()
+    gltfLoader.load(
+      '/models/robot.glb',
+      (gltf) => {
+        robotModel = gltf.scene
+        robotGroup.add(robotModel)
+
+        // Scale and position
+        robotModel.scale.set(1.45, 1.45, 1.45)
+        robotModel.position.y = 0
+
+        // Enable shadows on all meshes
+        robotModel.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true
+            child.receiveShadow = true
+            if (child.geometry) geometriesToDispose.push(child.geometry)
+            if (child.material) {
+              if (Array.isArray(child.material)) {
+                child.material.forEach(m => materialsToDispose.push(m))
+              } else {
+                materialsToDispose.push(child.material)
+              }
+            }
+          }
+        })
+
+        // Setup animations if present
+        if (gltf.animations && gltf.animations.length > 0) {
+          mixer = new THREE.AnimationMixer(robotModel)
+          gltf.animations.forEach((clip) => {
+            robotAnimations.push(clip)
+          })
+        }
+      },
+      undefined,
+      (error) => {
+        console.error('Error loading robot.glb:', error)
+      }
+    )
 
     const robotGlow = new THREE.PointLight(0x00ffcc, 0.4, 4)
     robotGlow.position.y = 1
@@ -376,6 +408,7 @@ export default function HexagonGame() {
       cameraAngle = Math.PI / 6
       cameraPitch = 0.35
       isWalking = false
+      floatTime = 0
 
       robotGroup.position.set(0, 0, 0)
       robotGroup.rotation.set(0, 0, 0)
@@ -438,43 +471,30 @@ export default function HexagonGame() {
       }
 
       isWalking = len > 0.01
-      animationTime += delta * (isWalking ? 14 : 3)
+      floatTime += delta
 
-      // CORREÇÃO: Altura Y fixa no nível superior dos blocos (sem flutuar no ar)
-      if (playerModel && playerModel.group) {
-        playerModel.group.position.y = TILE_HEIGHT / 2
+      // Floating effect - higher position with gentle bobbing
+      const floatHeight = 1.8
+      const floatBob = Math.sin(floatTime * 2.5) * 0.15
+      if (robotModel) {
+        robotModel.position.y = floatHeight + floatBob
       }
 
       if (isWalking) {
         playerAngle = Math.atan2(moveX, moveZ)
         robotGroup.rotation.y = playerAngle
 
-        playerModel.leftLeg.rotation.x = Math.sin(animationTime) * 0.65
-        playerModel.rightLeg.rotation.x = -Math.sin(animationTime) * 0.65
-
-        playerModel.leftArm.rotation.x = -Math.sin(animationTime) * 0.5
-        playerModel.leftArm.rotation.z = (Math.cos(animationTime) * 0.1) + 0.05
-        playerModel.rightArm.rotation.x = Math.sin(animationTime) * 0.5
-        playerModel.rightArm.rotation.z = -(Math.cos(animationTime) * 0.1) - 0.05
-
-        playerModel.torso.rotation.x = 0.15
-        playerModel.head.rotation.x = -0.05
-        
-        playerModel.group.rotation.x = THREE.MathUtils.lerp(playerModel.group.rotation.x, 0.12, 0.1)
+        // Play walk animation if available
+        if (mixer && robotAnimations.length > 0) {
+          const walkClip = robotAnimations.find(a => a.name.toLowerCase().includes('walk')) || robotAnimations[0]
+          const action = mixer.clipAction(walkClip)
+          action.play()
+        }
       } else {
-        playerModel.leftLeg.rotation.x *= 0.8
-        playerModel.rightLeg.rotation.x *= 0.8
-        playerModel.torso.rotation.x *= 0.8
-
-        playerModel.leftArm.rotation.x = Math.sin(animationTime) * 0.05
-        playerModel.leftArm.rotation.z = 0.05 + Math.sin(animationTime) * 0.03
-        playerModel.rightArm.rotation.x = Math.sin(animationTime) * 0.05
-        playerModel.rightArm.rotation.z = -0.05 - Math.sin(animationTime) * 0.03
-
-        playerModel.head.rotation.y = Math.sin(animationTime * 0.5) * 0.08
-        playerModel.head.rotation.x = (Math.cos(animationTime) * 0.02)
-        
-        playerModel.group.rotation.x = THREE.MathUtils.lerp(playerModel.group.rotation.x, 0, 0.1)
+        // Stop animations when idle
+        if (mixer) {
+          mixer.stopAllAction()
+        }
       }
 
       let newX = playerPos.x + moveX
@@ -569,6 +589,11 @@ export default function HexagonGame() {
         }
         setTimeLeft(Math.max(0, Math.ceil(timeRemaining * 10) / 10))
         updatePlayer(delta)
+      }
+
+      // Update animation mixer
+      if (mixer) {
+        mixer.update(delta)
       }
 
       hexagons.forEach((hex, i) => {
