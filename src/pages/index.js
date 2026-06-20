@@ -2,9 +2,20 @@
 import Link from 'next/link';
 import { FaChess, FaLock, FaSnowflake } from 'react-icons/fa';
 import { FiZap, FiUser, FiCpu, FiTarget, FiActivity } from 'react-icons/fi';
+import { GiCardAceSpades } from 'react-icons/gi'; // ← novo import para o Blackjack
 import { useEffect, useRef, useState } from 'react';
 
 const games = [
+  {
+    id: "blackjack",
+    badge: "CASSINO",
+    title: "Blackjack",
+    desc: "Peça carta, pare ou dobre — mas não passe de 21. Enfrente o dealer numa batalha de nervos, probabilidade e timing perfeito.",
+    color: "green",
+    icon: <GiCardAceSpades size={22} />,
+    path: "/game/blackjack",
+    banner: "/imgs/blackjack.png", // adicione sua imagem em public/imgs/blackjack.png
+  },
   {
     id: "mines",
     badge: "EM ALTA",
@@ -95,6 +106,7 @@ const games = [
     path: "/game/2048",
     banner: "/imgs/2048.jpg"
   },
+  // ── BLACKJACK (novo) ──────────────────────────────────────────────────────────
 ];
 
 export default function GameHub() {
@@ -105,8 +117,6 @@ export default function GameHub() {
     setMounted(true);
   }, []);
 
-  // Canvas com campo de estrelas: pontos com profundidade (parallax),
-  // brilho/cintilação individual e linhas de constelação entre estrelas próximas.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -124,7 +134,6 @@ export default function GameHub() {
     resize();
     window.addEventListener("resize", resize);
 
-    // Três camadas de profundidade: longe (pequenas/lentas) -> perto (maiores/rápidas)
     const layers = [
       { count: 90, rMin: 0.4, rMax: 0.9, speed: 0.03, twinkleSpeed: 0.006, baseOpacity: 0.35 },
       { count: 55, rMin: 0.8, rMax: 1.5, speed: 0.07, twinkleSpeed: 0.01, baseOpacity: 0.55 },
@@ -148,7 +157,6 @@ export default function GameHub() {
       }
     });
 
-    // Tint levemente azulado/violeta pra combinar com o tema do site
     const tint = "190, 200, 255";
     const linkDistance = 110;
 
@@ -164,16 +172,14 @@ export default function GameHub() {
         if (s.y > height) s.y = 0;
 
         s.twinklePhase += s.twinkleSpeed;
-        const twinkle = (Math.sin(s.twinklePhase) + 1) / 2; // 0..1
+        const twinkle = (Math.sin(s.twinklePhase) + 1) / 2;
         const opacity = s.baseOpacity * (0.5 + 0.5 * twinkle);
 
-        // núcleo
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(${tint}, ${opacity})`;
         ctx.fill();
 
-        // glow leve só nas estrelas maiores (camada de cima)
         if (s.layer === 2) {
           const glowR = s.r * 3.5;
           const gradient = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, glowR);
@@ -186,7 +192,6 @@ export default function GameHub() {
         }
       });
 
-      // linhas de constelação só entre estrelas da camada da frente (mais próximas)
       const frontStars = stars.filter((s) => s.layer === 2);
       frontStars.forEach((a, i) => {
         frontStars.slice(i + 1).forEach((b) => {
@@ -212,8 +217,6 @@ export default function GameHub() {
     };
   }, [mounted]);
 
-  // Paleta nova: cada cor tem accent (texto), glow (sombra), border, badgeBg/badgeText (badge colorida)
-  // e gradient (usado na barra superior do card para reforçar identidade visual).
   const colorClasses = {
     violet: {
       accent: "text-violet-300",
@@ -271,7 +274,18 @@ export default function GameHub() {
       badge: "bg-blue-500/15 text-blue-300 border-blue-400/30",
       gradient: "from-blue-500 via-indigo-500 to-violet-500",
     },
+    // ── verde para o Blackjack ─────────────────────────────────────────────────
+    green: {
+      accent: "text-green-300",
+      glow: "shadow-green-500/30",
+      border: "border-green-500/20",
+      badge: "bg-green-500/15 text-green-300 border-green-400/30",
+      gradient: "from-green-500 via-emerald-500 to-teal-500",
+    },
   };
+
+  // Atualiza o contador no badge superior
+  const totalGames = games.length; // 10
 
   if (!mounted) {
     return null;
@@ -279,7 +293,6 @@ export default function GameHub() {
 
   return (
     <div className="min-h-screen bg-[#04040a] relative overflow-hidden">
-      {/* Nebulosa de fundo, mais viva que a anterior */}
       <div className="fixed inset-0 pointer-events-none">
         <div
           className="absolute inset-0"
@@ -290,7 +303,6 @@ export default function GameHub() {
         />
       </div>
 
-      {/* Campo de estrelas animado via canvas (com profundidade + constelações) */}
       <canvas
         ref={canvasRef}
         className="fixed inset-0 pointer-events-none"
@@ -301,7 +313,7 @@ export default function GameHub() {
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-5 text-xs font-semibold tracking-widest text-violet-300 uppercase bg-violet-500/10 border border-violet-400/20 rounded-full">
             <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
-            9 jogos · grátis · sem download
+            {totalGames} jogos · grátis · sem download
           </div>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 tracking-tighter">
             <span className="text-white/90">Explorando o </span>
@@ -318,21 +330,23 @@ export default function GameHub() {
           {games.map((item) => {
             const colors = colorClasses[item.color] || colorClasses.violet;
             return (
-              <Link
-                key={item.id}
-                href={item.path}
-                className="group"
-              >
-                <div className={`glass-card relative rounded-3xl overflow-hidden border ${colors.border} ${colors.glow} transition-all duration-500 hover:-translate-y-3 hover:scale-[1.02]`}>
-                  {/* Barra de identidade no topo do card */}
+              <Link key={item.id} href={item.path} className="group">
+                <div
+                  className={`glass-card relative rounded-3xl overflow-hidden border ${colors.border} ${colors.glow} transition-all duration-500 hover:-translate-y-3 hover:scale-[1.02]`}
+                >
                   <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${colors.gradient} opacity-80`} />
 
                   {item.banner && (
                     <div className="relative overflow-hidden">
-                      <img src={item.banner} alt={item.title} className="w-full h-52 object-cover transition-all duration-700 group-hover:scale-110 group-hover:brightness-125" />
+                      <img
+                        src={item.banner}
+                        alt={item.title}
+                        className="w-full h-52 object-cover transition-all duration-700 group-hover:scale-110 group-hover:brightness-125"
+                      />
                       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#04040a]/70 to-[#04040a]" />
                     </div>
                   )}
+
                   <div className="p-6">
                     <div className="flex items-center justify-between mb-4">
                       <div className={`px-3 py-1 text-xs font-bold tracking-widest rounded-full border ${colors.badge}`}>
