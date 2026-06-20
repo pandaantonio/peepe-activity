@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo, memo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useDiscordScore } from '@/hooks/useDiscordScore';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -14,15 +15,15 @@ const MAX_SWIPE_TIME = 400;
 const WIN_VALUE = 2048;
 
 const TILE_STYLES = {
-  2:    { bg: 'bg-[#3d3d3d]', text: 'text-[#e8e8e8]', border: 'border-b-[#2a2a2a]', shadow: 'shadow-[0_2px_0_#2a2a2a]' },
-  4:    { bg: 'bg-[#4a4a4a]', text: 'text-[#f0f0f0]', border: 'border-b-[#333333]', shadow: 'shadow-[0_2px_0_#333333]' },
-  8:    { bg: 'bg-[#c17817]', text: 'text-white', border: 'border-b-[#8a5310]', shadow: 'shadow-[0_2px_0_#8a5310]', glow: 'shadow-[0_0_12px_rgba(193,120,23,0.3)]' },
-  16:   { bg: 'bg-[#d65a0f]', text: 'text-white', border: 'border-b-[#a0400b]', shadow: 'shadow-[0_2px_0_#a0400b]', glow: 'shadow-[0_0_14px_rgba(214,90,15,0.35)]' },
-  32:   { bg: 'bg-[#e8453c]', text: 'text-white', border: 'border-b-[#b8322a]', shadow: 'shadow-[0_2px_0_#b8322a]', glow: 'shadow-[0_0_16px_rgba(232,69,60,0.4)]' },
-  64:   { bg: 'bg-[#f02e2e]', text: 'text-white', border: 'border-b-[#c02020]', shadow: 'shadow-[0_2px_0_#c02020]', glow: 'shadow-[0_0_18px_rgba(240,46,46,0.45)]' },
-  128:  { bg: 'bg-[#e8c547]', text: 'text-[#1a1a1a]', border: 'border-b-[#b89a2e]', shadow: 'shadow-[0_2px_0_#b89a2e]', glow: 'shadow-[0_0_20px_rgba(232,197,71,0.5)]' },
-  256:  { bg: 'bg-[#f0d84a]', text: 'text-[#1a1a1a]', border: 'border-b-[#c4ad2e]', shadow: 'shadow-[0_2px_0_#c4ad2e]', glow: 'shadow-[0_0_24px_rgba(240,216,74,0.55)]' },
-  512:  { bg: 'bg-[#10b981]', text: 'text-white', border: 'border-b-[#0d8f65]', shadow: 'shadow-[0_2px_0_#0d8f65]', glow: 'shadow-[0_0_28px_rgba(16,185,129,0.6)]' },
+  2: { bg: 'bg-[#3d3d3d]', text: 'text-[#e8e8e8]', border: 'border-b-[#2a2a2a]', shadow: 'shadow-[0_2px_0_#2a2a2a]' },
+  4: { bg: 'bg-[#4a4a4a]', text: 'text-[#f0f0f0]', border: 'border-b-[#333333]', shadow: 'shadow-[0_2px_0_#333333]' },
+  8: { bg: 'bg-[#c17817]', text: 'text-white', border: 'border-b-[#8a5310]', shadow: 'shadow-[0_2px_0_#8a5310]', glow: 'shadow-[0_0_12px_rgba(193,120,23,0.3)]' },
+  16: { bg: 'bg-[#d65a0f]', text: 'text-white', border: 'border-b-[#a0400b]', shadow: 'shadow-[0_2px_0_#a0400b]', glow: 'shadow-[0_0_14px_rgba(214,90,15,0.35)]' },
+  32: { bg: 'bg-[#e8453c]', text: 'text-white', border: 'border-b-[#b8322a]', shadow: 'shadow-[0_2px_0_#b8322a]', glow: 'shadow-[0_0_16px_rgba(232,69,60,0.4)]' },
+  64: { bg: 'bg-[#f02e2e]', text: 'text-white', border: 'border-b-[#c02020]', shadow: 'shadow-[0_2px_0_#c02020]', glow: 'shadow-[0_0_18px_rgba(240,46,46,0.45)]' },
+  128: { bg: 'bg-[#e8c547]', text: 'text-[#1a1a1a]', border: 'border-b-[#b89a2e]', shadow: 'shadow-[0_2px_0_#b89a2e]', glow: 'shadow-[0_0_20px_rgba(232,197,71,0.5)]' },
+  256: { bg: 'bg-[#f0d84a]', text: 'text-[#1a1a1a]', border: 'border-b-[#c4ad2e]', shadow: 'shadow-[0_2px_0_#c4ad2e]', glow: 'shadow-[0_0_24px_rgba(240,216,74,0.55)]' },
+  512: { bg: 'bg-[#10b981]', text: 'text-white', border: 'border-b-[#0d8f65]', shadow: 'shadow-[0_2px_0_#0d8f65]', glow: 'shadow-[0_0_28px_rgba(16,185,129,0.6)]' },
   1024: { bg: 'bg-[#06b6d4]', text: 'text-white', border: 'border-b-[#058a9e]', shadow: 'shadow-[0_2px_0_#058a9e]', glow: 'shadow-[0_0_32px_rgba(6,182,212,0.65)]' },
   2048: { bg: 'bg-[#8b5cf6]', text: 'text-white', border: 'border-b-[#6d3bc4]', shadow: 'shadow-[0_2px_0_#6d3bc4]', glow: 'shadow-[0_0_40px_rgba(139,92,246,0.8)]' },
   4096: { bg: 'bg-[#ec4899]', text: 'text-white', border: 'border-b-[#c0267e]', shadow: 'shadow-[0_2px_0_#c0267e]', glow: 'shadow-[0_0_44px_rgba(236,72,153,0.85)]' },
@@ -111,12 +112,12 @@ const Tile = memo(function Tile({ tile }) {
 
 const StatCard = memo(function StatCard({ label, value, color = 'zinc' }) {
   const colors = {
-    zinc:    'bg-zinc-900/60 border-zinc-800/50 text-zinc-500',
-    amber:   'bg-amber-950/40 border-amber-900/40 text-amber-600',
-    orange:  'bg-orange-950/40 border-orange-900/40 text-orange-500',
+    zinc: 'bg-zinc-900/60 border-zinc-800/50 text-zinc-500',
+    amber: 'bg-amber-950/40 border-amber-900/40 text-amber-600',
+    orange: 'bg-orange-950/40 border-orange-900/40 text-orange-500',
     emerald: 'bg-emerald-950/40 border-emerald-900/40 text-emerald-600',
-    cyan:    'bg-cyan-950/40 border-cyan-900/40 text-cyan-600',
-    purple:  'bg-purple-950/40 border-purple-900/40 text-purple-500',
+    cyan: 'bg-cyan-950/40 border-cyan-900/40 text-cyan-600',
+    purple: 'bg-purple-950/40 border-purple-900/40 text-purple-500',
   };
   const valueColors = {
     zinc: 'text-zinc-200', amber: 'text-amber-400', orange: 'text-orange-400',
@@ -153,6 +154,7 @@ export default function Game2048() {
   const [newRecord, setNewRecord] = useState(false);
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [scorePopup, setScorePopup] = useState(null);
+  const { saveScore, resetSaveGuard } = useDiscordScore();
 
   const idCounterRef = useRef(0);
   const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
@@ -201,6 +203,19 @@ export default function Game2048() {
     }
   }, [score, highScore, newRecord]);
 
+  useEffect(() => {
+    if (!gameOver) return;
+
+    saveScore({
+      score,
+      highScore,
+      maxTile,
+      movesCount,
+      elapsedTime,
+      won,
+    });
+  }, [gameOver]);
+
   const addRandomTile = useCallback((currentGrid) => {
     const emptyPositions = getEmptyPositions(currentGrid);
     if (emptyPositions.length === 0) return currentGrid;
@@ -222,6 +237,7 @@ export default function Game2048() {
     setStartTime(Date.now()); setElapsedTime(0);
     setMaxTile(0); setTotalMerges(0);
     setShakeDir(null); setNewRecord(false); setScorePopup(null);
+    resetSaveGuard();
     moveLockRef.current = false;
   }, [addRandomTile]);
 
@@ -331,10 +347,10 @@ export default function Game2048() {
     const handleKeyDown = (e) => {
       const key = e.key.toLowerCase();
       let dir = null;
-      if (e.key === 'ArrowLeft'  || key === 'a') dir = 'left';
+      if (e.key === 'ArrowLeft' || key === 'a') dir = 'left';
       else if (e.key === 'ArrowRight' || key === 'd') dir = 'right';
-      else if (e.key === 'ArrowUp'    || key === 'w') dir = 'up';
-      else if (e.key === 'ArrowDown'  || key === 's') dir = 'down';
+      else if (e.key === 'ArrowUp' || key === 'w') dir = 'up';
+      else if (e.key === 'ArrowDown' || key === 's') dir = 'down';
       else if (key === 'r' || key === 'escape') { if (gameOverRef.current || wonRef.current) initGame(); return; }
       if (dir) { e.preventDefault(); performMove(dir); }
     };
@@ -608,14 +624,14 @@ export default function Game2048() {
 
           {/* Stats 2×4 */}
           <div className="grid grid-cols-2 gap-1.5 flex-shrink-0">
-            <StatCard label="Maior Tile"   value={maxTile || '-'}                    color="purple"  />
-            <StatCard label="Tempo"        value={formatTime(elapsedTime)}           color="cyan"    />
-            <StatCard label="Movimentos"   value={movesCount}                        color="zinc"    />
-            <StatCard label="Combo"        value={streak > 0 ? `${streak}🔥` : '0'} color={streak > 2 ? 'orange' : 'zinc'} />
-            <StatCard label="Melhor Combo" value={bestStreak}                        color="amber"   />
-            <StatCard label="Merges"       value={totalMerges}                       color="emerald" />
-            <StatCard label="Velocidade"   value={`${stats.avgSpeed}/m`}             color="cyan"    />
-            <StatCard label="Eficiência"   value={String(stats.efficiency)}          color="purple"  />
+            <StatCard label="Maior Tile" value={maxTile || '-'} color="purple" />
+            <StatCard label="Tempo" value={formatTime(elapsedTime)} color="cyan" />
+            <StatCard label="Movimentos" value={movesCount} color="zinc" />
+            <StatCard label="Combo" value={streak > 0 ? `${streak}🔥` : '0'} color={streak > 2 ? 'orange' : 'zinc'} />
+            <StatCard label="Melhor Combo" value={bestStreak} color="amber" />
+            <StatCard label="Merges" value={totalMerges} color="emerald" />
+            <StatCard label="Velocidade" value={`${stats.avgSpeed}/m`} color="cyan" />
+            <StatCard label="Eficiência" value={String(stats.efficiency)} color="purple" />
           </div>
 
           {/* Action buttons */}
