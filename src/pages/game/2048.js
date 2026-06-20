@@ -222,7 +222,6 @@ export default function Game2048() {
     setStartTime(Date.now()); setElapsedTime(0);
     setMaxTile(0); setTotalMerges(0);
     setShakeDir(null); setNewRecord(false); setScorePopup(null);
-    resetSaveGuard();
     moveLockRef.current = false;
   }, [addRandomTile]);
 
