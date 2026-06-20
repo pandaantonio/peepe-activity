@@ -3,7 +3,6 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo, memo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useDiscordScore } from '@/hooks/useDiscordScore';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -154,7 +153,6 @@ export default function Game2048() {
   const [newRecord, setNewRecord] = useState(false);
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [scorePopup, setScorePopup] = useState(null);
-  const { saveScore, resetSaveGuard } = useDiscordScore();
 
   const idCounterRef = useRef(0);
   const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
@@ -202,19 +200,6 @@ export default function Game2048() {
       }
     }
   }, [score, highScore, newRecord]);
-
-  useEffect(() => {
-    if (!gameOver) return;
-
-    saveScore({
-      score,
-      highScore,
-      maxTile,
-      movesCount,
-      elapsedTime,
-      won,
-    });
-  }, [gameOver]);
 
   const addRandomTile = useCallback((currentGrid) => {
     const emptyPositions = getEmptyPositions(currentGrid);
