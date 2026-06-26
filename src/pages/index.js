@@ -116,6 +116,9 @@ export default function GameHub() {
 
   useEffect(() => {
     setMounted(true);
+    try {
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    } catch (e) {}
   }, []);
 
   useEffect(() => {
@@ -327,14 +330,14 @@ export default function GameHub() {
           </p>
         </div>
 
-        {/* Google AdSense */}
         <Script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4342538765415358"
           crossOrigin="anonymous"
           strategy="afterInteractive"
         />
-        <div className="mb-8">
+
+        <div className="mb-8 w-full">
           <ins
             className="adsbygoogle"
             style={{ display: 'block' }}
@@ -343,9 +346,6 @@ export default function GameHub() {
             data-ad-format="auto"
             data-full-width-responsive="true"
           />
-          <Script id="adsense-init" strategy="afterInteractive">{`
-            (adsbygoogle = window.adsbygoogle || []).push({});
-          `}</Script>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
