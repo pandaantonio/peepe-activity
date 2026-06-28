@@ -4,7 +4,6 @@ import { FaChess, FaLock, FaSnowflake } from 'react-icons/fa';
 import { FiZap, FiUser, FiCpu, FiTarget, FiActivity } from 'react-icons/fi';
 import { GiCardAceSpades } from 'react-icons/gi'; // ← novo import para o Blackjack
 import { useEffect, useRef, useState } from 'react';
-import Script from 'next/script';
 
 const games = [
   {
@@ -116,9 +115,6 @@ export default function GameHub() {
 
   useEffect(() => {
     setMounted(true);
-    try {
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-    } catch (e) {}
   }, []);
 
   useEffect(() => {
@@ -328,24 +324,6 @@ export default function GameHub() {
           <p className="text-gray-400 text-lg max-w-md mx-auto">
             Entre no cosmos e desafie suas habilidades intergalácticas ✨
           </p>
-        </div>
-
-        <Script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4342538765415358"
-          crossOrigin="anonymous"
-          strategy="afterInteractive"
-        />
-
-        <div className="mb-8 w-full">
-          <ins
-            className="adsbygoogle"
-            style={{ display: 'block' }}
-            data-ad-client="ca-pub-4342538765415358"
-            data-ad-slot="3927555142"
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
