@@ -1,13 +1,15 @@
 // pages/index.js
+import Head from 'next/head';
 import Link from 'next/link';
 import { FaChess, FaLock, FaSnowflake } from 'react-icons/fa';
 import { FiZap, FiUser, FiCpu, FiTarget, FiActivity, FiSquare } from 'react-icons/fi';
 import { GiCardAceSpades, GiCube } from 'react-icons/gi'; // ← ícones de cassino e de dimensão 3D
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Space_Grotesk, JetBrains_Mono } from 'next/font/google';
 
-const display = Space_Grotesk({ subsets: ['latin'], weight: ['500', '700'], variable: '--font-display' });
-const mono = JetBrains_Mono({ subsets: ['latin'], weight: ['400', '500', '700'], variable: '--font-mono' });
+// Fontes carregadas via <link>, evitando o loader do next/font (que exige
+// resolução em tempo de build e pode quebrar em alguns ambientes/monorepos).
+const FONT_DISPLAY = "'Space Grotesk', sans-serif";
+const FONT_MONO = "'JetBrains Mono', monospace";
 
 // Todo jogo carrega uma "dimensão": 2d (hoje, toda a coleção) ou 3d (próxima leva).
 const games = [
@@ -50,7 +52,7 @@ const games = [
     title: "TNT Run",
     desc: "O chão desaparece sob seus pés. Corra, antecipe os blocos que vão cair e sobreviva o máximo possível nesta corrida contra a gravidade.",
     color: "amber",
-    dimension: "2d",
+    dimension: "3d",
     icon: <FiActivity size={22} />,
     path: "/game/tntrun",
     banner: "/imgs/tntrun.png"
@@ -61,7 +63,7 @@ const games = [
     title: "Color Rush",
     desc: "Reflexos em chamas: um grid hexagonal muda de cor a cada instante. Pise na cor certa em frações de segundo ou mergulhe no abismo.",
     color: "fuchsia",
-    dimension: "2d",
+    dimension: "3d",
     icon: <FiZap size={22} />,
     path: "/game/color_rush",
     banner: "/imgs/colorRush.png"
@@ -124,13 +126,13 @@ const games = [
 ];
 
 const CATEGORIES = [
+  { id: "3d", label: "3D", icon: <GiCube size={16} />, tag: "accent-violet" },
   { id: "2d", label: "2D", icon: <FiSquare size={15} />, tag: "accent-amber" },
-  { id: "3d", label: "3D", icon: <GiCube size={16} />, tag: "accent-teal" },
 ];
 
 export default function GameHub() {
   const [mounted, setMounted] = useState(false);
-  const [activeDimension, setActiveDimension] = useState("2d");
+  const [activeDimension, setActiveDimension] = useState("3d");
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -177,8 +179,8 @@ export default function GameHub() {
       }
     });
 
-    // constelação em tom âmbar-quente, alinhada à nova identidade "ficha de arcade"
-    const tint = "255, 214, 158";
+    // constelação em tom violeta, alinhada ao degradê roxo da identidade GameHub
+    const tint = "180, 140, 255";
     const linkDistance = 110;
 
     const draw = () => {
@@ -322,16 +324,22 @@ export default function GameHub() {
   }
 
   return (
-    <div
-      className={`${display.variable} ${mono.variable} min-h-screen bg-[#07060c] relative overflow-hidden`}
-      style={{ fontFamily: "var(--font-display)" }}
-    >
+    <div className="min-h-screen relative overflow-hidden" style={{ fontFamily: FONT_DISPLAY, background: "linear-gradient(160deg, #1a0b2e 0%, #12061f 35%, #0b0614 70%, #07040f 100%)" }}>
+      <Head>
+        <title>Game Hub</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+          rel="stylesheet"
+        />
+      </Head>
       <div className="fixed inset-0 pointer-events-none">
         <div
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(circle at 10% 15%, rgba(255,190,90,0.12), transparent 45%), radial-gradient(circle at 90% 6%, rgba(45,212,191,0.10), transparent 42%), radial-gradient(circle at 50% 105%, rgba(139,92,246,0.09), transparent 55%)",
+              "radial-gradient(ellipse at 20% 10%, rgba(124,58,237,0.28), transparent 50%), radial-gradient(ellipse at 85% 15%, rgba(99,102,241,0.18), transparent 45%), radial-gradient(ellipse at 50% 90%, rgba(139,92,246,0.16), transparent 55%), radial-gradient(ellipse at 70% 60%, rgba(67,56,202,0.12), transparent 40%)",
           }}
         />
       </div>
@@ -344,22 +352,14 @@ export default function GameHub() {
 
       <div className="relative pt-28 pb-16 px-6 max-w-6xl mx-auto z-10">
         <div className="text-center mb-10">
-          <div
-            className="inline-flex items-center gap-2 px-4 py-1.5 mb-5 text-[11px] font-semibold tracking-[0.2em] text-amber-200 uppercase bg-amber-500/10 border border-amber-400/25 rounded-full"
-            style={{ fontFamily: "var(--font-mono)" }}
+          <h1
+            className="text-5xl md:text-6xl lg:text-7xl font-bold mb-8 tracking-tighter"
+            style={{ fontFamily: FONT_DISPLAY }}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />
-            {visibleGames.length} jogos · dimensão {activeDimension.toUpperCase()} · grátis
-          </div>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 tracking-tighter">
-            <span className="text-white/90">Escolha sua </span>
-            <span className="bg-gradient-to-r from-amber-300 via-orange-300 to-teal-300 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(253,186,116,0.35)]">
-              dimensão de jogo
+            <span className="bg-gradient-to-r from-violet-300 via-indigo-300 to-fuchsia-300 bg-clip-text text-transparent drop-shadow-[0_0_28px_rgba(167,139,250,0.45)]">
+              Game Hub
             </span>
           </h1>
-          <p className="text-gray-400 text-lg max-w-md mx-auto">
-            Insira sua ficha, escolha entre 2D e 3D e mergulhe no cosmos dos jogos ✨
-          </p>
         </div>
 
         {/* Seletor de dimensão — duas fichas de arcade que se inserem no slot */}
@@ -368,15 +368,15 @@ export default function GameHub() {
             <div
               className="absolute inset-y-1.5 w-[calc(50%-6px)] rounded-full transition-all duration-300 ease-out"
               style={{
-                left: activeDimension === "2d" ? "6px" : "calc(50% + 0px)",
+                left: activeDimension === "3d" ? "6px" : "calc(50% + 0px)",
                 background:
-                  activeDimension === "2d"
-                    ? "linear-gradient(135deg, rgba(251,191,36,0.9), rgba(249,115,22,0.85))"
-                    : "linear-gradient(135deg, rgba(45,212,191,0.85), rgba(56,189,248,0.8))",
+                  activeDimension === "3d"
+                    ? "linear-gradient(135deg, rgba(139,92,246,0.95), rgba(99,102,241,0.9))"
+                    : "linear-gradient(135deg, rgba(251,191,36,0.9), rgba(249,115,22,0.85))",
                 boxShadow:
-                  activeDimension === "2d"
-                    ? "0 0 24px rgba(251,191,36,0.35)"
-                    : "0 0 24px rgba(45,212,191,0.35)",
+                  activeDimension === "3d"
+                    ? "0 0 24px rgba(139,92,246,0.45)"
+                    : "0 0 24px rgba(251,191,36,0.35)",
               }}
             />
             {CATEGORIES.map((cat) => {
@@ -386,7 +386,7 @@ export default function GameHub() {
                   key={cat.id}
                   onClick={() => setActiveDimension(cat.id)}
                   className="relative z-10 flex items-center gap-2 px-7 py-2.5 rounded-full transition-colors duration-300"
-                  style={{ fontFamily: "var(--font-mono)" }}
+                  style={{ fontFamily: FONT_MONO }}
                 >
                   <span className={isActive ? "text-[#0b0710]" : "text-gray-400"}>
                     {cat.icon}
@@ -429,13 +429,13 @@ export default function GameHub() {
                           alt={item.title}
                           className="w-full h-52 object-cover transition-all duration-700 group-hover:scale-110 group-hover:brightness-125"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#07060c]/70 to-[#07060c]" />
+                        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0b0614]/70 to-[#0b0614]" />
                       </div>
                     )}
 
                     <div className="p-6">
                       <div className="flex items-center justify-between mb-4">
-                        <div className={`px-3 py-1 text-xs font-bold tracking-widest rounded-full border ${colors.badge}`} style={{ fontFamily: "var(--font-mono)" }}>
+                        <div className={`px-3 py-1 text-xs font-bold tracking-widest rounded-full border ${colors.badge}`} style={{ fontFamily: FONT_MONO }}>
                           {item.badge}
                         </div>
                         <div className={`${colors.accent} text-2xl transition-transform group-hover:rotate-12 duration-300`}>
@@ -473,7 +473,7 @@ export default function GameHub() {
             </div>
             <div
               className="inline-flex items-center gap-2 px-4 py-1.5 mb-4 text-[11px] font-semibold tracking-[0.2em] text-teal-200 uppercase bg-teal-500/10 border border-teal-400/25 rounded-full"
-              style={{ fontFamily: "var(--font-mono)" }}
+              style={{ fontFamily: FONT_MONO }}
             >
               <GiCube size={14} />
               em construção
@@ -486,7 +486,7 @@ export default function GameHub() {
               onClick={() => setActiveDimension("2d")}
               className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold tracking-wide text-[#0b0710] transition-transform hover:scale-105"
               style={{
-                fontFamily: "var(--font-mono)",
+                fontFamily: FONT_MONO,
                 background: "linear-gradient(135deg, rgba(251,191,36,0.9), rgba(249,115,22,0.85))",
               }}
             >
@@ -499,9 +499,9 @@ export default function GameHub() {
 
       <style jsx>{`
         .glass-card {
-          background: rgba(13, 11, 20, 0.85);
+          background: rgba(18, 10, 36, 0.82);
           backdrop-filter: blur(24px);
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(139, 92, 246, 0.12);
           box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.7);
         }
       `}</style>
