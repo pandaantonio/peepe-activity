@@ -1,7 +1,10 @@
 import "@/styles/globals.css";
+import { DiscordProvider } from '@/contexts/DiscordContext';
 
 export default function App({ Component, pageProps: { session, ...pageProps } }) {
   return (
-    <Component {...pageProps} />
+    <DiscordProvider>
+      <Component {...pageProps} />
+    </DiscordProvider>
   );
 }
